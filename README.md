@@ -1,4 +1,4 @@
-# IBCC — Hospital Information System
+# IBCC — Laboratory Information System
 
 ## Stack
 - **Nuxt 4** (compatibility mode) · Vue 3 · TypeScript
