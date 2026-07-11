@@ -1,0 +1,256 @@
+/* app/assets/css/main.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Import FontAwesome SVG core CSS */
+@import '@fortawesome/fontawesome-svg-core/styles.css';
+
+/* ─── CSS custom properties ──────────────────────────────────────────────── */
+:root {
+  --color-primary:        #3d7fbf;
+  --color-primary-light:  #5b9bdb;
+  --color-sidebar-from:   #1f578c;
+  --color-sidebar-to:     #3d7fbf;
+  --color-surface:        #f7f9fb;
+  --color-on-surface:     #191c1e;
+  --color-outline:        #727687;
+  --color-outline-variant:#c2c6d8;
+  --radius-island:        0.75rem;
+  --shadow-island:        0px 10px 30px rgba(61, 127, 191, 0.08);
+  --sidebar-width:        260px;
+}
+
+/* ─── Base ───────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  background-color: var(--color-surface);
+  color: var(--color-on-surface);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+/* ─── Scrollbar styling ──────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--color-outline-variant); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--color-outline); }
+
+/* ─── Island / card base ─────────────────────────────────────────────────── */
+.island {
+  background: #ffffff;
+  border-radius: var(--radius-island);
+  box-shadow: var(--shadow-island);
+  padding: 1.5rem;
+  animation: island-in 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── Sidebar ────────────────────────────────────────────────────────────── */
+.sidebar {
+  background: linear-gradient(180deg, var(--color-sidebar-from) 0%, var(--color-sidebar-to) 100%);
+  width: var(--sidebar-width);
+  min-height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ─── Main content offset ────────────────────────────────────────────────── */
+.main-content {
+  margin-left: var(--sidebar-width);
+  min-height: 100vh;
+  background: linear-gradient(160deg, #ffffff 0%, #eaf2fb 100%);
+  transition: margin-left 0.3s ease;
+}
+
+@media (max-width: 1023px) {
+  .main-content { margin-left: 0; }
+  .sidebar { transform: translateX(-100%); transition: transform 0.3s ease; }
+  .sidebar.open { transform: translateX(0); }
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2
+         rounded-md text-sm sm:text-base font-semibold text-white
+         bg-primary-gradient shadow-island-active
+         transition-all duration-200
+         hover:opacity-90 active:scale-95 focus:outline-none focus:ring-2
+         focus:ring-primary focus:ring-offset-2 disabled:opacity-50
+         disabled:cursor-not-allowed;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2
+         rounded-md text-sm sm:text-base font-semibold
+         text-primary border border-primary/30 bg-white
+         transition-all duration-200
+         hover:bg-primary/5 active:scale-95 focus:outline-none
+         focus:ring-2 focus:ring-primary focus:ring-offset-2
+         disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-danger {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2
+         rounded-md text-sm sm:text-base font-semibold text-white
+         bg-error transition-all duration-200
+         hover:opacity-90 active:scale-95 focus:outline-none
+         focus:ring-2 focus:ring-error focus:ring-offset-2
+         disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+/* ─── Form inputs ────────────────────────────────────────────────────────── */
+.input-field {
+  @apply w-full rounded-md border border-outline-variant bg-white
+         px-3 py-2 text-sm sm:text-base text-on-surface
+         placeholder:text-outline
+         focus:outline-none focus:border-primary focus:ring-2
+         focus:ring-primary/20 transition-all duration-200
+         disabled:bg-surface-low disabled:cursor-not-allowed;
+}
+
+.input-label {
+  @apply block text-xs sm:text-sm font-semibold text-on-surface-variant mb-1;
+}
+
+/* ─── Badges / pills ─────────────────────────────────────────────────────── */
+.badge {
+  @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-full
+         text-xs sm:text-sm font-semibold;
+}
+.badge-success { @apply badge bg-secondary-fixed text-secondary-on-fixed; }
+.badge-warning { @apply badge bg-accent-fixed text-accent-on; }
+.badge-error   { @apply badge bg-error-container text-error-on-container; }
+.badge-info    { @apply badge bg-primary-fixed text-primary-on-fixed; }
+.badge-purple  { @apply badge bg-tertiary-fixed text-tertiary-on-fixed; }
+.badge-neutral { @apply badge bg-surface-container text-on-surface-variant; }
+
+/* ─── Table ──────────────────────────────────────────────────────────────── */
+.his-table {
+  @apply w-full text-sm sm:text-base text-on-surface border-collapse;
+}
+.his-table thead tr {
+  @apply bg-island-header;
+}
+.his-table thead th {
+  @apply px-3 py-3 text-left text-xs sm:text-sm font-bold
+         text-on-surface-variant uppercase tracking-wide
+         border-b border-outline-variant whitespace-nowrap;
+}
+.his-table tbody tr {
+  @apply border-b border-outline-variant/50
+         hover:bg-surface-low transition-colors duration-150;
+}
+.his-table tbody td {
+  @apply px-3 py-3 align-middle break-words;
+}
+
+/* ─── Stat card ──────────────────────────────────────────────────────────── */
+.stat-card {
+  @apply island flex flex-col gap-2;
+}
+.stat-card-value {
+  @apply text-xl sm:text-2xl md:text-3xl font-bold text-on-surface;
+}
+.stat-card-label {
+  @apply text-xs sm:text-sm text-on-surface-variant font-medium;
+}
+
+/* ─── Page header ────────────────────────────────────────────────────────── */
+.page-header {
+  @apply flex flex-wrap items-center justify-between gap-3 mb-6;
+}
+.page-title {
+  @apply text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold sm:font-bold
+         text-on-surface break-words;
+}
+.page-subtitle {
+  @apply text-xs sm:text-sm text-on-surface-variant mt-0.5;
+}
+
+/* ─── Section heading ────────────────────────────────────────────────────── */
+.section-heading {
+  @apply text-base sm:text-lg md:text-xl font-semibold text-on-surface mb-4;
+}
+
+/* ─── Alert ──────────────────────────────────────────────────────────────── */
+.alert {
+  @apply flex items-start gap-3 p-3 rounded-md text-sm sm:text-base;
+}
+.alert-error   { @apply alert bg-error-container text-error; }
+.alert-warning { @apply alert bg-accent-fixed text-accent; }
+.alert-success { @apply alert bg-secondary-fixed text-secondary-on-fixed; }
+.alert-info    { @apply alert bg-primary-fixed text-primary; }
+.alert-note    { @apply alert bg-tertiary-fixed text-tertiary; }
+
+/* ─── Ribbon color utilities ─────────────────────────────────────────────── */
+/* Direct access to all 5 IBCC ribbon colors — for tags, icons, chart legends */
+.ribbon-dot {
+  @apply inline-block w-2.5 h-2.5 rounded-full shrink-0;
+}
+.ribbon-dot-blue   { @apply ribbon-dot bg-ribbon-blue; }
+.ribbon-dot-red    { @apply ribbon-dot bg-ribbon-red; }
+.ribbon-dot-amber  { @apply ribbon-dot bg-ribbon-amber; }
+.ribbon-dot-teal   { @apply ribbon-dot bg-ribbon-teal; }
+.ribbon-dot-purple { @apply ribbon-dot bg-ribbon-purple; }
+
+.ribbon-chip {
+  @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
+         text-xs sm:text-sm font-semibold border;
+}
+.ribbon-chip-blue   { @apply ribbon-chip bg-primary-fixed text-primary-on-fixed border-primary/20; }
+.ribbon-chip-red    { @apply ribbon-chip bg-error-container text-error-on-container border-error/20; }
+.ribbon-chip-amber  { @apply ribbon-chip bg-accent-fixed text-accent-on-container border-accent/30; }
+.ribbon-chip-teal   { @apply ribbon-chip bg-secondary-fixed text-secondary-on-fixed border-secondary/20; }
+.ribbon-chip-purple { @apply ribbon-chip bg-tertiary-fixed text-tertiary-on-fixed border-tertiary/20; }
+
+/* ─── Sidebar nav item ───────────────────────────────────────────────────── */
+.nav-item {
+  @apply flex items-center gap-3 px-4 py-2.5 rounded-md
+         text-sm sm:text-base font-medium text-white/70
+         cursor-pointer transition-all duration-200
+         hover:bg-white/10 hover:text-white;
+}
+.nav-item.active {
+  @apply bg-white/15 text-white font-semibold;
+}
+
+/* ─── Tabs ───────────────────────────────────────────────────────────────── */
+.tab-bar {
+  @apply flex gap-1 border-b border-outline-variant overflow-x-auto pb-0;
+}
+.tab-item {
+  @apply px-4 py-2 text-sm sm:text-base font-medium text-on-surface-variant
+         border-b-2 border-transparent -mb-px cursor-pointer
+         whitespace-nowrap transition-all duration-200
+         hover:text-primary;
+}
+.tab-item.active {
+  @apply text-primary border-primary font-semibold;
+}
+
+/* ─── Overlay ────────────────────────────────────────────────────────────── */
+.overlay {
+  @apply fixed inset-0 bg-black/40 z-30 backdrop-blur-sm lg:hidden;
+}
+
+/* ─── Responsive utils ───────────────────────────────────────────────────── */
+.truncate-cell { @apply max-w-[160px] truncate; }
+
+/* ─── Design refresh — island shadow for new card style ─────────────────── */
+.shadow-island {
+  box-shadow: 0 10px 40px -10px rgba(61, 127, 191, 0.18), 0 4px 16px -4px rgba(0, 0, 0, 0.06);
+}
+
+/* ─── App frame gradient (default layout) ───────────────────────────────── */
+.bg-app-gradient {
+  background: linear-gradient(135deg, #d6e8fa 0%, #aed0f0 100%);
+}
