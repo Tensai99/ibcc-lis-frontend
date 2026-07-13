@@ -1,15 +1,20 @@
-<!-- app/pages/laboratory/order.vue -->
+<!-- app/pages/orders/[uuid].vue -->
 <template>
   <div class="space-y-4 sm:space-y-5 animate-fade-in">
 
-    <!-- Breadcrumb -->
-    <nav class="flex items-center gap-1 text-xs sm:text-sm">
-      <NuxtLink to="/laboratory/orders" class="crumb">
-        <font-awesome-icon :icon="['fas','vials']" class="text-[11px]" />Laboratory Orders
-      </NuxtLink>
-      <font-awesome-icon :icon="['fas','chevron-right']" class="text-[9px] text-outline" />
-      <span class="crumb-current">{{ order?.accession_number || 'Order' }}</span>
-    </nav>
+    <!-- Breadcrumb (pill) -->
+    <div class="mb-1">
+      <nav class="inline-flex items-center gap-1 bg-white/80 border border-white/50 rounded-xl px-2 py-1.5 text-xs shadow-sm">
+        <NuxtLink to="/orders"
+          class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-on-surface transition-colors">
+          <font-awesome-icon :icon="['fas', 'vials']" class="text-[11px]" />Laboratory Orders
+        </NuxtLink>
+        <font-awesome-icon :icon="['fas', 'chevron-right']" class="text-[9px] text-outline/40" />
+        <span v-if="order" class="flex items-center gap-1.5 px-2 py-1 text-on-surface font-semibold">
+          <font-awesome-icon :icon="['fas', 'flask-vial']" class="text-[11px] text-primary" />{{ order.accession_number }}
+        </span>
+      </nav>
+    </div>
 
     <!-- Loading -->
     <div v-if="loading" class="island flex flex-col items-center justify-center gap-3 py-20">
@@ -24,7 +29,7 @@
       </div>
       <p class="text-sm text-on-surface-variant max-w-md">{{ error }}</p>
       <div class="flex gap-2">
-        <NuxtLink to="/laboratory/orders" class="btn-secondary">
+        <NuxtLink to="/orders" class="btn-secondary">
           <font-awesome-icon :icon="['fas','arrow-left']" /><span>Back to orders</span>
         </NuxtLink>
         <button type="button" class="btn-secondary" @click="load"><font-awesome-icon :icon="['fas','rotate-right']" /><span>Retry</span></button>
@@ -47,110 +52,136 @@
               </span>
             </p>
           </div>
+
           <div class="flex flex-wrap items-center gap-2">
             <span :class="statusClass(order.status)">{{ titleCase(order.status) }}</span>
             <span :class="urgencyClass(order.urgency)">{{ order.urgency }}</span>
-          </div>
-        </div>
 
-        <!-- Actions -->
-        <div class="flex flex-wrap gap-2 mt-5">
-          <button type="button" class="hdr-btn" @click="openUpdate">
-            <font-awesome-icon :icon="['fas','pen-to-square']" /><span>Update</span>
-          </button>
-          <button type="button" class="hdr-btn" @click="openCollect">
-            <font-awesome-icon :icon="['fas','droplet']" /><span>Collect</span>
-          </button>
-          <button type="button" class="hdr-btn" @click="receiveOpen = true">
-            <font-awesome-icon :icon="['fas','inbox']" /><span>Receive</span>
-          </button>
-        </div>
-      </div>
-
-      <!-- Details grid -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <div class="island lg:col-span-2">
-          <h3 class="section-heading">Order details</h3>
-          <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-            <Detail label="Department" :value="order.department?.name" />
-            <Detail label="Section" :value="order.department?.section" />
-            <Detail label="Specimen" :value="order.specimen" />
-            <Detail label="Site" :value="order.site" />
-            <Detail label="Scheduled for" :value="fmtDate(order.scheduled_for)" />
-            <Detail label="Disposition" :value="order.disposition" />
-            <Detail label="Collection time" :value="fmtDate(order.collection_time)" />
-            <Detail label="Reception time" :value="fmtDate(order.reception_time)" />
-            <Detail label="Referring facility" :value="order.referring_facility" />
-            <Detail label="Requested by" :value="order.requested_by" />
-            <Detail label="Requested by occupation" :value="order.requested_by_occupation" />
-            <Detail label="Received by" :value="order.received_by" />
-          </dl>
-
-          <template v-if="clinicalEntries.length">
-            <h4 class="sub-label mt-4">Clinical details</h4>
-            <div class="flex flex-wrap gap-2">
-              <span v-for="[k, v] in clinicalEntries" :key="k" class="ribbon-chip-blue">
-                {{ titleCase(k) }}: {{ v }}
-              </span>
-            </div>
-          </template>
-        </div>
-
-        <!-- Encounters -->
-        <div class="island">
-          <h3 class="section-heading">Workflow</h3>
-          <div v-if="order.encounters?.length" class="space-y-3">
-            <div v-for="e in order.encounters" :key="e.id"
-              class="rounded-xl border-l-4 bg-surface-low/60 px-3 py-2.5" :class="tatAccent(e.tat_status)">
-              <div class="flex items-center justify-between gap-2">
-                <span class="font-semibold text-sm">{{ titleCase(e.type) }}</span>
-                <span :class="tatChip(e.tat_status)">{{ titleCase(e.tat_status || e.status) }}</span>
+            <!-- Advanced options dropdown (holds all workflow actions) -->
+            <div class="relative">
+              <button type="button" class="hdr-btn" @click="advOpen = !advOpen">
+                <font-awesome-icon :icon="['fas','sliders']" />
+                <span>Advanced options</span>
+                <font-awesome-icon :icon="['fas','chevron-down']"
+                  class="text-[0.65rem] transition-transform" :class="advOpen ? 'rotate-180' : ''" />
+              </button>
+              <div v-if="advOpen" class="fixed inset-0 z-20" @click="advOpen = false" />
+              <div v-if="advOpen"
+                class="absolute right-0 top-full mt-2 w-56 rounded-xl bg-surface-lowest shadow-island border border-outline-variant/40 py-1 z-30">
+                <button type="button" class="adv-item" @click="openUpdate(); advOpen = false">
+                  <font-awesome-icon :icon="['fas','pen-to-square']" class="text-primary" /><span>Update order</span>
+                </button>
+                <button type="button" class="adv-item" @click="openCollect(); advOpen = false">
+                  <font-awesome-icon :icon="['fas','droplet']" class="text-ribbon-teal" /><span>Collect specimen</span>
+                </button>
+                <button type="button" class="adv-item" @click="receiveOpen = true; advOpen = false">
+                  <font-awesome-icon :icon="['fas','inbox']" class="text-ribbon-amber" /><span>Receive order</span>
+                </button>
               </div>
-              <p class="text-xs text-on-surface-variant mt-1">
-                <font-awesome-icon :icon="['fas','clock']" class="mr-1 opacity-70" />
-                Due {{ fmtDate(e.due_at) }}
-              </p>
-              <p v-if="e.performed_by" class="text-xs text-on-surface-variant">By {{ e.performed_by }}</p>
             </div>
           </div>
-          <p v-else class="empty-line">No workflow stations yet.</p>
         </div>
       </div>
 
-      <!-- Tests -->
-      <div class="bg-surface-lowest rounded-xl shadow-island overflow-hidden">
-        <div class="px-4 sm:px-5 pt-4 flex items-center gap-2">
-          <font-awesome-icon :icon="['fas','flask']" class="text-ribbon-teal" />
-          <h3 class="heading-inline">Tests <span class="text-on-surface-variant font-normal">({{ order.tests?.length || 0 }})</span></h3>
+      <!-- Tabs -->
+      <div class="tab-bar">
+        <button type="button" class="tab-item" :class="{ active: tab === 'general' }" @click="tab = 'general'">
+          General
+        </button>
+        <button type="button" class="tab-item" :class="{ active: tab === 'tests' }" @click="tab = 'tests'">
+          Tests <span class="text-on-surface-variant font-normal">({{ order.tests?.length || 0 }})</span>
+        </button>
+      </div>
+
+      <!-- ══ General tab ══ -->
+      <div v-show="tab === 'general'" class="space-y-4">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div class="island lg:col-span-2">
+            <h3 class="section-heading">Order details</h3>
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
+              <Detail label="Department" :value="order.department?.name" />
+              <Detail label="Section" :value="order.department?.section" />
+              <Detail label="Specimen" :value="order.specimen" />
+              <Detail label="Site" :value="order.site" />
+              <Detail label="Scheduled for" :value="fmtDate(order.scheduled_for)" />
+              <Detail label="Disposition" :value="order.disposition" />
+              <Detail label="Collection time" :value="fmtDate(order.collection_time)" />
+              <Detail label="Reception time" :value="fmtDate(order.reception_time)" />
+              <Detail label="Referring facility" :value="order.referring_facility" />
+              <Detail label="Requested by" :value="order.requested_by" />
+              <Detail label="Requested by occupation" :value="order.requested_by_occupation" />
+              <Detail label="Received by" :value="order.received_by" />
+            </dl>
+
+            <template v-if="clinicalEntries.length">
+              <h4 class="sub-label mt-4">Clinical details</h4>
+              <div class="flex flex-wrap gap-2">
+                <span v-for="[k, v] in clinicalEntries" :key="k" class="ribbon-chip-blue">
+                  {{ titleCase(k) }}: {{ v }}
+                </span>
+              </div>
+            </template>
+          </div>
+
+          <!-- Encounters / workflow -->
+          <div class="island">
+            <h3 class="section-heading">Workflow</h3>
+            <div v-if="order.encounters?.length" class="space-y-3">
+              <div v-for="e in order.encounters" :key="e.id"
+                class="rounded-xl border-l-4 bg-surface-low/60 px-3 py-2.5" :class="tatAccent(e.tat_status)">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="font-semibold text-sm">{{ titleCase(e.type) }}</span>
+                  <span :class="tatChip(e.tat_status)">{{ titleCase(e.tat_status || e.status) }}</span>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1">
+                  <font-awesome-icon :icon="['fas','clock']" class="mr-1 opacity-70" />
+                  Due {{ fmtDate(e.due_at) }}
+                </p>
+                <p v-if="e.performed_by" class="text-xs text-on-surface-variant">By {{ e.performed_by }}</p>
+              </div>
+            </div>
+            <p v-else class="empty-line">No workflow stations yet.</p>
+          </div>
         </div>
-        <div class="overflow-x-auto mt-3">
-          <table class="his-table">
-            <thead>
-              <tr><th>Accession</th><th>Test</th><th>Code</th><th>Sample</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-              <tr v-for="t in order.tests" :key="t.uuid">
-                <td class="font-semibold text-primary whitespace-nowrap">{{ t.accession_number }}</td>
-                <td>{{ t.test_name }}</td>
-                <td class="text-on-surface-variant">{{ t.test_code }}</td>
-                <td>{{ t.sample_name || '—' }}</td>
-                <td><span :class="statusClass(t.status)">{{ titleCase(t.status) }}</span></td>
-              </tr>
-              <tr v-if="!order.tests?.length"><td colspan="5" class="text-center text-on-surface-variant py-6">No tests on this order.</td></tr>
-            </tbody>
-          </table>
+
+        <!-- Notes -->
+        <div v-if="order.notes?.length" class="island">
+          <h3 class="section-heading">Notes</h3>
+          <ul class="space-y-2">
+            <li v-for="(n, i) in order.notes" :key="i" class="text-sm text-on-surface flex gap-2">
+              <font-awesome-icon :icon="['fas','notes-medical']" class="text-ribbon-purple mt-0.5" />
+              <span>{{ typeof n === 'string' ? n : (n.body || n.note || JSON.stringify(n)) }}</span>
+            </li>
+          </ul>
         </div>
       </div>
 
-      <!-- Notes -->
-      <div v-if="order.notes?.length" class="island">
-        <h3 class="section-heading">Notes</h3>
-        <ul class="space-y-2">
-          <li v-for="(n, i) in order.notes" :key="i" class="text-sm text-on-surface flex gap-2">
-            <font-awesome-icon :icon="['fas','notes-medical']" class="text-ribbon-purple mt-0.5" />
-            <span>{{ typeof n === 'string' ? n : (n.body || n.note || JSON.stringify(n)) }}</span>
-          </li>
-        </ul>
+      <!-- ══ Tests tab ══ -->
+      <div v-show="tab === 'tests'">
+        <div class="bg-surface-lowest rounded-xl shadow-island overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="his-table">
+              <thead>
+                <tr><th>Accession</th><th>Test</th><th>Code</th><th>Sample</th><th>Status</th></tr>
+              </thead>
+              <tbody>
+                <tr v-for="t in order.tests" :key="t.uuid">
+                  <!-- ribbon variant: status-coloured left accent on the row -->
+                  <td class="font-semibold text-primary whitespace-nowrap border-l-4" :class="rowAccent(t.status)">
+                    {{ t.accession_number }}
+                  </td>
+                  <td>{{ t.test_name }}</td>
+                  <td class="text-on-surface-variant">{{ t.test_code }}</td>
+                  <td>{{ t.sample_name || '—' }}</td>
+                  <td><span :class="statusClass(t.status)">{{ titleCase(t.status) }}</span></td>
+                </tr>
+                <tr v-if="!order.tests?.length">
+                  <td colspan="5" class="text-center text-on-surface-variant py-6">No tests on this order.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     </template>
 
@@ -280,8 +311,12 @@ const order   = ref<LabOrderDetail | null>(null)
 const loading = ref(true)
 const error   = ref<string | null>(null)
 
+// active body tab + header dropdown
+const tab = ref<'general' | 'tests'>('general')
+const advOpen = ref(false)
+
 const load = async () => {
-  if (!uuid.value) { error.value = 'No order selected (missing ?uuid=).'; loading.value = false; return }
+  if (!uuid.value) { error.value = 'No order selected.'; loading.value = false; return }
   loading.value = true
   error.value = null
   try {
@@ -414,6 +449,14 @@ const urgencyClass = (u: string) => {
   if (k === 'medium') return 'ribbon-chip-amber'
   return 'ribbon-chip-teal'
 }
+// ribbon left-accent for table rows, keyed by status
+const rowAccent = (s: string) => {
+  const k = (s || '').toLowerCase()
+  if (k.includes('cancel') || k.includes('no show') || k.includes('no_show')) return 'border-ribbon-red'
+  if (k.includes('complete') || k.includes('received') || k.includes('verified')) return 'border-ribbon-teal'
+  if (k.includes('progress') || k.includes('collected')) return 'border-ribbon-amber'
+  return 'border-ribbon-blue'
+}
 const tatChip = (t: string | null) => {
   const k = (t || '').toLowerCase()
   if (k === 'breached') return 'ribbon-chip-red'
@@ -437,9 +480,6 @@ const Detail = (props: { label: string; value: string | number | null | undefine
 </script>
 
 <style scoped>
-.crumb { @apply flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-on-surface transition-colors; }
-.crumb-current { @apply px-2 py-1 font-semibold text-on-surface truncate max-w-[220px]; }
-.heading-inline { @apply text-base sm:text-lg font-semibold text-on-surface; }
 .sub-label { @apply text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-2; }
 .empty-line { @apply text-sm text-on-surface-variant py-6 text-center; }
 
@@ -447,6 +487,10 @@ const Detail = (props: { label: string; value: string | number | null | undefine
 .hdr-btn {
   @apply inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold
          text-white bg-white/15 hover:bg-white/25 transition-colors;
+}
+/* advanced-options dropdown items (white menu) */
+.adv-item {
+  @apply w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors;
 }
 
 /* toast transition */

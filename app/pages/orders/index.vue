@@ -1,28 +1,8 @@
-<!-- app/pages/laboratory/orders.vue -->
-<!--
-  Laboratory Orders list. GET /laboratories/orders (paginated: data + meta).
-  Row click OR the ellipsis "View order" → /laboratory/order?uuid=<uuid>.
-  Filters: from, to, q, status, urgency, department_id, sub_department_id (page/per_page).
-
-  FontAwesome (fas) icons: gauge, vials, chevron-right, chevron-left, sliders,
-  rotate-right, circle-notch, triangle-exclamation, ellipsis-vertical, eye,
-  magnifying-glass, circle-dot, bolt, building, sitemap.
--->
+<!-- app/pages/orders/index.vue -->
 <template>
   <div class="space-y-4 sm:space-y-5 animate-fade-in">
 
-    <!-- Breadcrumb -->
-    <nav class="flex items-center gap-1 text-xs sm:text-sm">
-      <NuxtLink :to="dashboardPath" class="crumb">
-        <font-awesome-icon :icon="['fas','gauge']" class="text-[11px]" />Dashboard
-      </NuxtLink>
-      <font-awesome-icon :icon="['fas','chevron-right']" class="text-[9px] text-outline" />
-      <span class="crumb-current">
-        <font-awesome-icon :icon="['fas','vials']" class="text-[11px]" />Laboratory Orders
-      </span>
-    </nav>
-
-    <!-- Header -->
+    <!-- Header (no breadcrumb on the list page) -->
     <div class="page-header">
       <div>
         <h1 class="page-title">Laboratory Orders</h1>
@@ -81,7 +61,10 @@
             </thead>
             <tbody>
               <tr v-for="o in rows" :key="o.uuid" class="cursor-pointer" @click="openOrder(o.uuid)">
-                <td class="font-bold text-primary whitespace-nowrap">{{ o.accession_number }}</td>
+                <!-- ribbon variant: status-coloured left accent on the row -->
+                <td class="font-bold text-primary whitespace-nowrap border-l-4" :class="rowAccent(o.status)">
+                  {{ o.accession_number }}
+                </td>
                 <td>
                   <div class="font-semibold">{{ o.patient_name }}</div>
                   <div class="text-xs text-on-surface-variant">
@@ -151,13 +134,6 @@
 import { ref, reactive, onMounted } from 'vue'
 
 const { listOrders } = useLaboratory()
-const auth = useAuthStore()
-
-// breadcrumb back-link → the role's laboratory dashboard
-const LAB_ADMIN_ROLES = ['system_administrator', 'lab_technician']
-const dashboardPath = LAB_ADMIN_ROLES.includes(auth.currentRole)
-  ? '/dashboard/laboratory-admin'
-  : '/dashboard/laboratory'
 
 const filters = reactive<Record<string, any>>({
   from: '', to: '', q: '',
@@ -188,10 +164,10 @@ const load = async () => {
 const goPage = (p: number) => { filters.page = p; load() }
 onMounted(load)
 
-// ── navigation ───────────────────────────────────────────────────────────────
+// ── navigation → nested detail route (orders/[uuid].vue) ─────────────────────
 const openOrder = (uuid: string) => {
   menuFor.value = null
-  navigateTo(`/orders/${uuid}`) // was /laboratory/order?uuid=
+  navigateTo(`/orders/${uuid}`)
 }
 
 // ── teleported ellipsis menu ─────────────────────────────────────────────────
@@ -225,11 +201,17 @@ const urgencyClass = (u: string) => {
   if (k === 'medium') return 'ribbon-chip-amber'
   return 'ribbon-chip-teal'
 }
+// ribbon left-accent for the row, keyed by status
+const rowAccent = (s: string) => {
+  const k = (s || '').toLowerCase()
+  if (k.includes('cancel') || k.includes('no show') || k.includes('no_show')) return 'border-ribbon-red'
+  if (k.includes('complete') || k.includes('received') || k.includes('verified')) return 'border-ribbon-teal'
+  if (k.includes('progress') || k.includes('collected')) return 'border-ribbon-amber'
+  return 'border-ribbon-blue'
+}
 </script>
 
 <style scoped>
-.crumb { @apply flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-on-surface transition-colors; }
-.crumb-current { @apply flex items-center gap-1.5 px-2 py-1 font-semibold text-on-surface; }
 .filter-toggle { @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors; }
 .ellipsis-btn { @apply w-8 h-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-primary transition-colors; }
 .menu-item { @apply w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors; }
