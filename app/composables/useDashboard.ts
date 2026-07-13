@@ -7,26 +7,13 @@
 //   • the /dashboard dispatcher page         (pages/dashboard/index.vue)
 
 // ── role → dashboard route ───────────────────────────────────────────────────
-export const DASHBOARD_ROUTES: Record<string, string> = {
-  system_administrator: '/dashboard/system-administrator',
-  medical_director:     '/dashboard/system-administrator', // shares the admin view
-  oncologist:           '/dashboard/oncologist',
-  resident_doctor:      '/dashboard/resident-doctor',
-  oncology_nurse:       '/dashboard/oncology-nurse',
-  clinical_nurse:       '/dashboard/oncology-nurse',
-  palliative_nurse:     '/dashboard/oncology-nurse',
-  receptionist:         '/dashboard/receptionist',
-  medical_records:      '/dashboard/receptionist',
-  lab_technician:       '/dashboard/lab-technician',
-  finance_officer:      '/dashboard/finance-officer',
-  inventory_officer:    '/dashboard/inventory-officer',
-  bme_lead:             '/dashboard/bme-lead',
-}
+export const LAB_ADMIN_ROLES = ['system_administrator', 'lab_technician'] as const
 
-/** Resolve the dashboard path for a role, falling back to the generic overview. */
+/** Resolve the laboratory dashboard path for a role. */
 export function dashboardPathForRole(role?: string | null): string {
-  if (!role) return '/dashboard/overview'
-  return DASHBOARD_ROUTES[role] ?? '/dashboard/overview'
+  return role && (LAB_ADMIN_ROLES as readonly string[]).includes(role)
+    ? '/dashboard/laboratory-admin'
+    : '/dashboard/laboratory'
 }
 
 // ── generic fetch helper ─────────────────────────────────────────────────────

@@ -228,13 +228,20 @@ interface NavItem {
 }
 
 // Dashboard target follows the logged-in role (admin → admin view, etc.).
-const dashboardPath = computed(() => dashboardPathForRole(auth.currentRole))
+const LAB_ADMIN_ROLES = ['system_administrator', 'lab_technician']
+const dashboardPath = computed(() =>
+  LAB_ADMIN_ROLES.includes(auth.currentRole)
+    ? '/dashboard/laboratory-admin'
+    : '/dashboard/laboratory',
+)
 
 const navItems = computed<NavItem[]>(() => {
   const items: NavItem[] = [
     { to: dashboardPath.value, icon: ['fas', 'gauge'], label: 'Dashboard', show: true },
-    { to: '/customers', icon: ['fas', 'users'], label: 'Customers', show: can('customer_view') },
-    { to: '/patients', icon: ['fas', 'hospital-user'], label: 'Patients', show: can('patient_view') || can('patient_search') },
+    //{ to: '/customers', icon: ['fas', 'users'], label: 'Customers', show: can('customer_view') },
+    //{ to: '/patients', icon: ['fas', 'hospital-user'], label: 'Patients', show: can('patient_view') || can('patient_search') },
+    // ── Laboratory ──────────────────────────────────────────────────────────
+    { to: '/orders', icon: ['fas', 'vials'], label: 'Laboratory Orders', show: canAny(['lab_referral', 'lab_results']) },
     // ── Inventory & Assets ──────────────────────────────────────────────────
     { to: '/inventory', icon: ['fas', 'boxes-stacked'], label: 'Inventory', show: can('inventory_view') },
     { to: '/assets', icon: ['fas', 'server'], label: 'Assets', show: can('asset_view') },

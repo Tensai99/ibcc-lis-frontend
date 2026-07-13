@@ -34,7 +34,7 @@
           <p class="text-sm sm:text-base leading-relaxed font-medium text-white/90 max-w-sm break-words drop-shadow-sm">
             Securely manage diagnostics, patient records, and clinical data
             within a unified, state-of-the-art environment designed for
-            healthcare professionals.
+            Laboratorycare professionals.
           </p>
         </div>
 
@@ -74,7 +74,7 @@
             Personnel Sign-in
           </h2>
           <p class="text-xs font-bold uppercase tracking-[0.1em] text-[#424753] mt-1">
-            Authorized Health Information System Access Only
+            Authorized Laboratory Information System Access Only
           </p>
         </div>
 
@@ -230,8 +230,20 @@ const handleLogin = async () => {
     })
     if (!data?.token) throw new Error('Invalid response from server.')
     auth.setAuth({ ...data, token: String(data.token) })
-    const redirect = (route.query.redirect as string)
-      || dashboardPathForRole(auth.user?.role)
+    const LAB_ADMIN_ROLES = ['system_administrator', 'lab_technician']
+    const role = auth.user?.role ?? ''
+    const dashboard = LAB_ADMIN_ROLES.includes(role)
+      ? '/dashboard/laboratory-admin'
+      : '/dashboard/laboratory'
+
+    // Only honour ?redirect= when it's a real internal path. Bare "/dashboard" has
+    // no index route (pages/dashboard/ holds only laboratory[-admin].vue), so a
+    // guard that stashed redirect=/dashboard must fall through to the role landing.
+    const raw = (route.query.redirect as string) || ''
+    const redirect =
+      raw.startsWith('/') && raw !== '/dashboard' && !raw.startsWith('/login')
+        ? raw
+        : dashboard
     router.push(redirect)
   } catch (e: unknown) {
     const err = e as Error & { status?: number }
