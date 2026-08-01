@@ -146,7 +146,7 @@
                 </span>
                 <button v-if="patientUuid"
                   class="flex items-center gap-1.5 px-3 py-1.5 bg-secondary text-white rounded-lg text-xs font-bold hover:bg-secondary-container transition-colors"
-                  @click="router.push({ path: `/patients/${patientUuid}`, query: { customer_uuid: uuid } })">
+                  @click="router.push({ path: `/patients/${patientUuid}` })">
                   <font-awesome-icon :icon="['fas', 'hospital-user']" class="text-xs" />View Patient Record
                 </button>
               </template>

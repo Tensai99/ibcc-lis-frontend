@@ -16,10 +16,6 @@
             <p v-if="dept.code" class="text-[11px] text-outline font-mono mt-0.5">{{ dept.code }}</p>
           </div>
         </div>
-        <button class="bg-ribbon-teal text-white px-5 py-3 rounded-full text-sm sm:text-base font-bold flex items-center gap-2 shadow-xl shadow-ribbon-teal/30 hover:scale-105 active:scale-95 transition-all w-fit"
-          @click="navigateTo('/assets/inspect')">
-          <font-awesome-icon :icon="['fas', 'clipboard-check']" /><span>Make Inspection</span>
-        </button>
       </header>
 
       <!-- feedback -->
@@ -213,6 +209,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .g-card {
   position: relative; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
   border-radius: 1.5rem; box-shadow: 0 10px 30px rgba(61, 127, 191, 0.05); border: 1px solid rgba(255, 255, 255, 0.4);

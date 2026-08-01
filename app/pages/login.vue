@@ -63,7 +63,7 @@
           <img
             src="/images/ibcc_logo.png"
             alt="IBCC"
-            class="h-auto w-auto object-contain mix-blend-multiply"
+            class="m-auto h-[150px] w-auto object-contain mix-blend-multiply"
             @error="($event.target as HTMLImageElement).style.display = 'none'"
           />
         </div>

@@ -6,9 +6,9 @@
       <div class="mb-5">
         <nav
           class="inline-flex items-center gap-1 bg-white/80 border border-white/50 rounded-xl px-2 py-1.5 text-xs sm:text-sm shadow-sm flex-wrap">
-          <NuxtLink :to="{ path: `/assets` }"
+          <NuxtLink :to="{ path: `/assets/overview`, query: { tab: originTab } }"
             class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-on-surface transition-colors">
-            <font-awesome-icon :icon="['fas', 'server']" class="text-[11px]" />Assets Overview
+            <font-awesome-icon :icon="['fas', originCrumb.icon]" class="text-[11px]" />{{ originCrumb.label }}
           </NuxtLink>
 
           <template v-if="selectedAsset">
@@ -23,7 +23,7 @@
             <span class="flex items-center gap-1.5 px-2 py-1 text-on-surface font-semibold">
               <font-awesome-icon :icon="['fas', 'clipboard-check']" class="text-[11px] text-ribbon-teal" /><span
                 class="truncate max-w-[10rem] sm:max-w-none">{{ viewingExisting ? 'Inspection record' :
-                `${selectedAsset.name} Inspection` }}</span>
+                  `${selectedAsset.name} Inspection` }}</span>
             </span>
           </template>
         </nav>
@@ -38,7 +38,8 @@
             <font-awesome-icon :icon="['fas', 'clipboard-check']" class="text-xl" />
           </div>
           <div class="min-w-0">
-            <h1 class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold sm:font-bold text-on-surface break-words">
+            <h1
+              class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold sm:font-bold text-on-surface break-words">
               {{ headerTitle }}</h1>
             <p class="text-xs sm:text-sm text-outline mt-0.5">PPM · safety · routine checklists</p>
           </div>
@@ -53,13 +54,48 @@
       </div>
 
       <!-- ═══════════ LOADING an existing record ═══════════ -->
-      <SkeletonPanel v-if="showSkeleton" :bars="4" />
+      <template v-if="showSkeleton">
+        <div class="g-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div class="flex items-center gap-3 min-w-0 flex-1">
+            <SkeletonBase width="2.5rem" height="2.5rem" circle />
+            <div class="flex-1 min-w-0 space-y-2">
+              <SkeletonBase width="40%" height="1.1rem" />
+              <SkeletonBase width="55%" height="0.8rem" />
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <SkeletonBase width="5rem" height="2.25rem" rounded="rounded-lg" />
+            <SkeletonBase width="5rem" height="2.25rem" rounded="rounded-lg" />
+            <SkeletonBase width="4rem" height="2.25rem" rounded="rounded-lg" />
+          </div>
+        </div>
+
+        <div class="g-card p-5 sm:p-6">
+          <div class="flex flex-wrap gap-2 mb-4">
+            <SkeletonBase width="7rem" height="1.75rem" rounded="rounded-lg" />
+            <SkeletonBase width="8rem" height="1.75rem" rounded="rounded-lg" />
+            <SkeletonBase width="6rem" height="1.75rem" rounded="rounded-lg" />
+          </div>
+          <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div v-for="i in 5" :key="i" class="space-y-1.5">
+              <SkeletonBase width="60%" height="0.7rem" />
+              <SkeletonBase width="80%" height="0.95rem" />
+            </div>
+          </div>
+        </div>
+
+        <div class="g-card p-4 sm:p-6 space-y-3">
+          <SkeletonBase width="35%" height="1.4rem" class="mb-2" />
+          <SkeletonBase v-for="i in 6" :key="i" width="100%" height="1.75rem" />
+        </div>
+      </template>
       <div v-else-if="loadingRecord" />
 
       <!-- ═══════════ LANDING (no uuid, no mode chosen) ═══════════ -->
       <template v-else-if="screen === 'landing'">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-          <button type="button" class="g-card p-6 sm:p-8 text-left hover:-translate-y-0.5 hover:shadow-xl transition-all group"
+          <button type="button"
+            class="g-card p-6 sm:p-8 text-left hover:-translate-y-0.5 hover:shadow-xl transition-all group"
             @click="startWizard()">
             <div
               class="w-14 h-14 rounded-2xl bg-ribbon-teal/15 text-ribbon-teal flex items-center justify-center mb-4 group-hover:scale-105 transition">
@@ -71,7 +107,8 @@
               asset and record the outcome.</p>
           </button>
 
-          <button type="button" class="g-card p-6 sm:p-8 text-left hover:-translate-y-0.5 hover:shadow-xl transition-all group"
+          <button type="button"
+            class="g-card p-6 sm:p-8 text-left hover:-translate-y-0.5 hover:shadow-xl transition-all group"
             @click="navigateTo('/assets/overview?tab=inspections')">
             <div
               class="w-14 h-14 rounded-2xl bg-ribbon-purple/15 text-ribbon-purple flex items-center justify-center mb-4 group-hover:scale-105 transition">
@@ -210,7 +247,7 @@
                           <select v-model="row.result" class="filter-select"
                             :class="!row.result && 'text-on-surface-variant'">
                             <option value="" disabled>Select result…</option>
-                            <option v-for="r in (row.result_options || RESULT_OPTIONS)" :key="r" :value="r">{{
+                            <option v-for="r in RESULT_OPTIONS" :key="r" :value="r">{{
                               titleCase(r) }}
                             </option>
                           </select>
@@ -222,8 +259,8 @@
                         <label class="input-label">Comment</label>
                         <textarea v-model="row.comment" maxlength="500" rows="1" class="input-field resize-none"
                           placeholder="Add a comment (optional)…" />
-                        <p class="text-[ppx] text-on-surface-variant text-right mt-0.5">{{ (row.comment || '').length
-                          }}/500
+                        <p class="text-[10px] text-on-surface-variant text-right mt-0.5">{{ (row.comment || '').length
+                        }}/500
                         </p>
                       </div>
                     </div>
@@ -289,7 +326,7 @@
                       <textarea v-model="t.comment" maxlength="500" rows="2" class="input-field resize-none"
                         placeholder="Add a comment (optional)…" />
                       <p class="text-[10px] text-on-surface-variant text-right mt-0.5">{{ (t.comment || '').length
-                      }}/500</p>
+                        }}/500</p>
                     </div>
                   </div>
                 </div>
@@ -372,10 +409,14 @@
               <label class="input-label">Next due on</label>
               <input v-model="form.next_due_on" type="date" class="input-field" />
             </div>
-            <div class="sm:col-span-2"><label class="input-label">Observations</label><textarea
-                v-model="form.observations" rows="3" class="input-field" /></div>
-            <div class="sm:col-span-2"><label class="input-label">Recommendations</label><textarea
-                v-model="form.recommendations" rows="3" class="input-field" /></div>
+            <div class="sm:col-span-2">
+              <label class="input-label">Observations *</label>
+              <ConsultNoteEditor v-model="form.observations" placeholder="Record inspection observations…" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="input-label">Recommendations *</label>
+              <ConsultNoteEditor v-model="form.recommendations" placeholder="Record recommendations…" />
+            </div>
             <div class="sm:col-span-2">
               <label class="input-label">Pictures (optional)</label>
               <input type="file" multiple accept="image/*"
@@ -420,10 +461,14 @@
             </div>
             <div><label class="input-label">Next due on</label><input v-model="form.next_due_on" type="date"
                 class="input-field" /></div>
-            <div class="sm:col-span-2"><label class="input-label">Observations</label><textarea
-                v-model="form.observations" rows="2" class="input-field" /></div>
-            <div class="sm:col-span-2"><label class="input-label">Recommendations</label><textarea
-                v-model="form.recommendations" rows="2" class="input-field" /></div>
+            <div class="sm:col-span-2">
+              <label class="input-label">Observations *</label>
+              <ConsultNoteEditor v-model="form.observations" placeholder="Record inspection observations…" />
+            </div>
+            <div class="sm:col-span-2">
+              <label class="input-label">Recommendations *</label>
+              <ConsultNoteEditor v-model="form.recommendations" placeholder="Record recommendations…" />
+            </div>
           </div>
 
           <!-- editable checklist review (binds to the real rows so edits persist) -->
@@ -440,7 +485,39 @@
               <div class="bg-ribbon-blue/8 px-4 py-2.5 text-sm font-bold break-words">{{ grp.section }}</div>
               <div class="divide-y divide-outline-variant/10">
                 <div v-for="row in grp.rows" :key="row._i" class="p-4 space-y-3">
-                  <p class="text-sm font-semibold text-on-surface leading-snug break-words">{{ row.task }}</p>
+                  <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <div>
+                        <label class="input-label">Task</label>
+                        <div class="text-md font-semibold text-on-surface leading-snug break-words mt-4">
+                          {{ row.task }}
+                        </div>
+                      </div>
+                      <div>
+                        <label class="input-label">Result</label>
+                        <div class="filter-wrap">
+                          <select v-model="row.result" class="filter-select"
+                            :class="!row.result && 'text-on-surface-variant'">
+                            <option value="" disabled>Select result…</option>
+                            <option v-for="r in RESULT_OPTIONS" :key="r" :value="r">{{
+                              titleCase(r) }}
+                            </option>
+                          </select>
+                          <font-awesome-icon :icon="['fas', 'chevron-down']" class="filter-caret" />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label class="input-label">Comment</label>
+                        <textarea v-model="row.comment" maxlength="500" rows="1" class="input-field resize-none"
+                          placeholder="Add a comment (optional)…" />
+                        <p class="text-[10px] text-on-surface-variant text-right mt-0.5">{{ (row.comment || '').length
+                        }}/500
+                        </p>
+                      </div>
+                    </div>
+
+
+                  <!--<p class="text-sm font-semibold text-on-surface leading-snug break-words">{{ row.task }}</p>
                   <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                       <label class="input-label">Result</label>
@@ -459,9 +536,9 @@
                       <textarea v-model="row.comment" maxlength="500" rows="2" class="input-field resize-none"
                         placeholder="Add a comment (optional)…" />
                       <p class="text-[10px] text-on-surface-variant text-right mt-0.5">{{ (row.comment || '').length
-                        }}/500</p>
+                      }}/500</p>
                     </div>
-                  </div>
+                  </div>-->
                 </div>
               </div>
             </div>
@@ -495,7 +572,7 @@
                       <textarea v-model="t.comment" maxlength="500" rows="2" class="input-field resize-none"
                         placeholder="Add a comment (optional)…" />
                       <p class="text-[10px] text-on-surface-variant text-right mt-0.5">{{ (t.comment || '').length
-                        }}/500</p>
+                      }}/500</p>
                     </div>
                   </div>
                 </div>
@@ -523,20 +600,23 @@
       <template v-else>
         <div class="g-card p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 shrink-0 rounded-full bg-ribbon-teal/15 text-ribbon-teal flex items-center justify-center">
+            <div
+              class="w-10 h-10 shrink-0 rounded-full bg-ribbon-teal/15 text-ribbon-teal flex items-center justify-center">
               <font-awesome-icon :icon="['fas', viewingExisting ? 'clipboard-check' : 'circle-check']" />
             </div>
             <div class="min-w-0">
               <p class="text-sm sm:text-base md:text-lg font-bold text-on-surface break-words">{{ viewingExisting ?
                 'Inspection record' : 'Inspection recorded' }}</p>
-              <p class="text-xs sm:text-sm text-outline break-words">Read-only PPM document · print or download below</p>
+              <p class="text-xs sm:text-sm text-outline break-words">Read-only PPM document · print or download below
+              </p>
             </div>
           </div>
           <div class="flex items-center gap-2 flex-wrap">
             <button class="btn-secondary text-sm sm:text-base" @click="printDoc"><font-awesome-icon
                 :icon="['fas', 'print']" /><span>Print</span></button>
-            <button class="btn-secondary text-sm sm:text-base" :disabled="downloadingPdf" @click="downloadPdf"><font-awesome-icon
-                :icon="['fas', 'file-pdf']" /><span>{{ downloadingPdf ? 'Generating…' : 'PDF' }}</span></button>
+            <button class="btn-secondary text-sm sm:text-base" :disabled="downloadingPdf"
+              @click="downloadPdf"><font-awesome-icon :icon="['fas', 'file-pdf']" /><span>{{ downloadingPdf ?
+                'Generating…' : 'PDF' }}</span></button>
             <button class="btn-primary text-sm sm:text-base" @click="finishResult"><font-awesome-icon
                 :icon="['fas', 'check']" /><span>Done</span></button>
           </div>
@@ -547,19 +627,19 @@
           <div class="flex flex-wrap items-center gap-2 mb-4">
             <span class="px-3 py-1 rounded-lg font-bold text-xs sm:text-sm whitespace-nowrap"
               :class="resultOutcomeClass">
-              <font-awesome-icon :icon="['fas', 'circle-check']" class="mr-1" />{{ titleCase(result?.outcome) }}
+              <font-awesome-icon :icon="['fas', 'circle-check']" class="mr-1" />Outcome: {{ titleCase(result?.outcome) }}
             </span>
             <span
               class="px-3 py-1 rounded-lg font-bold text-xs sm:text-sm bg-ribbon-blue/12 text-ribbon-blue whitespace-nowrap">
-              {{ titleCase(result?.type) }}<span v-if="result?.quarter"> · {{ result.quarter }}</span>
+              Type: {{ titleCase(result?.type) }}<span v-if="result?.quarter"> · {{ result.quarter }}</span>
             </span>
             <span v-if="result?.asset_tag"
               class="px-3 py-1 rounded-lg font-bold text-xs sm:text-sm bg-surface-high text-on-surface-variant font-mono whitespace-nowrap">
-              {{ result.asset_tag }}
+              Tag: {{ result.asset_tag }}
             </span>
             <span v-if="result?.department"
               class="px-3 py-1 rounded-lg font-bold text-xs sm:text-sm bg-ribbon-purple/12 text-ribbon-purple break-words">
-              <span class="ribbon-dot-purple inline-block mr-1.5" />{{ result.department }}<span
+              <span class="ribbon-dot-purple inline-block mr-1.5" />Department: {{ result.department }}<span
                 v-if="result?.sub_department"> · {{ result.sub_department }}</span>
             </span>
           </div>
@@ -588,23 +668,93 @@
             <div class="min-w-0">
               <p class="text-xs sm:text-sm font-bold uppercase tracking-wider text-on-surface-variant mb-0.5">Tasks</p>
               <p class="text-sm sm:text-base font-semibold text-on-surface truncate">{{ (result?.checklist || []).length
-                }}</p>
+              }}</p>
             </div>
           </div>
 
           <div v-if="result?.observations" class="mt-4 pt-4 border-t border-outline-variant/20">
             <p class="text-xs sm:text-sm font-bold uppercase tracking-wider text-ribbon-blue mb-1">Observations</p>
-            <p class="text-sm sm:text-base text-on-surface break-words">{{ result.observations }}</p>
+            <div class="rte-content text-sm sm:text-base text-on-surface break-words" v-html="result.observations" />
           </div>
           <div v-if="result?.recommendations" class="mt-3">
             <p class="text-xs sm:text-sm font-bold uppercase tracking-wider text-ribbon-teal mb-1">Recommendations</p>
-            <p class="text-sm sm:text-base text-on-surface break-words">{{ result.recommendations }}</p>
+            <div class="rte-content text-sm sm:text-base text-on-surface break-words" v-html="result.recommendations" />
           </div>
         </div>
 
-        <!-- rendered reference-design document (same HTML used for print / pdf) -->
-        <div class="g-card p-0 overflow-hidden">
-          <iframe class="doc-frame" :srcdoc="previewHTML" title="Inspection document preview" />
+        <!-- rendered reference-design document — inline DOM (no iframe) so the
+             whole page scrolls as one; print/pdf still use buildInspectionHTML -->
+        <div class="g-card p-4 sm:p-6 overflow-x-auto">
+          <div class="ppm-doc">
+            <div class="doc">
+              <div class="topbar">
+                <img class="logo" src="/images/ibcc_logo.png" alt="IBCC" @error="onLogoError" />
+                <div>
+                  <div class="htitle">PLANNED PREVENTIVE MAINTENANCE (PPM) PROTOCOL</div>
+                  <div class="org">International Blantyre Cancer Centre · Equipment inspection record</div>
+                </div>
+              </div>
+
+              <div class="titlebox">{{ result?.asset || 'ASSET INSPECTION' }}</div>
+
+              <table class="meta">
+                <tbody>
+                  <tr v-for="(m, i) in docMetaRows" :key="i">
+                    <td class="k">{{ m.k }}</td>
+                    <td>
+                      <b v-if="m.color" :style="{ color: m.color }">{{ m.v }}</b>
+                      <template v-else>{{ m.v }}</template>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <table class="ck">
+                <thead>
+                  <tr>
+                    <td class="num">#</td>
+                    <td class="task">PPM TASKS</td>
+                    <td v-for="q in QSET" :key="q" class="q">{{ q }}</td>
+                    <td class="cmt">COMMENT</td>
+                  </tr>
+                </thead>
+                <tbody>
+                  <template v-if="docGroups.length">
+                    <template v-for="(g, gi) in docGroups" :key="gi">
+                      <tr class="sec">
+                        <td class="num">{{ SECTION_LETTERS[gi] || gi + 1 }}</td>
+                        <td class="task">{{ g.section }}</td>
+                        <td v-for="q in QSET" :key="q" class="q">{{ q }}</td>
+                        <td class="cmt">COMMENT</td>
+                      </tr>
+                      <tr v-for="(r, ri) in g.rows" :key="`${gi}-${ri}`">
+                        <td class="num">{{ gi + 1 }}.{{ ri + 1 }}</td>
+                        <td class="task">{{ r.task }}</td>
+                        <td v-for="q in QSET" :key="q" class="mark">{{ q === docQuarter ? resultMark(r.result) : '' }}
+                        </td>
+                        <td class="cmt">{{ r.comment || '' }}</td>
+                      </tr>
+                    </template>
+                  </template>
+                  <tr v-else>
+                    <td :colspan="QSET.length + 3" style="text-align:center;padding:14px">No checklist tasks.</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div class="notes">
+                <h4>Observations</h4>
+                <div class="box rte-content" v-html="result?.observations || '—'" />
+                <h4>Recommendations</h4>
+                <div class="box rte-content" v-html="result?.recommendations || '—'" />
+              </div>
+
+              <div class="key">Key: ✓ = Passed · ✗ = Failed · – = Pending &nbsp;|&nbsp; Q1 = Quarter 1, Q2 = Quarter 2,
+                Q3 = Quarter 3, Q4 = Quarter 4</div>
+              <div class="foot">Created by {{ result?.inspected_by_id ? `Inspector #${result.inspected_by_id}` :
+                'IBCC EHIS' }} · © {{ currentYear }} International Blantyre Cancer Centre</div>
+            </div>
+          </div>
         </div>
       </template>
     </div>
@@ -623,7 +773,7 @@ const assetsApi = useAssets()
 const INSPECTION_TYPES = ['ROUTINE', 'WEEKLY', 'PPM_PROTOCOL', 'ACCEPTANCE', 'SAFETY']
 const QUARTERS = ['Q1', 'Q2', 'Q3', 'Q4']
 const OUTCOMES = ['PASS', 'PASS_WITH_OBSERVATIONS', 'FAIL']
-const RESULT_OPTIONS = ['PENDING', 'PASSED', 'FAILED']
+const RESULT_OPTIONS = ['PASSED', 'FAILED']
 
 // screen: landing | wizard | result
 // ?uuid=<inspection_uuid>      → read-only detail view of a saved inspection
@@ -653,6 +803,28 @@ const assets = ref<any[]>([])
 const types = ref<any[]>([])
 const templates = ref<any[]>([])
 const loadingTemplates = ref(false)
+
+// ── Tabs ────────────────────────────────────────────────────────────
+type Crumb = { label: string; icon: string }
+const ORIGIN_TABS = {
+  overview: { label: 'Overview', icon: 'gauge-high' },
+  assets: { label: 'Assets', icon: 'server' },
+  issues: { label: 'All Assets Issues', icon: 'triangle-exclamation' },
+  maintenances: { label: 'All Assets Maintenances', icon: 'screwdriver-wrench' },
+  inspections: { label: 'All Assets Inspections', icon: 'clipboard-check' },
+  damages: { label: 'All Assets Damages', icon: 'house-crack' },
+  disposals: { label: 'All Assets Disposals', icon: 'trash-can' },
+  templates: { label: 'Inspection Templates', icon: 'clipboard-list' },
+  tools: { label: 'Tools', icon: 'wrench' },
+} satisfies Record<string, Crumb>
+// DEFAULT differs per page:  _uuid_ → assets | inspect → inspections
+//                            maintenance → maintenances | checklist → templates
+const originTab = computed(() => {
+  const f = route.query.from as string | undefined
+  return f && f in ORIGIN_TABS ? f : 'assets' /* ← per-page default */
+})
+// literal-key access → concrete Crumb (never undefined), so the ?? fallback collapses the union
+const originCrumb = computed<Crumb>(() => ORIGIN_TABS[originTab.value as keyof typeof ORIGIN_TABS] ?? ORIGIN_TABS.assets)
 
 // ── wizard form ────────────────────────────────────────────────────────────────
 const form = reactive<Record<string, any>>({
@@ -786,8 +958,9 @@ const onTemplatePick = async (t: any) => {
   try {
     const full = await assetsApi.showChecklistTemplate(t.uuid)
     templateRows.value = (full.inspection_checklist ?? []).map((c: any, i: number) => ({
-      _i: i, section: c.section, task: c.task, result: c.result === 'PENDING' ? '' : c.result,
-      comment: c.comment ?? '', result_options: c.result_options ?? RESULT_OPTIONS,
+      _i: i, section: c.section, task: c.task,
+      result: RESULT_OPTIONS.includes(c.result) ? c.result : '',
+      comment: c.comment ?? '', result_options: RESULT_OPTIONS,
     }))
   } catch (e: any) { flash(e.message || 'Failed to load template', 'error') }
 }
@@ -808,8 +981,9 @@ const applyTemplateByUuid = async (uuid: string) => {
       loadTemplatesForType(full.asset_type.id)   // populate the SearchSelect options
     }
     templateRows.value = (full.inspection_checklist ?? []).map((c: any, i: number) => ({
-      _i: i, section: c.section, task: c.task, result: c.result === 'PENDING' ? 'PASSED' : c.result,
-      comment: c.comment ?? '', result_options: c.result_options ?? RESULT_OPTIONS,
+      _i: i, section: c.section, task: c.task,
+      result: RESULT_OPTIONS.includes(c.result) ? c.result : '',
+      comment: c.comment ?? '', result_options: RESULT_OPTIONS,
     }))
   } catch (e: any) { flash(e.message || 'Failed to load template', 'error') }
 }
@@ -840,8 +1014,16 @@ const validateStep = (): string => {
     if (!finalChecklist.value.length) return 'Add at least one section with a task.'
   }
   if (k === 'outcome') {
-    if (!form.outcome) return 'Select an outcome.'
+    const e = validateOutcome()
+    if (e) return e
   }
+  return ''
+}
+// Outcome-step required fields (everything except pictures)
+const validateOutcome = (): string => {
+  if (!form.outcome) return 'Select an outcome.'
+  if (!form.observations?.trim()) return 'Observations are required.'
+  if (!form.recommendations?.trim()) return 'Recommendations are required.'
   return ''
 }
 const next = () => {
@@ -870,7 +1052,8 @@ const goBack = () => {
 // ── submit ──────────────────────────────────────────────────────────────────────
 const saving = ref(false)
 const submit = async () => {
-  const err = validateStep()
+  // required-field guard (Review lets these be edited/cleared, so re-check here)
+  const err = validateOutcome()
   stepError.value = err
   if (err) return
   if (!finalChecklist.value.length) { stepError.value = 'Checklist is empty.'; return }
@@ -889,11 +1072,25 @@ const submit = async () => {
       pictures: form.pictures.length ? form.pictures : undefined,
     })
     clearDraft()                       // draft no longer needed
-    // fall back to the local form data if the API echoes a thin payload
-    result.value = res || buildResultFromForm()
+
+    // Re-fetch the canonical saved record by its uuid and display it exactly the
+    // same way a previously-saved inspection is viewed (not a one-off "result").
+    const newUuid = res?.uuid
+    if (newUuid) {
+      try {
+        result.value = await assetsApi.showInspection(newUuid)
+      } catch {
+        result.value = res || buildResultFromForm()   // fall back to the echo
+      }
+    } else {
+      result.value = res || buildResultFromForm()
+    }
     if (!result.value.checklist?.length) result.value.checklist = finalChecklist.value
+
+    viewingExisting.value = true                 // render as an inspection record
+    resolvedAssetUuid.value = form.asset_uuid || resolvedAssetUuid.value
     flash('Inspection saved')
-    screen.value = 'result'            // read-only PPM document view
+    screen.value = 'result'
     window.scrollTo({ top: 0, behavior: 'smooth' })
   } catch (e: any) { flash(e.message || 'Failed to save inspection', 'error') }
   finally { saving.value = false }
@@ -1003,9 +1200,9 @@ const buildInspectionHTML = (data: any, { footer = true }: { footer?: boolean } 
 <style>
   * { box-sizing: border-box; }
   body { font-family: Tahoma, 'MS PGothic', Arial, sans-serif; color: #111; margin: 0; padding: 24px; font-size: 12px; }
-  .doc { max-width: 1000px; margin: 0 auto; }
+  .doc { max-width: 100%; margin: 0 auto; }
   .topbar { display: flex; align-items: center; gap: 14px; border-bottom: 3px solid #3d7fbf; padding-bottom: 10px; margin-bottom: 6px; }
-  .logo { height: 48px; width: auto; max-width: 130px; object-fit: contain; display: block; }
+  .logo { height: 150px; width: auto; max-width: 130px; object-fit: contain; display: block; }
   .org { font-size: 11px; color:#555; }
   .htitle { font-weight: 800; font-size: 15px; letter-spacing: .5px; }
   .titlebox { border: 1.5px solid #000; text-align: center; font-weight: 800; font-size: 16px; padding: 8px; margin: 12px 0; text-transform: uppercase; }
@@ -1025,6 +1222,13 @@ const buildInspectionHTML = (data: any, { footer = true }: { footer?: boolean } 
   .notes { margin-top: 14px; }
   .notes h4 { margin: 10px 0 4px; font-size: 12px; text-transform: uppercase; letter-spacing: .4px; color:#3d7fbf; }
   .notes .box { border: 1px solid #999; padding: 8px; min-height: 28px; white-space: pre-wrap; }
+  .notes .box.rte-content { white-space: normal; }
+  .rte-content p { margin: 0 0 .4em; }
+  .rte-content ul { list-style: disc; padding-left: 1.4em; margin: .4em 0; }
+  .rte-content ol { list-style: decimal; padding-left: 1.4em; margin: .4em 0; }
+  .rte-content h2, .rte-content h3, .rte-content h4 { margin: .5em 0 .3em; font-weight: 700; }
+  .rte-content blockquote { border-left: 3px solid #ccc; margin: .4em 0; padding-left: .8em; color: #444; }
+  .rte-content a { color: #3d7fbf; text-decoration: underline; }
   .key { margin-top: 14px; font-size: 11px; color:#333; border-top: 1px solid #ccc; padding-top: 8px; }
   .foot { margin-top: 6px; font-size: 10px; color:#777; text-align: center; }
   @media print { body { padding: 0; } .doc { max-width: none; } tr { page-break-inside: avoid; } }
@@ -1045,8 +1249,8 @@ const buildInspectionHTML = (data: any, { footer = true }: { footer?: boolean } 
     <tbody>${body || `<tr><td colspan="${QSET.length + 3}" style="text-align:center;padding:14px">No checklist tasks.</td></tr>`}</tbody>
   </table>
   <div class="notes">
-    <h4>Observations</h4><div class="box">${esc(data.observations || '—')}</div>
-    <h4>Recommendations</h4><div class="box">${esc(data.recommendations || '—')}</div>
+    <h4>Observations</h4><div class="box rte-content">${data.observations || '—'}</div>
+    <h4>Recommendations</h4><div class="box rte-content">${data.recommendations || '—'}</div>
   </div>
   <div class="key">Key: ✓ = Passed · ✗ = Failed · – = Pending &nbsp;|&nbsp; Q1 = Quarter 1, Q2 = Quarter 2, Q3 = Quarter 3, Q4 = Quarter 4</div>
   ${footer ? `<div class="foot">Created by ${esc(data.inspected_by_id ? `Inspector #${data.inspected_by_id}` : 'IBCC EHIS')} · © ${new Date().getFullYear()} International Blantyre Cancer Centre</div>` : ''}
@@ -1119,8 +1323,40 @@ const downloadPdf = () => {
   setTimeout(() => { window.removeEventListener('message', onMsg); cleanup() }, 30000)
 }
 
-// live preview HTML for the on-screen read-only view
-const previewHTML = computed(() => result.value ? buildInspectionHTML(result.value, { footer: true }) : '')
+// buildInspectionHTML is still used by Print + PDF (isolated iframes, off-screen).
+// The on-screen preview below is rendered as real DOM (divs/table) so the whole
+// page scrolls as one — no nested iframe with its own scrollbar.
+const currentYear = new Date().getFullYear()
+const isPPMResult = computed(() => (result.value?.type || '') === 'PPM_PROTOCOL')
+const docQuarter = computed(() => result.value?.quarter || '')
+const docOutcomeColor = computed(() => {
+  const o = result.value?.outcome
+  return o === 'FAIL' ? '#c0395a' : o === 'PASS_WITH_OBSERVATIONS' ? '#e8a33d' : '#3dae8c'
+})
+// checklist grouped by section, first-seen order preserved
+const docGroups = computed(() => {
+  const groups: { section: string; rows: any[] }[] = []
+  for (const c of (result.value?.checklist || [])) {
+    let g = groups.find((x) => x.section === c.section)
+    if (!g) { g = { section: c.section, rows: [] }; groups.push(g) }
+    g.rows.push(c)
+  }
+  return groups
+})
+// meta rows for the top table ({ k, v, color? })
+const docMetaRows = computed<{ k: string; v: string; color?: string }[]>(() => {
+  const d = result.value || {}
+  const rows: { k: string; v: string; color?: string }[] = [
+    { k: 'Inspection type', v: String(d.type || '').replace(/_/g, ' ') },
+    { k: 'Date', v: d.date || '' },
+  ]
+  if (isPPMResult.value) rows.push({ k: 'Quarter', v: docQuarter.value })
+  rows.push({ k: 'Outcome', v: String(d.outcome || '').replace(/_/g, ' '), color: docOutcomeColor.value })
+  rows.push({ k: 'Next due on', v: d.next_due_on || '—' })
+  rows.push({ k: 'Inspected by', v: d.inspected_by_id ? `Inspector #${d.inspected_by_id}` : '—' })
+  return rows
+})
+const onLogoError = (e: Event) => { const t = e.target as HTMLImageElement | null; if (t) t.style.display = 'none' }
 
 // ── mount ──────────────────────────────────────────────────────────────────────
 onMounted(async () => {
@@ -1167,6 +1403,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .g-card {
   position: relative;
   background: rgba(255, 255, 255, 0.72);
@@ -1304,12 +1542,201 @@ onMounted(async () => {
   }
 }
 
-/* read-only PPM document preview (isolated iframe hosting the builder's HTML) */
-.doc-frame {
-  width: 100%;
-  height: 75vh;
-  border: 0;
+/* read-only PPM document preview — rendered inline as real DOM (no iframe).
+   Mirrors buildInspectionHTML() so on-screen matches print/pdf. Namespaced
+   under .ppm-doc so the reference-design CSS never leaks into the app. */
+.ppm-doc {
+  font-family: Tahoma, 'MS PGothic', Arial, sans-serif;
+  color: #111;
+  font-size: 12px;
+}
+
+.ppm-doc * {
+  box-sizing: border-box;
+}
+
+.ppm-doc .doc {
   background: #fff;
+}
+
+.ppm-doc .topbar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-bottom: 3px solid #3d7fbf;
+  padding-bottom: 10px;
+  margin-bottom: 6px;
+}
+
+.ppm-doc .logo {
+  height: 150px;
+  width: auto;
+  max-width: 130px;
+  object-fit: contain;
   display: block;
+}
+
+.ppm-doc .org {
+  font-size: 11px;
+  color: #555;
+}
+
+.ppm-doc .htitle {
+  font-weight: 800;
+  font-size: 15px;
+  letter-spacing: .5px;
+}
+
+.ppm-doc .titlebox {
+  border: 1.5px solid #000;
+  text-align: center;
+  font-weight: 800;
+  font-size: 16px;
+  padding: 8px;
+  margin: 12px 0;
+  text-transform: uppercase;
+}
+
+.ppm-doc table.meta {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 12px;
+}
+
+.ppm-doc table.meta td {
+  border: 1px solid #999;
+  padding: 5px 8px;
+}
+
+.ppm-doc table.meta td.k {
+  background: #eef5fc;
+  font-weight: 700;
+  width: 150px;
+}
+
+.ppm-doc table.ck {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.ppm-doc table.ck td {
+  border: 1px solid #000;
+  padding: 4px 6px;
+  vertical-align: middle;
+}
+
+.ppm-doc table.ck thead td {
+  background: #3d7fbf;
+  color: #fff;
+  font-weight: 800;
+  text-align: center;
+}
+
+.ppm-doc td.num {
+  width: 42px;
+  text-align: center;
+  font-weight: 700;
+}
+
+.ppm-doc td.task {
+  text-align: left;
+}
+
+.ppm-doc td.q,
+.ppm-doc td.mark {
+  width: 42px;
+  text-align: center;
+}
+
+.ppm-doc td.cmt {
+  width: 200px;
+}
+
+.ppm-doc tr.sec td {
+  background: #e3eefb;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.ppm-doc tr.sec td.q {
+  background: #d6e8fa;
+}
+
+.ppm-doc .mark {
+  font-weight: 800;
+}
+
+.ppm-doc .notes {
+  margin-top: 14px;
+}
+
+.ppm-doc .notes h4 {
+  margin: 10px 0 4px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .4px;
+  color: #3d7fbf;
+}
+
+.ppm-doc .notes .box {
+  border: 1px solid #999;
+  padding: 8px;
+  min-height: 28px;
+  white-space: pre-wrap;
+}
+
+.ppm-doc .key {
+  margin-top: 14px;
+  font-size: 11px;
+  color: #333;
+  border-top: 1px solid #ccc;
+  padding-top: 8px;
+}
+
+.ppm-doc .foot {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #777;
+  text-align: center;
+}
+
+/* rendered CKEditor rich-text (injected via v-html — needs :deep to be styled) */
+.ppm-doc .notes .box.rte-content {
+  white-space: normal;
+}
+
+.rte-content :deep(p) {
+  margin: 0 0 0.4em;
+}
+
+.rte-content :deep(ul) {
+  list-style: disc;
+  padding-left: 1.4em;
+  margin: 0.4em 0;
+}
+
+.rte-content :deep(ol) {
+  list-style: decimal;
+  padding-left: 1.4em;
+  margin: 0.4em 0;
+}
+
+.rte-content :deep(h2),
+.rte-content :deep(h3),
+.rte-content :deep(h4) {
+  margin: 0.5em 0 0.3em;
+  font-weight: 700;
+}
+
+.rte-content :deep(blockquote) {
+  border-left: 3px solid #ccc;
+  margin: 0.4em 0;
+  padding-left: 0.8em;
+  color: #444;
+}
+
+.rte-content :deep(a) {
+  color: #3d7fbf;
+  text-decoration: underline;
 }
 </style>

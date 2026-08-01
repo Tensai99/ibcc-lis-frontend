@@ -8,9 +8,9 @@
       <div class="mb-5">
         <nav
           class="inline-flex items-center gap-1 bg-white/80 border border-white/50 rounded-xl px-2 py-1.5 text-xs shadow-sm">
-          <NuxtLink :to="{ path: `/inventory`, query: { tab: 'items' } }"
+          <NuxtLink :to="{ path: `/inventory`, query: { tab: originTab } }"
             class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-on-surface transition-colors">
-            <font-awesome-icon :icon="['fas', 'boxes-stacked']" class="text-[11px]" />Inventory Overview
+            <font-awesome-icon :icon="['fas', originCrumb.icon]" class="text-[11px]" />{{ originCrumb.label }}
           </NuxtLink>
           <font-awesome-icon :icon="['fas', 'chevron-right']" class="text-[9px] text-outline/40" />
           <span v-if="item" class="flex items-center gap-1.5 px-2 py-1 text-on-surface font-semibold">
@@ -170,8 +170,7 @@
               </p>
             </div>
             <button v-if="expiredCentral.length" type="button"
-              class="shrink-0 px-4 py-2 rounded-xl text-sm font-bold border transition-colors"
-              :class="centralExpiredOnly
+              class="shrink-0 px-4 py-2 rounded-xl text-sm font-bold border transition-colors" :class="centralExpiredOnly
                 ? 'bg-error text-white border-error'
                 : 'bg-error-container text-on-error-container border-transparent hover:brightness-95'"
               @click="centralExpiredOnly = !centralExpiredOnly">
@@ -272,7 +271,7 @@
                   <td class="px-6 py-5 text-right">{{ fmtQty(d.quantity_allocated) }}</td>
                   <td class="px-6 py-5 text-right text-lg sm:text-xl font-semibold text-primary">{{
                     fmtQty(d.quantity_on_hand)
-                  }}</td>
+                    }}</td>
                   <td class="px-6 py-5 text-right">{{ fmtQty(d.quantity_used) }}</td>
                   <td class="px-6 py-5 whitespace-nowrap text-on-surface-variant">{{ d.expiry_date || '—' }}</td>
                   <td class="px-6 py-5"><span
@@ -416,7 +415,7 @@
                     d.batch_no }}</span></td>
                   <td class="px-6 py-4 text-right">{{ fmtQty(d.quantity_on_hand) }}</td>
                   <td class="px-6 py-4 text-right text-lg font-semibold text-ribbon-red">{{ fmtQty(d.disposed?.quantity)
-                    }}</td>
+                  }}</td>
                   <td class="px-6 py-4 text-right text-on-surface-variant">{{ d.disposed?.utilisation_pct ?
                     `${fmtQty(d.disposed.utilisation_pct)}%` : '—' }}</td>
                   <td class="px-6 py-4 text-on-surface-variant">{{ d.disposed?.last_used_on || '—' }}</td>
@@ -770,6 +769,23 @@ const auth = useAuthStore()
 const can = (p: string) => auth.can(p)
 const canAnyAction = computed(() => can('inventory_management') || can('inventory_pricing') || can('inventory_stock'))
 
+// ── breadcrumb origin: the overview tab the redirect came from (?from=<key>) ──
+type Crumb = { label: string; icon: string }
+const ORIGIN_TABS = {
+  overview: { label: 'Overview', icon: 'gauge-high' },
+  items: { label: 'Inventory Items', icon: 'boxes-stacked' },
+  stock: { label: 'All Inventory Stock', icon: 'warehouse' },
+  usage: { label: 'All Inventory Stock Usage', icon: 'droplet' },
+  damages: { label: 'All Inventory Stock Damages', icon: 'house-crack' },
+  disposals: { label: 'All Inventory Stock Disposals', icon: 'trash-can' },
+  expiration: { label: 'All Inventory Stock Expiration', icon: 'hourglass-end' },
+} satisfies Record<string, Crumb>
+const originTab = computed(() => {
+  const f = route.query.from as string | undefined
+  return f && f in ORIGIN_TABS ? f : 'items'   // default: items
+})
+const originCrumb = computed<Crumb>(() => ORIGIN_TABS[originTab.value as keyof typeof ORIGIN_TABS] ?? ORIGIN_TABS.items)
+
 // ── feedback ────────────────────────────────────────────────────────────────
 const feedback = reactive<{ msg: string; kind: 'success' | 'error' | '' }>({ msg: '', kind: '' })
 const flash = (msg: string, kind: 'success' | 'error' = 'success') => {
@@ -1111,6 +1127,8 @@ const approveAdjustmentRow = async (adj: any) => {
 </script>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .detail-page {
   min-height: 100%;
   background: linear-gradient(135deg, #d6e8fa 0%, #aed0f0 100%);

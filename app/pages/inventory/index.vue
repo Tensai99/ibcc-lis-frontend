@@ -36,7 +36,7 @@
       </div>
 
       <!-- ═══════════ PRIVILEGED VIEW (system_administrator / inventory_officer) ═══════════ -->
-      <template v-if="isPrivileged">
+      <template>
         <!-- ── Tab bar: width locked to the primary group, Show more/less scrolls the rest in ── -->
         <div ref="tabBarEl" class="g-card p-1.5 sm:p-2 inline-flex max-w-full overflow-hidden"
           :style="lockedWidth ? { width: lockedWidth + 'px' } : {}">
@@ -67,306 +67,323 @@
 
         <!-- ───────────── OVERVIEW TAB ───────────── -->
         <template v-if="activeTab === 'overview'">
-        <template v-if="showSkeleton">
-          <SkeletonStatGrid :count="4" grid-class="grid-cols-2 lg:grid-cols-4" />
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <SkeletonPanel :bars="4" />
-            <SkeletonPanel :bars="4" />
-            <SkeletonPanel :bars="4" />
-          </div>
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <SkeletonPanel :bars="3" />
-            <SkeletonPanel :bars="3" />
-            <SkeletonPanel :bars="3" />
-          </div>
-        </template>
-        <template v-else>
-          <!-- 2. KPI cards -->
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
-            <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-blue">
-              <p class="text-[10px] text-ribbon-blue font-bold uppercase tracking-wider mb-2">Total items</p>
-              <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ summary.total_items ?? '—' }}</p>
+          <template v-if="showSkeleton">
+            <SkeletonStatGrid :count="4" grid-class="grid-cols-2 lg:grid-cols-4" />
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              <SkeletonPanel :bars="4" />
+              <SkeletonPanel :bars="4" />
+              <SkeletonPanel :bars="4" />
             </div>
-            <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-purple">
-              <p class="text-[10px] text-ribbon-purple font-bold uppercase tracking-wider mb-2">Billable items</p>
-              <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ summary.billable_items ?? '—' }}</p>
-              <p class="text-[11px] text-on-surface-variant opacity-70 mt-1">{{ billablePct }}% of inventory</p>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              <SkeletonPanel :bars="3" />
+              <SkeletonPanel :bars="3" />
+              <SkeletonPanel :bars="3" />
             </div>
-            <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-amber">
-              <p class="text-[10px] text-ribbon-amber font-bold uppercase tracking-wider mb-2">Controlled items</p>
-              <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ summary.controlled_items ?? '—' }}</p>
-              <p class="text-[11px] text-ribbon-amber font-bold flex items-center gap-1 mt-1">
-                <font-awesome-icon :icon="['fas', 'shield-halved']" class="text-[12px]" /> High security
-              </p>
-            </div>
-            <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-teal bg-ribbon-teal/5">
-              <p class="text-[10px] text-ribbon-teal font-bold uppercase tracking-wider mb-2">Central store value</p>
-              <p class="text-lg sm:text-xl lg:text-2xl font-extrabold text-secondary-on-container break-words">
-                {{ fmtMoney(valuation.central_store_value, valuation.currency || 'MWK') }}
-              </p>
-              <p class="text-[11px] text-ribbon-teal font-medium mt-1">Total asset value</p>
-            </div>
-          </div>
-
-          <!-- 3. Row of 3: Low stock alerts | Items by type | Departments stocked -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <!-- low stock alerts -->
-            <div class="g-card p-6 flex flex-col">
-              <div class="flex items-center gap-3 mb-4">
-                <div class="w-9 h-9 rounded-full bg-error/10 flex items-center justify-center text-error">
-                  <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
-                </div>
-                <h3 class="text-base sm:text-lg font-semibold sm:font-bold uppercase">Low stock alerts</h3>
+          </template>
+          <template v-else>
+            <!-- 2. KPI cards -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+              <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-blue">
+                <p class="text-[10px] text-ribbon-blue font-bold uppercase tracking-wider mb-2">Total items</p>
+                <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ summary.total_items ?? '—' }}</p>
               </div>
-              <div class="overflow-auto max-h-[320px] scroll-area -mx-2 px-2">
-                <table class="w-full text-left border-collapse text-sm alive-tbl tbl-red">
-                  <thead class="bg-surface-lowest rounded-lg sticky top-0 z-10">
-                    <tr class="text-[10px] text-on-surface-variant uppercase tracking-widest">
-                      <th class="py-2.5 px-3">Item</th>
-                      <th class="py-2.5 px-3 text-right">On hand</th>
-                      <th class="py-2.5 px-3 text-right">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody class="divide-y divide-outline-variant/10">
-                    <tr v-for="l in lowStock" :key="l.id" class="hover:bg-surface-low transition-colors">
-                      <td class="py-3 px-3">
-                        <p class="font-bold break-words">{{ l.name }}</p>
-                        <p class="text-[10px] font-mono text-primary">{{ l.code }}</p>
-                      </td>
-                      <td class="py-3 px-3 text-right font-bold"
-                        :class="Number(l.on_hand) === 0 ? 'text-error' : 'text-ribbon-amber'">{{ fmtQty(l.on_hand) }}
-                      </td>
-                      <td class="py-3 px-3 text-right">
-                        <span v-if="Number(l.on_hand) === 0"
-                          class="bg-error text-white text-[9px] font-bold px-2 py-0.5 rounded-full">CRITICAL</span>
-                        <span v-else
-                          class="bg-ribbon-amber text-white text-[9px] font-bold px-2 py-0.5 rounded-full">LOW</span>
-                      </td>
-                    </tr>
-                    <tr v-if="!lowStock.length">
-                      <td colspan="3" class="py-6 text-center text-on-surface-variant">Nothing below reorder level.</td>
-                    </tr>
-                  </tbody>
-                </table>
+              <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-purple">
+                <p class="text-[10px] text-ribbon-purple font-bold uppercase tracking-wider mb-2">Billable items</p>
+                <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ summary.billable_items ?? '—' }}</p>
+                <p class="text-[11px] text-on-surface-variant opacity-70 mt-1">{{ billablePct }}% of inventory</p>
               </div>
-            </div>
-
-            <!-- items by type (bar chart) -->
-            <div class="g-card p-6">
-              <div class="flex items-center justify-between mb-4">
-                <h3 class="text-base sm:text-lg font-semibold sm:font-bold uppercase">Items by type</h3>
-                <span class="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">{{
-                  itemsByType.length }} cats</span>
-              </div>
-              <client-only>
-                <apexchart v-if="itemsByType.length" type="bar" :height="typeChartHeight" :options="typeChartOptions"
-                  :series="typeChartSeries" />
-                <p v-else class="text-sm text-on-surface-variant py-8 text-center">No data.</p>
-              </client-only>
-            </div>
-
-            <!-- departments stocked -->
-            <div class="g-card p-6">
-              <h3 class="text-base sm:text-lg font-semibold sm:font-bold mb-4 uppercase">Departments stocked</h3>
-              <div class="grid grid-cols-2 gap-3 max-h-[320px] overflow-y-auto scroll-area pr-1">
-                <button v-for="d in deptStocked" :key="d.type" type="button"
-                  class="text-left bg-ribbon-purple/5 p-4 rounded-2xl border border-ribbon-purple/15 hover:bg-ribbon-purple/10 hover:shadow-md transition-all cursor-pointer"
-                  @click="openDeptModal(d)">
-                  <p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1 truncate">{{ d.type }}</p>
-                  <p class="text-lg sm:text-xl font-extrabold text-ribbon-purple">
-                    {{ d.unique_items }} <span class="text-xs font-normal text-outline">items</span>
-                  </p>
-                </button>
-                <p v-if="!deptStocked.length" class="text-sm text-on-surface-variant col-span-full">No departments
-                  stocked.</p>
-              </div>
-            </div>
-          </div>
-
-          <!-- 4. Row of 3: Pending approvals | Expiry tracking | Recent receipts -->
-          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <!-- pending approvals (clickable → Inventory Items tab filtered) -->
-            <div class="g-card p-6">
-              <div class="flex items-center gap-3 mb-5">
-                <div
-                  class="w-10 h-10 rounded-full bg-ribbon-amber/15 flex items-center justify-center text-ribbon-amber">
-                  <font-awesome-icon :icon="['fas', 'clipboard-list']" />
-                </div>
-                <h3 class="text-[12px] font-bold uppercase tracking-widest">Pending approvals</h3>
-              </div>
-              <div class="space-y-3">
-                <button type="button"
-                  class="w-full flex justify-between items-center p-3.5 bg-surface-low rounded-2xl border border-white/50 hover:bg-white transition-colors"
-                  @click="goToItemsFiltered('price')">
-                  <span class="text-sm sm:text-base font-medium">Price changes</span>
-                  <span class="font-extrabold text-primary bg-primary/10 px-3 py-1 rounded-lg">{{ pad(approvals.prices)
-                    }}</span>
-                </button>
-                <button type="button"
-                  class="w-full flex justify-between items-center p-3.5 bg-surface-low rounded-2xl border border-white/50 hover:bg-white transition-colors"
-                  @click="goToItemsFiltered('damages')">
-                  <span class="text-sm sm:text-base font-medium">Damages</span>
-                  <span class="font-extrabold text-primary bg-primary/10 px-3 py-1 rounded-lg">{{ pad(approvals.damages)
-                    }}</span>
-                </button>
-                <button type="button"
-                  class="w-full flex justify-between items-center p-3.5 bg-surface-low rounded-2xl border border-white/50 hover:bg-white transition-colors"
-                  @click="goToItemsFiltered('disposals')">
-                  <span class="text-sm sm:text-base font-medium">Disposals</span>
-                  <span class="font-extrabold px-3 py-1 rounded-lg"
-                    :class="approvals.disposals ? 'text-primary bg-primary/10' : 'text-outline bg-surface-container'">{{
-                      pad(approvals.disposals) }}</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- expiry -->
-            <div class="g-card p-6">
-              <div class="flex items-center gap-3 mb-5">
-                <div class="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center text-error">
-                  <font-awesome-icon :icon="['fas', 'calendar-xmark']" />
-                </div>
-                <h3 class="text-[12px] font-bold uppercase tracking-widest">Expiry tracking</h3>
-              </div>
-              <div class="space-y-3">
-                <button type="button"
-                  class="w-full flex justify-between items-center p-3.5 bg-error/5 rounded-2xl border border-error/10 hover:bg-error/10 transition-colors"
-                  @click="goToExpiry('expired')">
-                  <span class="text-sm sm:text-base text-error font-bold">Expired batches</span>
-                  <span class="font-extrabold text-error">{{ expired.batches }}</span>
-                </button>
-                <button type="button"
-                  class="w-full flex justify-between items-center p-3.5 bg-ribbon-amber/10 rounded-2xl border border-ribbon-amber/25 hover:bg-ribbon-amber/15 transition-colors"
-                  @click="goToExpiry('expiring')">
-                  <span class="text-sm sm:text-base text-ribbon-amber font-bold">Expiring soon</span>
-                  <span class="font-extrabold text-ribbon-amber">{{ expiringSoon.length }}</span>
-                </button>
-                <div class="flex justify-between items-center p-3.5 bg-surface-low rounded-2xl">
-                  <span class="text-sm sm:text-base font-medium">Expired qty</span>
-                  <span class="font-extrabold text-on-surface">{{ fmtQty(expired.quantity) }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- recent receipts -->
-            <div class="g-card p-6">
-              <div class="flex items-center justify-between mb-5">
-                <h3 class="text-base sm:text-lg font-semibold sm:font-bold uppercase">Recent receipts</h3>
-                <font-awesome-icon :icon="['fas', 'receipt']" class="text-ribbon-teal" />
-              </div>
-              <div class="space-y-3 max-h-[260px] overflow-y-auto pr-1 scroll-area">
-                <div v-for="(r, i) in receipts" :key="`${r.batch_no}-${i}`"
-                  class="p-3 bg-surface-low rounded-lg border border-white/50">
-                  <div class="flex justify-between items-center gap-2 mb-1">
-                    <span class="text-xs font-bold text-on-surface break-words">{{ r.batch_no }}</span>
-                    <span class="text-[10px] text-outline whitespace-nowrap">{{ relTime(r.received_date) }}</span>
-                  </div>
-                  <p class="text-xs text-on-surface-variant break-words">{{ r.item }} ({{ fmtQty(r.quantity) }} units)
-                  </p>
-                </div>
-                <p v-if="!receipts.length" class="text-sm text-on-surface-variant py-4 text-center">No recent receipts.
+              <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-amber">
+                <p class="text-[10px] text-ribbon-amber font-bold uppercase tracking-wider mb-2">Controlled items</p>
+                <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ summary.controlled_items ?? '—' }}</p>
+                <p class="text-[11px] text-ribbon-amber font-bold flex items-center gap-1 mt-1">
+                  <font-awesome-icon :icon="['fas', 'shield-halved']" class="text-[12px]" /> High security
                 </p>
               </div>
-            </div>
-          </div>
-
-          <!-- 5. Usage insights (last N days) -->
-          <div class="g-card grid grid-cols-1 lg:grid-cols-3 gap-5 p-6">
-            <!-- usage summary -->
-            <div class="p-6">
-              <div class="flex items-center gap-3 mb-5">
-                <div
-                  class="w-10 h-10 rounded-full bg-ribbon-purple/15 flex items-center justify-center text-ribbon-purple">
-                  <font-awesome-icon :icon="['fas', 'chart-line']" />
-                </div>
-                <h3 class="text-[12px] font-bold uppercase tracking-widest">Usage insights</h3>
-                <span
-                  class="ml-auto text-[10px] font-bold text-ribbon-purple bg-ribbon-purple/10 px-2.5 py-1 rounded-full whitespace-nowrap">last
-                  {{ usageWindow }}d</span>
+              <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-teal bg-ribbon-teal/5">
+                <p class="text-[10px] text-ribbon-teal font-bold uppercase tracking-wider mb-2">Central store value</p>
+                <p class="text-lg sm:text-xl lg:text-2xl font-extrabold text-secondary-on-container break-words">
+                  {{ fmtMoney(valuation.central_store_value, valuation.currency || 'MWK') }}
+                </p>
+                <p class="text-[11px] text-ribbon-teal font-medium mt-1">Total asset value</p>
               </div>
-              <div class="grid grid-cols-2 gap-3">
-                <div class="p-3.5 rounded-2xl bg-ribbon-blue/8 border border-ribbon-blue/20">
-                  <div class="flex items-center gap-1.5 mb-1">
-                    <font-awesome-icon :icon="['fas', 'bolt']" class="text-ribbon-blue text-xs" />
-                    <p class="text-[10px] text-ribbon-blue uppercase font-bold">Events</p>
+            </div>
+
+            <!-- 3. Row of 3: Low stock alerts | Items by type | Departments stocked -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              <!-- low stock alerts -->
+              <div class="g-card p-6 flex flex-col">
+                <div class="flex items-center gap-3 mb-4">
+                  <div class="w-9 h-9 rounded-full bg-error/10 flex items-center justify-center text-error">
+                    <font-awesome-icon :icon="['fas', 'triangle-exclamation']" />
                   </div>
-                  <p class="text-xl sm:text-2xl font-extrabold text-on-surface">{{ usage.events ?? 0 }}</p>
+                  <h3 class="text-base sm:text-lg font-semibold sm:font-bold uppercase flex-1">Low stock alerts</h3>
+                  <button type="button"
+                    class="w-8 h-8 rounded-full hover:bg-surface-low flex items-center justify-center text-outline transition-colors shrink-0"
+                    title="Maximize" @click="lowStockModal = true">
+                    <font-awesome-icon :icon="['fas', 'expand']" class="text-xs" />
+                  </button>
                 </div>
-                <div class="p-3.5 rounded-2xl bg-ribbon-amber/10 border border-ribbon-amber/25">
-                  <div class="flex items-center gap-1.5 mb-1">
-                    <font-awesome-icon :icon="['fas', 'boxes-stacked']" class="text-ribbon-amber text-xs" />
-                    <p class="text-[10px] text-ribbon-amber uppercase font-bold">Qty used</p>
-                  </div>
-                  <p class="text-xl sm:text-2xl font-extrabold text-on-surface">{{ fmtQty(usage.quantity_used) }}</p>
+                <div class="overflow-auto max-h-[320px] scroll-area -mx-2 px-2">
+                  <table class="w-full text-left border-collapse text-sm alive-tbl tbl-red">
+                    <thead class="bg-surface-lowest rounded-lg sticky top-0 z-10">
+                      <tr class="text-[10px] text-on-surface-variant uppercase tracking-widest">
+                        <th class="py-2.5 px-3">Item</th>
+                        <th class="py-2.5 px-3 text-right">On hand</th>
+                        <th class="py-2.5 px-3 text-right">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-outline-variant/10">
+                      <tr v-for="l in lowStock" :key="l.id" class="hover:bg-surface-low transition-colors">
+                        <td class="py-3 px-3">
+                          <p class="font-bold break-words">{{ l.name }}</p>
+                          <p class="text-[10px] font-mono text-primary">{{ l.code }}</p>
+                        </td>
+                        <td class="py-3 px-3 text-right font-bold"
+                          :class="Number(l.on_hand) === 0 ? 'text-error' : 'text-ribbon-amber'">{{ fmtQty(l.on_hand) }}
+                        </td>
+                        <td class="py-3 px-3 text-right">
+                          <span v-if="Number(l.on_hand) === 0"
+                            class="bg-error text-white text-[9px] font-bold px-2 py-0.5 rounded-full">CRITICAL</span>
+                          <span v-else
+                            class="bg-ribbon-amber text-white text-[9px] font-bold px-2 py-0.5 rounded-full">LOW</span>
+                        </td>
+                      </tr>
+                      <tr v-if="!lowStock.length">
+                        <td colspan="3" class="py-6 text-center text-on-surface-variant">Nothing below reorder level.
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
                 </div>
-                <div
-                  class="col-span-2 p-4 rounded-2xl bg-ribbon-teal/10 border border-ribbon-teal/25 flex items-center gap-3">
+              </div>
+
+              <!-- items by type (bar chart) -->
+              <div class="g-card p-6">
+                <div class="flex items-center justify-between mb-4">
+                  <h3 class="text-base sm:text-lg font-semibold sm:font-bold uppercase">Items by type</h3>
+                  <span class="text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">{{
+                    itemsByType.length }} cats</span>
+                </div>
+                <client-only>
+                  <apexchart v-if="itemsByType.length" type="bar" :height="typeChartHeight" :options="typeChartOptions"
+                    :series="typeChartSeries" />
+                  <p v-else class="text-sm text-on-surface-variant py-8 text-center">No data.</p>
+                </client-only>
+              </div>
+
+              <!-- departments stocked -->
+              <div class="g-card p-6">
+                <h3 class="text-base sm:text-lg font-semibold sm:font-bold mb-4 uppercase">Departments stocked</h3>
+                <div class="grid grid-cols-2 gap-3 max-h-[320px] overflow-y-auto scroll-area pr-1">
+                  <button v-for="d in deptStocked" :key="d.type" type="button"
+                    class="text-left bg-ribbon-purple/5 p-4 rounded-2xl border border-ribbon-purple/15 hover:bg-ribbon-purple/10 hover:shadow-md transition-all cursor-pointer"
+                    @click="openDeptModal(d)">
+                    <p class="text-[10px] text-on-surface-variant uppercase font-bold mb-1 truncate">{{ d.type }}</p>
+                    <p class="text-lg sm:text-xl font-extrabold text-ribbon-purple">
+                      {{ d.unique_items }} <span class="text-xs font-normal text-outline">items</span>
+                    </p>
+                  </button>
+                  <p v-if="!deptStocked.length" class="text-sm text-on-surface-variant col-span-full">No departments
+                    stocked.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Row of 3: Pending approvals | Expiry tracking | Recent receipts -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+              <!-- pending approvals (clickable → Inventory Items tab filtered) -->
+              <div class="g-card p-6">
+                <div class="flex items-center gap-3 mb-5">
                   <div
-                    class="w-10 h-10 rounded-full bg-ribbon-teal/20 flex items-center justify-center text-ribbon-teal shrink-0">
-                    <font-awesome-icon :icon="['fas', 'coins']" />
+                    class="w-10 h-10 rounded-full bg-ribbon-amber/15 flex items-center justify-center text-ribbon-amber">
+                    <font-awesome-icon :icon="['fas', 'clipboard-list']" />
                   </div>
-                  <div class="min-w-0">
-                    <p class="text-[10px] text-ribbon-teal uppercase font-bold mb-0.5">Billable value</p>
-                    <p class="text-base sm:text-lg font-extrabold text-secondary-on-container break-words">
-                      {{ fmtMoney(usage.billable_value?.amount, usage.billable_value?.currency || 'MWK') }}</p>
+                  <h3 class="text-[12px] font-bold uppercase tracking-widest">Pending approvals</h3>
+                </div>
+                <div class="space-y-3">
+                  <button type="button"
+                    class="w-full flex justify-between items-center p-3.5 bg-surface-low rounded-2xl border border-white/50 hover:bg-white transition-colors"
+                    @click="goToItemsFiltered('price')">
+                    <span class="text-sm sm:text-base font-medium">Price changes</span>
+                    <span class="font-extrabold text-primary bg-primary/10 px-3 py-1 rounded-lg">{{
+                      pad(approvals.prices)
+                      }}</span>
+                  </button>
+                  <button type="button"
+                    class="w-full flex justify-between items-center p-3.5 bg-surface-low rounded-2xl border border-white/50 hover:bg-white transition-colors"
+                    @click="goToItemsFiltered('damages')">
+                    <span class="text-sm sm:text-base font-medium">Damages</span>
+                    <span class="font-extrabold text-primary bg-primary/10 px-3 py-1 rounded-lg">{{
+                      pad(approvals.damages)
+                      }}</span>
+                  </button>
+                  <button type="button"
+                    class="w-full flex justify-between items-center p-3.5 bg-surface-low rounded-2xl border border-white/50 hover:bg-white transition-colors"
+                    @click="goToItemsFiltered('disposals')">
+                    <span class="text-sm sm:text-base font-medium">Disposals</span>
+                    <span class="font-extrabold px-3 py-1 rounded-lg"
+                      :class="approvals.disposals ? 'text-primary bg-primary/10' : 'text-outline bg-surface-container'">{{
+                        pad(approvals.disposals) }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- expiry -->
+              <div class="g-card p-6">
+                <div class="flex items-center gap-3 mb-5">
+                  <div class="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center text-error">
+                    <font-awesome-icon :icon="['fas', 'calendar-xmark']" />
+                  </div>
+                  <h3 class="text-[12px] font-bold uppercase tracking-widest">Expiry tracking</h3>
+                </div>
+                <div class="space-y-3">
+                  <button type="button"
+                    class="w-full flex justify-between items-center p-3.5 bg-error/5 rounded-2xl border border-error/10 hover:bg-error/10 transition-colors"
+                    @click="goToExpiry('expired')">
+                    <span class="text-sm sm:text-base text-error font-bold">Expired batches</span>
+                    <span class="font-extrabold text-error">{{ expired.batches }}</span>
+                  </button>
+                  <button type="button"
+                    class="w-full flex justify-between items-center p-3.5 bg-ribbon-amber/10 rounded-2xl border border-ribbon-amber/25 hover:bg-ribbon-amber/15 transition-colors"
+                    @click="goToExpiry('expiring')">
+                    <span class="text-sm sm:text-base text-ribbon-amber font-bold">Expiring soon</span>
+                    <span class="font-extrabold text-ribbon-amber">{{ expiringSoon.length }}</span>
+                  </button>
+                  <div class="flex justify-between items-center p-3.5 bg-surface-low rounded-2xl">
+                    <span class="text-sm sm:text-base font-medium">Expired qty</span>
+                    <span class="font-extrabold text-on-surface">{{ fmtQty(expired.quantity) }}</span>
                   </div>
                 </div>
               </div>
-              <div v-if="byConsumerType.length" class="mt-4">
-                <p class="text-[10px] text-outline uppercase font-bold tracking-widest mb-2">By consumer type</p>
-                <div class="flex flex-wrap gap-2">
-                  <span v-for="(c, ci) in byConsumerType" :key="c.consumer_type"
-                    class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
-                    :class="DEPT_CHIP[ci % DEPT_CHIP.length]">
-                    {{ titleCase(c.consumer_type) }} <span class="font-extrabold">· {{ fmtQty(c.quantity_used) }}</span>
-                  </span>
+
+              <!-- recent receipts -->
+              <div class="g-card p-6">
+                <div class="flex items-center gap-3 mb-5">
+                  <div class="w-10 h-10 rounded-full bg-ribbon-teal/15 flex items-center justify-center text-ribbon-teal">
+                    <font-awesome-icon :icon="['fas', 'receipt']" />
+                  </div>
+                  <h3 class="text-[12px] font-bold uppercase tracking-widest flex-1">Recent receipts</h3>
+                  <button type="button"
+                    class="w-8 h-8 rounded-full hover:bg-surface-low flex items-center justify-center text-outline transition-colors shrink-0"
+                    title="Maximize" @click="receiptsModal = true">
+                    <font-awesome-icon :icon="['fas', 'expand']" class="text-xs" />
+                  </button>
+                </div>
+                <div class="space-y-3 max-h-[260px] overflow-y-auto pr-1 scroll-area">
+                  <div v-for="(r, i) in receipts" :key="`${r.batch_no}-${i}`"
+                    class="p-3 bg-surface-low rounded-lg border border-white/50">
+                    <div class="flex justify-between items-center gap-2 mb-1">
+                      <span class="text-xs font-bold text-on-surface break-words">{{ r.batch_no }}</span>
+                      <span class="text-[10px] text-outline whitespace-nowrap">{{ relTime(r.received_date) }}</span>
+                    </div>
+                    <p class="text-xs text-on-surface-variant break-words">{{ r.item }} ({{ fmtQty(r.quantity) }} units)
+                    </p>
+                  </div>
+                  <p v-if="!receipts.length" class="text-sm text-on-surface-variant py-4 text-center">No recent
+                    receipts.
+                  </p>
                 </div>
               </div>
             </div>
 
-            <!-- top consumed items -->
-            <div class="p-6">
-              <h3 class="text-base sm:text-lg font-semibold sm:font-bold uppercase mb-4">Top consumed items</h3>
-              <div class="space-y-3 max-h-[300px] overflow-y-auto scroll-area pr-1">
-                <div v-for="(t, ti) in topConsumed" :key="t.inventory_id"
-                  class="p-3 bg-surface-low rounded-xl border border-white/50">
-                  <div class="flex items-center gap-3 mb-2">
-                    <span
-                      class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0"
-                      :class="RANK_BADGE[ti % RANK_BADGE.length]">{{ ti + 1 }}</span>
-                    <span class="text-sm font-semibold text-on-surface break-words flex-1 min-w-0">{{ t.name }}</span>
-                    <span class="text-sm font-extrabold text-on-surface whitespace-nowrap">{{ fmtQty(t.quantity_used)
-                    }}</span>
+            <!-- 5. Usage insights (last N days) -->
+            <div class="g-card grid grid-cols-1 lg:grid-cols-3 gap-5 p-6">
+              <!-- usage summary -->
+              <div class="p-6">
+                <div class="flex items-center gap-3 mb-5">
+                  <div
+                    class="w-10 h-10 rounded-full bg-ribbon-purple/15 flex items-center justify-center text-ribbon-purple">
+                    <font-awesome-icon :icon="['fas', 'chart-line']" />
                   </div>
-                  <div class="h-2 rounded-full bg-surface-container overflow-hidden">
-                    <div class="h-full rounded-full transition-all" :class="BAR_COLORS[ti % BAR_COLORS.length]"
-                      :style="{ width: usagePct(t.quantity_used) + '%' }" />
+                  <h3 class="text-[12px] font-bold uppercase tracking-widest">Usage insights</h3>
+                  <span
+                    class="ml-auto text-[10px] font-bold text-ribbon-purple bg-ribbon-purple/10 px-2.5 py-1 rounded-full whitespace-nowrap">last
+                    {{ usageWindow }}d</span>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                  <div class="p-3.5 rounded-2xl bg-ribbon-blue/8 border border-ribbon-blue/20">
+                    <div class="flex items-center gap-1.5 mb-1">
+                      <font-awesome-icon :icon="['fas', 'bolt']" class="text-ribbon-blue text-xs" />
+                      <p class="text-[10px] text-ribbon-blue uppercase font-bold">Events</p>
+                    </div>
+                    <p class="text-xl sm:text-2xl font-extrabold text-on-surface">{{ usage.events ?? 0 }}</p>
+                  </div>
+                  <div class="p-3.5 rounded-2xl bg-ribbon-amber/10 border border-ribbon-amber/25">
+                    <div class="flex items-center gap-1.5 mb-1">
+                      <font-awesome-icon :icon="['fas', 'boxes-stacked']" class="text-ribbon-amber text-xs" />
+                      <p class="text-[10px] text-ribbon-amber uppercase font-bold">Qty used</p>
+                    </div>
+                    <p class="text-xl sm:text-2xl font-extrabold text-on-surface">{{ fmtQty(usage.quantity_used) }}</p>
+                  </div>
+                  <div
+                    class="col-span-2 p-4 rounded-2xl bg-ribbon-teal/10 border border-ribbon-teal/25 flex items-center gap-3">
+                    <div
+                      class="w-10 h-10 rounded-full bg-ribbon-teal/20 flex items-center justify-center text-ribbon-teal shrink-0">
+                      <font-awesome-icon :icon="['fas', 'coins']" />
+                    </div>
+                    <div class="min-w-0">
+                      <p class="text-[10px] text-ribbon-teal uppercase font-bold mb-0.5">Billable value</p>
+                      <p class="text-base sm:text-lg font-extrabold text-secondary-on-container break-words">
+                        {{ fmtMoney(usage.billable_value?.amount, usage.billable_value?.currency || 'MWK') }}</p>
+                    </div>
                   </div>
                 </div>
-                <p v-if="!topConsumed.length" class="text-sm text-on-surface-variant py-4 text-center">No usage
-                  recorded.
-                </p>
+                <div v-if="byConsumerType.length" class="mt-4">
+                  <p class="text-[10px] text-outline uppercase font-bold tracking-widest mb-2">By consumer type</p>
+                  <div class="flex flex-wrap gap-2">
+                    <span v-for="(c, ci) in byConsumerType" :key="c.consumer_type"
+                      class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold"
+                      :class="DEPT_CHIP[ci % DEPT_CHIP.length]">
+                      {{ titleCase(c.consumer_type) }} <span class="font-extrabold">· {{ fmtQty(c.quantity_used)
+                        }}</span>
+                    </span>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            <!-- usage by department -->
-            <div class="p-6">
-              <h3 class="text-base sm:text-lg font-semibold sm:font-bold uppercase mb-4">Usage by department</h3>
-              <div class="space-y-2 max-h-[300px] overflow-y-auto scroll-area pr-1">
-                <div v-for="(d, i) in usageByDept" :key="`${d.department}-${d.item}-${i}`"
-                  class="flex items-center gap-3 p-3 bg-surface-low rounded-xl border border-white/50">
-                  <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap shrink-0"
-                    :class="DEPT_CHIP[i % DEPT_CHIP.length]">{{ d.department }}</span>
-                  <span class="text-xs text-on-surface-variant break-words flex-1 min-w-0">{{ d.item }}</span>
-                  <span class="text-sm font-extrabold text-on-surface whitespace-nowrap">{{ fmtQty(d.quantity_used)
-                  }}</span>
+              <!-- top consumed items -->
+              <div class="p-6">
+                <h3 class="text-base sm:text-lg font-semibold sm:font-bold uppercase mb-4">Top consumed items</h3>
+                <div class="space-y-3 max-h-[300px] overflow-y-auto scroll-area pr-1">
+                  <div v-for="(t, ti) in topConsumed" :key="t.inventory_id"
+                    class="p-3 bg-surface-low rounded-xl border border-white/50">
+                    <div class="flex items-center gap-3 mb-2">
+                      <span
+                        class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-extrabold shrink-0"
+                        :class="RANK_BADGE[ti % RANK_BADGE.length]">{{ ti + 1 }}</span>
+                      <span class="text-sm font-semibold text-on-surface break-words flex-1 min-w-0">{{ t.name }}</span>
+                      <span class="text-sm font-extrabold text-on-surface whitespace-nowrap">{{ fmtQty(t.quantity_used)
+                        }}</span>
+                    </div>
+                    <div class="h-2 rounded-full bg-surface-container overflow-hidden">
+                      <div class="h-full rounded-full transition-all" :class="BAR_COLORS[ti % BAR_COLORS.length]"
+                        :style="{ width: usagePct(t.quantity_used) + '%' }" />
+                    </div>
+                  </div>
+                  <p v-if="!topConsumed.length" class="text-sm text-on-surface-variant py-4 text-center">No usage
+                    recorded.
+                  </p>
                 </div>
-                <p v-if="!usageByDept.length" class="text-sm text-on-surface-variant py-4 text-center">No departmental
-                  usage.</p>
+              </div>
+
+              <!-- usage by department -->
+              <div class="p-6">
+                <h3 class="text-base sm:text-lg font-semibold sm:font-bold uppercase mb-4">Usage by department</h3>
+                <div class="space-y-2 max-h-[300px] overflow-y-auto scroll-area pr-1">
+                  <div v-for="(d, i) in usageByDept" :key="`${d.department}-${d.item}-${i}`"
+                    class="flex items-center gap-3 p-3 bg-surface-low rounded-xl border border-white/50">
+                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase whitespace-nowrap shrink-0"
+                      :class="DEPT_CHIP[i % DEPT_CHIP.length]">{{ d.department }}</span>
+                    <span class="text-xs text-on-surface-variant break-words flex-1 min-w-0">{{ d.item }}</span>
+                    <span class="text-sm font-extrabold text-on-surface whitespace-nowrap">{{ fmtQty(d.quantity_used)
+                      }}</span>
+                  </div>
+                  <p v-if="!usageByDept.length" class="text-sm text-on-surface-variant py-4 text-center">No departmental
+                    usage.</p>
+                </div>
               </div>
             </div>
-          </div>
-        </template>
+          </template>
         </template>
 
         <!-- ───────────── INVENTORY ITEMS TAB ───────────── -->
@@ -532,7 +549,7 @@
                     <td colspan="7" class="py-8 text-center text-on-surface-variant">Loading…</td>
                   </tr>
                   <tr v-for="it in pagedItems" :key="it.uuid" class="hover:bg-surface-low transition-all cursor-pointer"
-                    @click="navigateTo(`/inventory/${it.uuid}`)">
+                    @click="navigateTo(`/inventory/${it.uuid}?from=items`)">
                     <td class="py-5 px-5">
                       <p class="font-bold text-on-surface break-words">{{ it.name }}</p>
                       <p v-if="!it.active" class="text-[10px] text-outline">inactive</p>
@@ -675,7 +692,8 @@
                     </td>
                   </tr>
                   <tr v-if="!stockTab.loading && !stockTab.data.length">
-                    <td colspan="10" class="py-8 text-center text-xs sm:text-sm text-on-surface-variant">No stock records
+                    <td colspan="10" class="py-8 text-center text-xs sm:text-sm text-on-surface-variant">No stock
+                      records
                       match the current filters.</td>
                   </tr>
                 </tbody>
@@ -831,7 +849,8 @@
             </div>
 
             <InventoryHistoryFilterBar :key="activeTab" v-model="damagesTab.filters" :open="damagesTab.filtersOpen"
-              :show-inventory="true" :inventory-items="items" :departments="departmentsList" @apply="damagesTab.load()" />
+              :show-inventory="true" :inventory-items="items" :departments="departmentsList"
+              @apply="damagesTab.load()" />
 
             <div class="overflow-x-auto rounded-t-2xl">
               <table class="his-table tbl-amber">
@@ -930,7 +949,8 @@
             </div>
 
             <InventoryHistoryFilterBar :key="activeTab" v-model="disposalsTab.filters" :open="disposalsTab.filtersOpen"
-              :show-inventory="true" :inventory-items="items" :departments="departmentsList" @apply="disposalsTab.load()" />
+              :show-inventory="true" :inventory-items="items" :departments="departmentsList"
+              @apply="disposalsTab.load()" />
 
             <div class="overflow-x-auto rounded-t-2xl">
               <table class="his-table tbl-purple">
@@ -1032,8 +1052,8 @@
             </div>
 
             <InventoryHistoryFilterBar :key="activeTab" v-model="expirationTab.filters"
-              :open="expirationTab.filtersOpen" :show-inventory="true" :inventory-items="items" :departments="departmentsList"
-              @apply="expirationTab.load()" />
+              :open="expirationTab.filtersOpen" :show-inventory="true" :inventory-items="items"
+              :departments="departmentsList" @apply="expirationTab.load()" />
 
             <div class="overflow-x-auto rounded-t-2xl">
               <table class="his-table tbl-red">
@@ -1100,19 +1120,62 @@
           </div>
         </template>
       </template>
-
-      <!-- ═══════════ NON-PRIVILEGED VIEW — Department Overview only ═══════════ -->
-      <template v-else>
-        <div class="g-card p-6 sm:p-8">
-          <DeptOverviewBody />
-        </div>
-      </template>
     </div>
 
     <!-- ── Department Overview modal (privileged, opened from a department card) ── -->
     <Modal v-model="deptModal" :title="deptModalName || 'Department overview'"
       subtitle="Real-time utilisation monitoring" :show-logo="true" class="max-w-4xl">
       <DeptOverviewBody />
+    </Modal>
+
+    <!-- ── Low stock alerts — maximized view ──────────────────────────────── -->
+    <Modal v-model="lowStockModal" title="Low stock alerts" subtitle="Items at or below reorder level"
+      :show-logo="false" class="max-w-3xl">
+      <table class="w-full text-left border-collapse text-sm alive-tbl tbl-red">
+        <thead class="bg-surface-lowest rounded-lg sticky top-0 z-10">
+          <tr class="text-[10px] text-on-surface-variant uppercase tracking-widest">
+            <th class="py-2.5 px-3">Item</th>
+            <th class="py-2.5 px-3 text-right">On hand</th>
+            <th class="py-2.5 px-3 text-right">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-outline-variant/10">
+          <tr v-for="l in lowStock" :key="l.id" class="hover:bg-surface-low transition-colors">
+            <td class="py-3 px-3">
+              <p class="font-bold break-words">{{ l.name }}</p>
+              <p class="text-[10px] font-mono text-primary">{{ l.code }}</p>
+            </td>
+            <td class="py-3 px-3 text-right font-bold"
+              :class="Number(l.on_hand) === 0 ? 'text-error' : 'text-ribbon-amber'">{{ fmtQty(l.on_hand) }}
+            </td>
+            <td class="py-3 px-3 text-right">
+              <span v-if="Number(l.on_hand) === 0"
+                class="bg-error text-white text-[9px] font-bold px-2 py-0.5 rounded-full">CRITICAL</span>
+              <span v-else class="bg-ribbon-amber text-white text-[9px] font-bold px-2 py-0.5 rounded-full">LOW</span>
+            </td>
+          </tr>
+          <tr v-if="!lowStock.length">
+            <td colspan="3" class="py-6 text-center text-on-surface-variant">Nothing below reorder level.</td>
+          </tr>
+        </tbody>
+      </table>
+    </Modal>
+
+    <!-- ── Recent receipts — maximized view ───────────────────────────────── -->
+    <Modal v-model="receiptsModal" title="Recent receipts" subtitle="Latest inventory receipts"
+      :show-logo="false" class="max-w-2xl">
+      <div class="space-y-3">
+        <div v-for="(r, i) in receipts" :key="`${r.batch_no}-${i}`"
+          class="p-3 rounded-lg border border-white/50"
+          :class="i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-container/60'">
+          <div class="flex justify-between items-center gap-2 mb-1">
+            <span class="text-xs font-bold text-on-surface break-words">{{ r.batch_no }}</span>
+            <span class="text-[10px] text-outline whitespace-nowrap">{{ relTime(r.received_date) }}</span>
+          </div>
+          <p class="text-xs text-on-surface-variant break-words">{{ r.item }} ({{ fmtQty(r.quantity) }} units)</p>
+        </div>
+        <p v-if="!receipts.length" class="text-sm text-on-surface-variant py-4 text-center">No recent receipts.</p>
+      </div>
     </Modal>
 
     <!-- ── Create-item modal ──────────────────────────────────────────────── -->
@@ -1191,10 +1254,101 @@
       </template>
     </Modal>
 
+    <!-- ── Bulk-import modal: drag & drop → process → per-row report ─────────── -->
+    <Modal v-model="importModal" title="Import inventory items"
+      subtitle="Upload a filled import template (.xls / .xlsx)" :show-logo="false" class="max-w-2xl">
+      <div class="flex flex-col gap-4">
+
+        <!-- pick / drop zone (pre-upload) -->
+        <template v-if="!importResult">
+          <div class="rounded-2xl border-2 border-dashed p-8 text-center cursor-pointer transition-colors"
+            :class="importDragOver ? 'border-primary bg-primary/5' : 'border-outline-variant/60 hover:border-primary/50 hover:bg-primary/[0.03]'"
+            @click="importFileInput?.click()" @dragover.prevent="importDragOver = true"
+            @dragleave.prevent="importDragOver = false" @drop.prevent="onImportDrop">
+            <input ref="importFileInput" type="file" class="hidden"
+              accept=".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              @change="onImportPick" />
+            <div
+              class="w-12 h-12 mx-auto rounded-2xl bg-ribbon-blue/12 text-ribbon-blue flex items-center justify-center mb-3">
+              <font-awesome-icon :icon="['fas', 'file-arrow-up']" class="text-lg" />
+            </div>
+            <p class="text-sm sm:text-base font-semibold text-on-surface">
+              {{ importFile ? importFile.name : 'Drag & drop your workbook here' }}
+            </p>
+            <p class="text-xs sm:text-sm text-on-surface-variant mt-1">
+              {{ importFile ? fmtBytes(importFile.size) + ' · click to choose a different file'
+                : 'or click to browse — .xls or .xlsx only' }}
+            </p>
+          </div>
+          <p v-if="importError" class="alert-error !p-2.5 text-xs sm:text-sm">{{ importError }}</p>
+        </template>
+
+        <!-- result report (post-upload) -->
+        <template v-else>
+          <div class="grid grid-cols-3 gap-2">
+            <div class="rounded-xl bg-ribbon-blue/8 border border-ribbon-blue/15 px-3 py-2.5 text-center">
+              <p class="text-lg sm:text-xl font-bold text-ribbon-blue tabular-nums">{{
+                importResult.report?.summary?.total ?? 0 }}</p>
+              <p class="text-xs sm:text-sm font-bold text-on-surface-variant">Rows</p>
+            </div>
+            <div class="rounded-xl bg-ribbon-teal/8 border border-ribbon-teal/15 px-3 py-2.5 text-center">
+              <p class="text-lg sm:text-xl font-bold text-ribbon-teal tabular-nums">{{
+                importResult.report?.summary?.success ?? 0 }}</p>
+              <p class="text-xs sm:text-sm font-bold text-on-surface-variant">Imported</p>
+            </div>
+            <div class="rounded-xl px-3 py-2.5 text-center border"
+              :class="(importResult.report?.summary?.failed ?? 0) > 0 ? 'bg-error/8 border-error/20' : 'bg-surface-low border-outline-variant/30'">
+              <p class="text-lg sm:text-xl font-bold tabular-nums"
+                :class="(importResult.report?.summary?.failed ?? 0) > 0 ? 'text-error' : 'text-on-surface-variant'">{{
+                  importResult.report?.summary?.failed ?? 0 }}</p>
+              <p class="text-xs sm:text-sm font-bold text-on-surface-variant">Failed</p>
+            </div>
+          </div>
+
+          <!-- per-row outcomes -->
+          <div
+            class="max-h-64 overflow-y-auto rounded-xl border border-outline-variant/30 divide-y divide-outline-variant/20">
+            <div v-for="r in importResult.report?.rows ?? []" :key="r.row"
+              class="flex items-start gap-2.5 px-3 py-2.5 text-xs sm:text-sm min-w-0">
+              <font-awesome-icon :icon="['fas', r.status === 'success' ? 'circle-check' : 'circle-exclamation']"
+                class="mt-0.5 shrink-0" :class="r.status === 'success' ? 'text-ribbon-teal' : 'text-error'" />
+              <span class="font-mono text-on-surface-variant shrink-0">Row {{ r.row }}</span>
+              <span class="font-semibold text-on-surface truncate">{{ r.identifier || '—' }}</span>
+              <span v-if="r.errors?.length" class="text-error break-words min-w-0 ml-auto text-right">{{
+                r.errors.join('; ') }}</span>
+            </div>
+          </div>
+
+          <!-- report files -->
+          <div class="flex flex-wrap gap-2">
+            <a v-if="importResult.files?.report_pdf_url" :href="importResult.files.report_pdf_url" target="_blank"
+              rel="noopener" class="btn-secondary text-sm sm:text-base">
+              <font-awesome-icon :icon="['fas', 'file-arrow-down']" /> Report PDF
+            </a>
+            <a v-if="importResult.files?.failed_records_xlsx_url" :href="importResult.files.failed_records_xlsx_url"
+              target="_blank" rel="noopener" class="btn-secondary text-sm sm:text-base !text-error !border-error/30">
+              <font-awesome-icon :icon="['fas', 'file-arrow-down']" /> Failed rows (.xlsx)
+            </a>
+          </div>
+        </template>
+      </div>
+
+      <template #footer>
+        <button class="btn-secondary" @click="closeImport">{{ importResult ? 'Close' : 'Cancel' }}</button>
+        <button v-if="importResult" class="btn-secondary" @click="resetImport">
+          <font-awesome-icon :icon="['fas', 'file-arrow-up']" /> Import another
+        </button>
+        <button v-else class="btn-primary" :disabled="!importFile || importing" @click="runImport">
+          <font-awesome-icon :icon="['fas', importing ? 'circle-notch' : 'check']" :class="{ 'fa-spin': importing }" />
+          {{ importing ? 'Processing…' : 'Process import' }}
+        </button>
+      </template>
+    </Modal>
+
     <!-- ── Teleported row actions menu (print barcode / QR) ────────────────── -->
     <Teleport to="body">
       <div v-if="rowMenu" class="row-menu" :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }" @click.stop>
-        <NuxtLink :to="`/inventory/${rowMenu}`" class="row-menu-item">
+        <NuxtLink :to="`/inventory/${rowMenu}?from=items`" class="row-menu-item">
           <font-awesome-icon :icon="['fas', 'eye']" class="text-ribbon-blue" /> View Inventory
         </NuxtLink>
         <button v-if="rowMenuBarcode" class="row-menu-item"
@@ -1211,9 +1365,9 @@
 
     <!-- ── Teleported history-tables row actions menu (View Inventory) ──────── -->
     <Teleport to="body">
-      <div v-if="histMenuKey" class="row-menu"
-        :style="{ top: histMenuPos.top + 'px', left: histMenuPos.left + 'px' }" @click.stop>
-        <NuxtLink :to="`/inventory/${histMenuUuid}`" class="row-menu-item">
+      <div v-if="histMenuKey" class="row-menu" :style="{ top: histMenuPos.top + 'px', left: histMenuPos.left + 'px' }"
+        @click.stop>
+        <NuxtLink :to="`/inventory/${histMenuUuid}?from=${activeTab}`" class="row-menu-item">
           <font-awesome-icon :icon="['fas', 'eye']" class="text-ribbon-blue" /> View Inventory
         </NuxtLink>
       </div>
@@ -1230,6 +1384,9 @@
           <font-awesome-icon :icon="['fas', exportingTemplate ? 'circle-notch' : 'file-arrow-down']"
             :class="{ 'fa-spin': exportingTemplate }" class="text-ribbon-teal" />
           {{ exportingTemplate ? 'Preparing…' : 'Export Template' }}
+        </button>
+        <button class="row-menu-item" @click="openImport(); closeHeaderMenu()">
+          <font-awesome-icon :icon="['fas', 'file-arrow-up']" class="text-ribbon-purple" /> Import Template
         </button>
       </div>
     </Teleport>
@@ -1249,8 +1406,12 @@ const auth = useAuthStore()
 const can = (p: string) => auth.can(p)
 
 // only these roles see the whole dashboard + other departments
-const PRIVILEGED_ROLES = ['system_administrator', 'inventory_officer', 'biomedical_engineer', 'bme_lead', 'asset_officer']
+const PRIVILEGED_ROLES = ['system_administrator', 'inventory_officer']
 const isPrivileged = computed(() => PRIVILEGED_ROLES.includes(auth.currentRole))
+  
+if (!isPrivileged.value) {
+  await navigateTo('/inventory/department', { replace: true })
+}
 
 // ── tabs ────────────────────────────────────────────────────────────────────
 type TabKey = 'overview' | 'items' | 'stock' | 'usage' | 'damages' | 'disposals' | 'expiration'
@@ -1457,6 +1618,60 @@ const exportTemplate = async () => {
     exportingTemplate.value = false
   }
 }
+
+// ── bulk-import: drag & drop workbook → /inventories/bulk_import/template/process ──
+const importModal = ref(false)
+const importFile = ref<File | null>(null)
+const importFileInput = ref<HTMLInputElement | null>(null)
+const importDragOver = ref(false)
+const importing = ref(false)
+const importError = ref('')
+const importResult = ref<any>(null)
+
+const fmtBytes = (n: number) =>
+  n >= 1048576 ? `${(n / 1048576).toFixed(1)} MB` : `${Math.max(1, Math.round(n / 1024))} KB`
+
+const isWorkbook = (f: File) => /\.(xls|xlsx)$/i.test(f.name)
+
+const setImportFile = (f: File | null) => {
+  importError.value = ''
+  if (f && !isWorkbook(f)) { importError.value = 'Only .xls or .xlsx files are accepted.'; return }
+  importFile.value = f
+}
+const onImportPick = (e: Event) => {
+  setImportFile((e.target as HTMLInputElement).files?.[0] ?? null)
+    ; (e.target as HTMLInputElement).value = ''   // allow re-picking the same file
+}
+const onImportDrop = (e: DragEvent) => {
+  importDragOver.value = false
+  setImportFile(e.dataTransfer?.files?.[0] ?? null)
+}
+
+const openImport = () => { resetImport(); importModal.value = true }
+const resetImport = () => {
+  importFile.value = null; importResult.value = null; importError.value = ''; importDragOver.value = false
+}
+const closeImport = () => {
+  importModal.value = false
+  if (importResult.value) loadItems()   // refresh the items list after a completed import
+  resetImport()
+}
+
+const runImport = async () => {
+  if (!importFile.value || importing.value) return
+  importing.value = true; importError.value = ''
+  try {
+    importResult.value = await inv.processImport(importFile.value)
+    const s = importResult.value?.report?.summary
+    flash(`Import complete — ${s?.success ?? 0} of ${s?.total ?? 0} row(s) imported${s?.failed ? `, ${s.failed} failed` : ''}`,
+      s?.failed ? 'error' : 'success')
+  } catch (e: any) {
+    importError.value = e?.message || 'Import failed'
+  } finally {
+    importing.value = false
+  }
+}
+
 const openRowMenu = (e: MouseEvent, it: any) => {
   if (rowMenu.value === it.uuid) { rowMenu.value = ''; return }
   const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
@@ -1724,6 +1939,10 @@ const submitCreate = async () => {
   finally { saving.value = false }
 }
 
+// ── maximize modals for small dashboard cards ───────────────────────────────
+const lowStockModal = ref(false)
+const receiptsModal = ref(false)
+
 // ── department overview (modal for privileged, inline for others) ───────────
 const deptDash = ref<any>(null)
 const loadingDept = ref(false)
@@ -1810,7 +2029,8 @@ const DeptOverviewBody = () => {
 
 // ── mount ───────────────────────────────────────────────────────────────────
 onMounted(() => {
-  if (route.query.tab === 'items') activeTab.value = 'items'
+  const qTab = route.query.tab as TabKey | undefined
+  if (qTab && tabs.some((x) => x.key === qTab)) activeTab.value = qTab
   if (isPrivileged.value) {
     loadDashboard(); loadTypes(); loadItems(); loadDepartments()
   } else {
@@ -1820,6 +2040,8 @@ onMounted(() => {
 </script>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .inv-page {
   min-height: 100%;
   background: linear-gradient(135deg, #f7f9fb 0%, #d6e8fa 100%);
@@ -2041,9 +2263,11 @@ onMounted(() => {
 .tbl-teal thead tr {
   background: linear-gradient(90deg, rgba(61, 174, 140, 0.14), rgba(61, 174, 140, 0.04));
 }
+
 .tbl-teal thead th {
   border-bottom: 2px solid rgba(61, 174, 140, 0.40);
 }
+
 .tbl-teal tbody tr:hover {
   background: rgba(61, 174, 140, 0.09);
 }
@@ -2052,9 +2276,11 @@ onMounted(() => {
 .tbl-amber thead tr {
   background: linear-gradient(90deg, rgba(232, 163, 61, 0.16), rgba(232, 163, 61, 0.05));
 }
+
 .tbl-amber thead th {
   border-bottom: 2px solid rgba(232, 163, 61, 0.45);
 }
+
 .tbl-amber tbody tr:hover {
   background: rgba(232, 163, 61, 0.10);
 }
@@ -2063,9 +2289,11 @@ onMounted(() => {
 .tbl-purple thead tr {
   background: linear-gradient(90deg, rgba(176, 95, 168, 0.14), rgba(176, 95, 168, 0.04));
 }
+
 .tbl-purple thead th {
   border-bottom: 2px solid rgba(176, 95, 168, 0.40);
 }
+
 .tbl-purple tbody tr:hover {
   background: rgba(176, 95, 168, 0.08);
 }

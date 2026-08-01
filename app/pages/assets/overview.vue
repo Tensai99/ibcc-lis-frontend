@@ -244,10 +244,15 @@
             </div>
 
             <div class="g-card p-6 border-l-4 border-ribbon-red">
-              <div class="flex items-center justify-between mb-5">
-                <h3 class="text-base sm:text-lg md:text-xl font-semibold sm:font-bold">Commissioning backlog</h3>
+              <div class="flex items-center justify-between gap-2 mb-5">
+                <h3 class="text-base sm:text-lg md:text-xl font-semibold sm:font-bold flex-1">Commissioning backlog</h3>
                 <span class="text-[11px] font-bold text-ribbon-red bg-ribbon-red/12 px-2.5 py-1 rounded-full">{{
                   commissioningBacklog.length }}</span>
+                <button type="button"
+                  class="w-8 h-8 rounded-full hover:bg-surface-low flex items-center justify-center text-outline transition-colors shrink-0"
+                  title="Maximize" @click="backlogModal = true">
+                  <font-awesome-icon :icon="['fas', 'expand']" class="text-xs" />
+                </button>
               </div>
               <div class="space-y-2 max-h-[260px] overflow-y-auto pr-1 scroll-area">
                 <div v-for="b in commissioningBacklog" :key="b.asset_tag"
@@ -439,7 +444,7 @@
                   <td colspan="8" class="py-8 text-center text-on-surface-variant">Loading…</td>
                 </tr>
                 <tr v-for="a in filteredAssets" :key="a.uuid" class="hover:bg-surface-low transition-all cursor-pointer"
-                  @click="navigateTo(`/assets/${a.uuid}`)">
+                  @click="navigateTo(`/assets/${a.uuid}?from=assets`)">
                   <td class="py-5 px-5 font-mono text-[11px] text-primary whitespace-nowrap">{{ a.asset_tag }}</td>
                   <td class="py-5 px-5">
                     <p class="font-bold text-on-surface break-words">{{ a.name }}</p>
@@ -631,14 +636,15 @@
                   <th class="text-center">Status</th>
                   <th>Scheduled</th>
                   <th class="text-right">Total cost</th>
+                  <th class="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="maintenancesTab.loading">
-                  <td colspan="7" class="py-8 text-center text-xs sm:text-sm text-on-surface-variant">Loading…</td>
+                  <td colspan="8" class="py-8 text-center text-xs sm:text-sm text-on-surface-variant">Loading…</td>
                 </tr>
                 <tr v-for="m in maintenancesTab.data" :key="m.uuid" class="cursor-pointer"
-                  @click="navigateTo(`/assets/maintenance?uuid=${m.uuid}`)">
+                  @click="navigateTo(`/assets/maintenance?uuid=${m.uuid}&from=maintenances`)">
                   <td><span
                       class="font-mono text-xs sm:text-sm text-primary bg-primary/8 px-2 py-1 rounded-lg whitespace-nowrap">{{
                       m.job_card_no }}</span></td>
@@ -657,9 +663,14 @@
                         titleCase(m.status) }}</span></td>
                   <td class="text-on-surface-variant whitespace-nowrap">{{ m.scheduled_date }}</td>
                   <td class="text-right font-medium truncate">{{ fmtAssetMoney(m.total_cost) }}</td>
+                  <td class="text-right" @click.stop>
+  <button class="row-act-btn" title="Actions" @click.stop="openMaintMenu($event, m)">
+    <font-awesome-icon :icon="['fas', 'ellipsis-vertical']" />
+  </button>
+</td>
                 </tr>
                 <tr v-if="!maintenancesTab.loading && !maintenancesTab.data.length">
-                  <td colspan="7" class="py-8 text-center text-xs sm:text-sm text-on-surface-variant">No maintenances
+                  <td colspan="8" class="py-8 text-center text-xs sm:text-sm text-on-surface-variant">No maintenances
                     match the current filters.</td>
                 </tr>
               </tbody>
@@ -721,14 +732,15 @@
                   <th>Date</th>
                   <th>Next due</th>
                   <th>Inspected by</th>
+                  <th class="text-right">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 <tr v-if="inspectionsTab.loading">
-                  <td colspan="7" class="py-8 text-center text-xs sm:text-sm text-on-surface-variant">Loading…</td>
+                  <td colspan="8" class="py-8 text-center text-xs sm:text-sm text-on-surface-variant">Loading…</td>
                 </tr>
                 <tr v-for="insp in inspectionsTab.data" :key="insp.uuid" class="cursor-pointer"
-                  @click="navigateTo(`/assets/inspect?uuid=${insp.uuid}`)">
+                  @click="navigateTo(`/assets/inspect?uuid=${insp.uuid}&from=inspections`)">
                   <td class="min-w-0">
                     <p class="font-semibold sm:font-bold break-words">{{ insp.asset }}</p>
                     <p class="text-xs sm:text-sm text-outline truncate">{{ insp.asset_tag }}</p>
@@ -745,9 +757,14 @@
                   <td class="text-on-surface-variant whitespace-nowrap">{{ insp.inspection_date }}</td>
                   <td class="text-on-surface-variant whitespace-nowrap">{{ insp.next_due_on || '—' }}</td>
                   <td class="text-on-surface-variant break-words">{{ insp.inspected_by }}</td>
+                  <td class="text-right" @click.stop>
+  <button class="row-act-btn" title="Actions" @click.stop="openInspMenu($event, insp)">
+    <font-awesome-icon :icon="['fas', 'ellipsis-vertical']" />
+  </button>
+</td>
                 </tr>
                 <tr v-if="!inspectionsTab.loading && !inspectionsTab.data.length">
-                  <td colspan="7" class="py-8 text-center text-xs sm:text-sm text-on-surface-variant">No inspections
+                  <td colspan="8" class="py-8 text-center text-xs sm:text-sm text-on-surface-variant">No inspections
                     match the current filters.</td>
                 </tr>
               </tbody>
@@ -976,7 +993,7 @@
               :class="TEMPLATE_ACCENT[i % 5]">
               <!-- content region → view / edit the template -->
               <button type="button" class="text-left flex-1 min-w-0"
-                @click="navigateTo(`/assets/checklist?uuid=${t.uuid}`)">
+                @click="navigateTo(`/assets/checklist?uuid=${t.uuid}&from=templates`)">
                 <div class="flex items-start justify-between gap-2 mb-2">
                   <span class="text-xs font-mono break-words" :class="TEMPLATE_CODE[i % 5]">{{ t.code }}</span>
                   <span class="text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap"
@@ -993,7 +1010,7 @@
               <div class="mt-4 pt-4 border-t border-outline-variant/15">
                 <button type="button"
                   class="w-full inline-flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs sm:text-sm font-bold text-primary bg-primary/8 hover:bg-primary/14 transition-colors"
-                  @click.stop="navigateTo(`/assets/inspect?template=${t.uuid}`)">
+                  @click.stop="navigateTo(`/assets/inspect?template=${t.uuid}&from=templates`)">
                   <font-awesome-icon :icon="['fas', 'clipboard-check']" />
                   <span>Make inspection with this template</span>
                 </button>
@@ -1241,6 +1258,23 @@
       <DeptOverviewBody />
     </Modal>
 
+    <!-- ── Commissioning backlog — maximized view ─────────────────────────── -->
+    <Modal v-model="backlogModal" title="Commissioning backlog" subtitle="Assets awaiting commissioning"
+      :show-logo="false" class="max-w-2xl">
+      <div class="space-y-2">
+        <div v-for="b in commissioningBacklog" :key="b.asset_tag"
+          class="p-3 bg-ribbon-red/10 rounded-xl border border-ribbon-red/15">
+          <div class="flex justify-between items-center gap-2">
+            <span class="text-xs font-bold text-ribbon-red font-mono">{{ b.asset_tag }}</span>
+            <span class="text-[10px] text-ribbon-red/70 whitespace-nowrap truncate max-w-[45%]">{{ b.type }}</span>
+          </div>
+          <p class="text-xs text-on-surface-variant break-words mt-0.5">{{ b.name }}</p>
+        </div>
+        <p v-if="!commissioningBacklog.length" class="text-sm text-on-surface-variant py-4 text-center">Nothing
+          awaiting commissioning.</p>
+      </div>
+    </Modal>
+
     <!-- ── Teleported header "Advanced options" menu ────────────────────────── -->
     <Teleport to="body">
       <div v-if="headerMenu" class="row-menu"
@@ -1354,7 +1388,7 @@
     <Teleport to="body">
       <div v-if="rowMenu" class="row-menu" :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }" @click.stop>
         <template v-if="rowMenuKind === 'asset'">
-          <NuxtLink :to="`/assets/${rowMenuItem?.uuid}`" class="row-menu-item">
+          <NuxtLink :to="`/assets/${rowMenuItem?.uuid}?from=assets`" class="row-menu-item">
             <font-awesome-icon :icon="['fas', 'eye']" class="text-ribbon-blue" /> View Asset
           </NuxtLink>
           <button class="row-menu-item" @click="printAssetCode(rowMenuTag, 'qr'); closeRowMenu()">
@@ -1385,24 +1419,48 @@
     <Teleport to="body">
       <div v-if="issueMenu" class="row-menu" :style="{ top: issueMenuPos.top + 'px', left: issueMenuPos.left + 'px' }"
         @click.stop>
-        <NuxtLink :to="`/assets/${issueMenuRow.asset_uuid}`" class="row-menu-item">
+        <NuxtLink :to="`/assets/${issueMenuRow.asset_uuid}?from=issues`" class="row-menu-item">
           <font-awesome-icon :icon="['fas', 'eye']" class="text-ribbon-blue" /> View Asset
         </NuxtLink>
         <button v-if="!issueMenuRow.has_maintenance" class="row-menu-item"
           @click="openScheduleForIssue(issueMenuRow); closeIssueMenu()">
           <font-awesome-icon :icon="['fas', 'screwdriver-wrench']" class="text-ribbon-blue" /> Schedule Maintenance
         </button>
-        <NuxtLink v-else :to="`/assets/maintenance?uuid=${issueMenuRow.maintenance_uuid}`" class="row-menu-item">
+        <NuxtLink v-else :to="`/assets/maintenance?uuid=${issueMenuRow.maintenance_uuid}&from=issues`" class="row-menu-item">
           <font-awesome-icon :icon="['fas', 'screwdriver-wrench']" class="text-ribbon-blue" /> View Maintenance
         </NuxtLink>
       </div>
     </Teleport>
 
+    <!-- Maintenances-tab row menu -->
+<Teleport to="body">
+  <div v-if="maintMenu" class="row-menu" :style="{ top: maintMenuPos.top + 'px', left: maintMenuPos.left + 'px' }" @click.stop>
+    <NuxtLink :to="`/assets/maintenance?uuid=${maintMenuRow.uuid}&from=maintenances`" class="row-menu-item">
+      <font-awesome-icon :icon="['fas', 'screwdriver-wrench']" class="text-ribbon-blue" /> View Maintenance
+    </NuxtLink>
+    <NuxtLink v-if="maintMenuRow?.asset_uuid" :to="`/assets/${maintMenuRow.asset_uuid}?from=maintenances`" class="row-menu-item">
+      <font-awesome-icon :icon="['fas', 'eye']" class="text-ribbon-blue" /> View Asset
+    </NuxtLink>
+  </div>
+</Teleport>
+
+<!-- Inspections-tab row menu -->
+<Teleport to="body">
+  <div v-if="inspMenu" class="row-menu" :style="{ top: inspMenuPos.top + 'px', left: inspMenuPos.left + 'px' }" @click.stop>
+    <NuxtLink :to="`/assets/inspect?uuid=${inspMenuRow.uuid}&from=inspections`" class="row-menu-item">
+      <font-awesome-icon :icon="['fas', 'clipboard-check']" class="text-ribbon-teal" /> View Inspection
+    </NuxtLink>
+    <NuxtLink v-if="inspMenuRow?.asset_uuid" :to="`/assets/${inspMenuRow.asset_uuid}?from=inspections`" class="row-menu-item">
+      <font-awesome-icon :icon="['fas', 'eye']" class="text-ribbon-blue" /> View Asset
+    </NuxtLink>
+  </div>
+</Teleport>
+
     <!-- Damages / Disposals row menu (Approve write-off) -->
     <Teleport to="body">
       <div v-if="approveMenu" class="row-menu"
         :style="{ top: approveMenuPos.top + 'px', left: approveMenuPos.left + 'px' }" @click.stop>
-        <NuxtLink :to="`/assets/${approveMenuRow?.asset_uuid}`" class="row-menu-item">
+        <NuxtLink :to="`/assets/${approveMenuRow?.asset_uuid}?from=${approveMenuKind}s`" class="row-menu-item">
           <font-awesome-icon :icon="['fas', 'eye']" class="text-ribbon-blue" /> View Asset
         </NuxtLink>
         <button v-if="!approveMenuRow?.is_approved" class="row-menu-item" :disabled="busy"
@@ -1433,16 +1491,6 @@
         <div><label class="input-label">Supplier</label><input v-model="form.supplier" class="input-field" /></div>
         <!-- <div><label class="input-label">Quantity</label><input v-model.number="form.quantity" type="number" min="1"
             class="input-field" /></div> -->
-
-        <div class="sm:col-span-2 border-t border-outline-variant/50 pt-3"><span
-            class="text-xs sm:text-sm font-semibold text-on-surface-variant">Location</span></div>
-        <div><label class="input-label">Main location</label><input v-model="form.main_location" class="input-field" />
-        </div>>
-        <div><label class="input-label">Sub location</label><input v-model="form.sub_location" class="input-field" />
-        </div>
-        <div class="sm:col-span-2"><label class="input-label">Room description</label><input
-            v-model="form.room_description" class="input-field" /></div>
-
         <div class="sm:col-span-2 border-t border-outline-variant/50 pt-3"><span
             class="text-xs sm:text-sm font-semibold text-on-surface-variant">Status &amp; condition</span></div>
         <div>
@@ -1659,6 +1707,7 @@ const registerValue = computed(() => dashboard.value?.register_value ?? {})
 const approvals = computed(() => dashboard.value?.pending_approvals ?? {})
 const openIssues = computed(() => dashboard.value?.open_issues ?? {})
 const commissioningBacklog = computed(() => dashboard.value?.commissioning_backlog ?? [])
+const backlogModal = ref(false)
 const maintenanceRows = computed(() => {
   const m = dashboard.value?.maintenance ?? {}
   return [
@@ -1763,6 +1812,28 @@ const openIssueMenu = (e: MouseEvent, iss: any) => {
   issueMenuRow.value = iss; issueMenu.value = iss.reference_no
 }
 const closeIssueMenu = () => { issueMenu.value = null }
+
+// ── maintenances-tab row menu ──────────────────────────────────────────────
+const maintMenu = ref<string | null>(null)
+const maintMenuRow = ref<any>(null)
+const maintMenuPos = reactive({ top: 0, left: 0 })
+const openMaintMenu = (e: MouseEvent, m: any) => {
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  maintMenuPos.top = r.bottom + 6; maintMenuPos.left = Math.max(8, r.right - 200)
+  maintMenuRow.value = m; maintMenu.value = m.uuid
+}
+const closeMaintMenu = () => { maintMenu.value = null }
+
+// ── inspections-tab row menu ───────────────────────────────────────────────
+const inspMenu = ref<string | null>(null)
+const inspMenuRow = ref<any>(null)
+const inspMenuPos = reactive({ top: 0, left: 0 })
+const openInspMenu = (e: MouseEvent, insp: any) => {
+  const r = (e.currentTarget as HTMLElement).getBoundingClientRect()
+  inspMenuPos.top = r.bottom + 6; inspMenuPos.left = Math.max(8, r.right - 200)
+  inspMenuRow.value = insp; inspMenu.value = insp.uuid
+}
+const closeInspMenu = () => { inspMenu.value = null }
 
 // ── write-off approve menu (damages / disposals tabs) ──────────────────────
 const approveMenu = ref<string | null>(null)
@@ -1955,12 +2026,16 @@ onMounted(() => {
   document.addEventListener('click', closeRowMenu)
   document.addEventListener('click', closeIssueMenu)
   document.addEventListener('click', closeApproveMenu)
+  document.addEventListener('click', closeMaintMenu)   // + add
+  document.addEventListener('click', closeInspMenu)    // + add
 })
 onBeforeUnmount(() => {
   document.removeEventListener('click', closeHeaderMenu)
   document.removeEventListener('click', closeRowMenu)
   document.removeEventListener('click', closeIssueMenu)
   document.removeEventListener('click', closeApproveMenu)
+  document.removeEventListener('click', closeMaintMenu) // + add
+  document.removeEventListener('click', closeInspMenu)  // + add
 })
 
 // Print a QR code or Code-128 barcode of the asset_tag.
@@ -2069,7 +2144,6 @@ const goAssetPage = (p: number) => {
   loadAssets()
 }
 
-const PAGE_SIZE = 8   // retained: the Departments panel below still slices client-side
 
 const goToAssetsFiltered = (kind: 'damages' | 'disposals') => {
   clearAssetFilters()
@@ -2141,8 +2215,11 @@ const deptModalName = ref('')
 const departmentsList = ref<any[]>([])
 const deptAssets = computed(() => deptDash.value?.assets ?? [])
 const deptPage = ref(1)
-const deptPages = computed(() => Math.max(1, Math.ceil(deptAssets.value.length / PAGE_SIZE)))
-const pagedDeptAssets = computed(() => deptAssets.value.slice((deptPage.value - 1) * PAGE_SIZE, deptPage.value * PAGE_SIZE))
+const DEPT_PAGE_SIZE_OPTIONS = [20, 50, 100] as const
+const deptPageSize = ref<number>(20)
+const deptPages = computed(() => Math.max(1, Math.ceil(deptAssets.value.length / deptPageSize.value)))
+const pagedDeptAssets = computed(() => deptAssets.value.slice((deptPage.value - 1) * deptPageSize.value, deptPage.value * deptPageSize.value))
+watch(deptPageSize, () => { deptPage.value = 1 })
 watch(deptAssets, () => { deptPage.value = 1 })
 
 const loadDepartments = async () => { try { departmentsList.value = (await assetsApi.getDepartments()) ?? [] } catch { /* ignore */ } }
@@ -2153,36 +2230,83 @@ const loadDeptDashboard = async (departmentUuid = '') => {
   finally { loadingDept.value = false }
 }
 const openDeptModal = async (d: any) => {
-  deptModalName.value = d?.name || 'Department dashboard'
+  deptModalName.value = d?.name ? `${d.name} (${d.code})` : 'Department dashboard'
   await loadDeptDashboard(d?.uuid ?? '')
   deptModal.value = true
 }
 
+// ── drag-resizable anomalies panel (between anomalies list and asset table) ─
+const ANOMALIES_MIN_H = 80
+const ANOMALIES_MAX_H = 480
+const deptAnomaliesHeight = ref(200)
+let anomaliesResizeStartY = 0
+let anomaliesResizeStartH = 0
+const onAnomaliesResizeMove = (e: MouseEvent) => {
+  const delta = e.clientY - anomaliesResizeStartY
+  deptAnomaliesHeight.value = Math.min(ANOMALIES_MAX_H, Math.max(ANOMALIES_MIN_H, anomaliesResizeStartH + delta))
+}
+const onAnomaliesResizeUp = () => {
+  window.removeEventListener('mousemove', onAnomaliesResizeMove)
+  window.removeEventListener('mouseup', onAnomaliesResizeUp)
+}
+const startAnomaliesResize = (e: MouseEvent) => {
+  e.preventDefault()
+  anomaliesResizeStartY = e.clientY
+  anomaliesResizeStartH = deptAnomaliesHeight.value
+  window.addEventListener('mousemove', onAnomaliesResizeMove)
+  window.addEventListener('mouseup', onAnomaliesResizeUp)
+}
+
 // shared Department dashboard body (inline for restricted users, modal for privileged)
+// literal class strings (Tailwind JIT — never build dynamically)
+const DEPT_KPI_STYLE = {
+  blue: { border: 'border-ribbon-blue', label: 'text-ribbon-blue', badge: 'bg-ribbon-blue/12 text-ribbon-blue' },
+  teal: { border: 'border-ribbon-teal', label: 'text-ribbon-teal', badge: 'bg-ribbon-teal/12 text-ribbon-teal' },
+  red: { border: 'border-ribbon-red', label: 'text-ribbon-red', badge: 'bg-error/10 text-error' },
+  amber: { border: 'border-ribbon-amber', label: 'text-ribbon-amber', badge: 'bg-ribbon-amber/15 text-ribbon-amber' },
+} as const
+const DEPT_ANOMALY_SEVERITY: Record<string, { pill: string; border: string }> = {
+  CRITICAL: { pill: 'bg-error/10 text-error', border: 'border-error/40' },
+  HIGH: { pill: 'bg-error/10 text-error', border: 'border-error/40' },
+  MEDIUM: { pill: 'bg-ribbon-amber/15 text-ribbon-amber', border: 'border-ribbon-amber/40' },
+  LOW: { pill: 'bg-ribbon-blue/12 text-ribbon-blue', border: 'border-ribbon-blue/40' },
+}
 const DeptOverviewBody = () => {
   if (loadingDept.value && !deptDash.value) return h('p', { class: 'text-sm text-on-surface-variant py-6 text-center' }, 'Loading…')
   if (!deptDash.value) return h('p', { class: 'text-sm text-on-surface-variant' }, 'No department data loaded.')
   const s = deptDash.value.summary ?? {}
-  const dept = deptDash.value.department ?? {}
   const anomalies = deptDash.value.anomalies ?? []
-  const kpi = (label: string, value: string, accent = false) =>
-    h('div', { class: `p-4 rounded-2xl border ${accent ? 'bg-primary/10 border-primary/20' : 'bg-white/60 border-white/60'}` }, [
-      h('p', { class: `text-[10px] uppercase font-bold tracking-wider mb-1 ${accent ? 'text-primary' : 'text-outline'}` }, label),
-      h('p', { class: `text-lg sm:text-xl font-extrabold ${accent ? 'text-primary' : 'text-on-surface'} break-words` }, value),
+  const kpi = (label: string, value: string, tone: keyof typeof DEPT_KPI_STYLE, icon: string, subtitle?: string) => {
+    const c = DEPT_KPI_STYLE[tone]
+    return h('div', { class: `g-card p-4 sm:p-5 border-l-4 ${c.border}` }, [
+      h('div', { class: 'flex items-center justify-between mb-2' }, [
+        h('p', { class: `text-[10px] font-bold uppercase tracking-wider ${c.label}` }, label),
+        h('span', { class: `w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${c.badge}` }, [
+          h('font-awesome-icon', { icon: ['fas', icon], class: 'text-sm' }),
+        ]),
+      ]),
+      h('p', { class: 'text-xl sm:text-2xl font-extrabold text-on-surface break-words' }, value),
+      subtitle ? h('p', { class: 'text-[11px] text-on-surface-variant opacity-70 mt-1' }, subtitle) : null,
     ])
+  }
   const th = (t: string, extra = '') => h('th', { class: `py-3 px-4 ${extra}` }, t)
+  const pill = (text: string, cls: string) => h('span', { class: `text-[10px] font-bold px-2 py-0.5 rounded-full whitespace-nowrap ${cls}` }, text)
   const rows = pagedDeptAssets.value.length
-    ? pagedDeptAssets.value.map((a: any) => h('tr', { key: a.asset_uuid, class: 'hover:bg-surface-low transition-colors cursor-pointer', onClick: () => navigateTo(`/assets/${a.asset_uuid}`) }, [
-      h('td', { class: 'py-3 px-4 font-mono text-[11px] text-primary' }, a.asset_tag),
+    ? pagedDeptAssets.value.map((a: any, i: number) => h('tr', {
+      key: a.asset_uuid,
+      class: `transition-colors cursor-pointer hover:bg-primary/5 ${i % 2 === 0 ? '' : 'bg-surface-low/50'}`,
+      onClick: () => navigateTo(`/assets/${a.asset_uuid}?from=assets`),
+    }, [
+      h('td', { class: 'py-3 px-4 font-mono text-[11px] text-primary font-bold' }, a.asset_tag),
       h('td', { class: 'py-3 px-4 font-bold text-xs break-words' }, a.name),
       h('td', { class: 'py-3 px-4 text-xs text-on-surface-variant break-words' }, a.type),
-      h('td', { class: 'py-3 px-4 text-xs' }, titleCase(a.condition)),
-      h('td', { class: 'py-3 px-4 text-xs' }, titleCase(a.operational_status)),
+      h('td', { class: 'py-3 px-4' }, pill(titleCase(a.condition), conditionClass(a.condition))),
+      h('td', { class: 'py-3 px-4' }, pill(titleCase(a.operational_status), statusClass(a.operational_status))),
     ]))
-    : [h('tr', [h('td', { colspan: 5, class: 'py-6 text-center text-on-surface-variant' }, 'No assets in this department.')])]
+    : [h('tr', [h('td', { colspan: 5, class: 'py-8 text-center text-on-surface-variant' }, 'No assets in this department.')])]
   const pager = deptPages.value > 1
     ? h('div', { class: 'flex items-center justify-between gap-3 mt-4' }, [
-      h('p', { class: 'text-xs sm:text-sm text-on-surface-variant' }, `Showing ${(deptPage.value - 1) * PAGE_SIZE + 1}–${Math.min(deptPage.value * PAGE_SIZE, deptAssets.value.length)} of ${deptAssets.value.length}`),
+      h('p', { class: 'text-xs sm:text-sm text-on-surface-variant' }, `Showing ${(deptPage.value - 1) * deptPageSize.value + 1}–${Math.min(deptPage.value * deptPageSize.value, deptAssets.value.length)} of ${deptAssets.value.length}`),
       h('div', { class: 'flex items-center gap-2' }, [
         h('button', { class: 'pager-btn', disabled: deptPage.value === 1, onClick: () => deptPage.value-- }, '‹'),
         h('span', { class: 'text-sm font-semibold text-on-surface' }, `${deptPage.value} / ${deptPages.value}`),
@@ -2191,28 +2315,49 @@ const DeptOverviewBody = () => {
     ])
     : null
   return h('div', [
-    dept.name ? h('p', { class: 'text-sm sm:text-base font-bold text-on-surface mb-3 break-words' }, `${dept.name} (${dept.code})`) : null,
-    h('div', { class: 'grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-5' }, [
-      kpi('Total assets', String(s.total_assets ?? 0)),
-      kpi('In service', String(s.in_service ?? 0)),
-      kpi('Out of service', String(s.out_of_service ?? 0)),
-      kpi('On-hand value', fmtAssetMoney(s.on_hand_value), true),
+    h('div', { class: 'grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-6' }, [
+      kpi('Total assets', String(s.total_assets ?? 0), 'blue', 'server'),
+      kpi('In service', String(s.in_service ?? 0), 'teal', 'circle-check', `of ${s.total_assets ?? 0} total`),
+      kpi('Out of service', String(s.out_of_service ?? 0), 'red', 'triangle-exclamation'),
+      kpi('On-hand value', fmtAssetMoney(s.on_hand_value), 'amber', 'coins'),
     ]),
     anomalies.length
-      ? h('div', { class: 'mb-5' }, [
-        h('p', { class: 'text-[12px] font-bold uppercase tracking-widest text-error mb-2' }, `Anomalies (${anomalies.length})`),
-        h('div', { class: 'space-y-2 max-h-[200px] overflow-y-auto scroll-area pr-1' }, anomalies.map((an: any, i: number) =>
-          h('div', { key: i, class: 'p-3 rounded-xl bg-error/5 border border-error/10' }, [
+      ? h('div', { class: 'mb-6' }, [
+        h('div', { class: 'flex items-center gap-2 mb-3' }, [
+          h('span', { class: 'w-6 h-6 rounded-full bg-error/10 text-error flex items-center justify-center shrink-0' }, [
+            h('font-awesome-icon', { icon: ['fas', 'triangle-exclamation'], class: 'text-[10px]' }),
+          ]),
+          h('p', { class: 'text-[12px] font-bold uppercase tracking-widest text-error' }, `Anomalies (${anomalies.length})`),
+        ]),
+        h('div', { class: 'space-y-2 overflow-y-auto scroll-area pr-1', style: { height: `${deptAnomaliesHeight.value}px` } }, anomalies.map((an: any, i: number) => {
+          const sev = DEPT_ANOMALY_SEVERITY[an.severity] || DEPT_ANOMALY_SEVERITY.LOW
+          return h('div', { key: i, class: `p-3 rounded-xl border-l-4 bg-surface-low ${sev.border}` }, [
             h('div', { class: 'flex justify-between items-center gap-2' }, [
-              h('span', { class: 'text-xs font-mono text-primary' }, an.asset_tag),
-              h('span', { class: 'text-[10px] font-bold uppercase text-error' }, an.severity),
+              h('span', { class: 'text-xs font-mono font-bold text-primary' }, an.asset_tag),
+              pill(an.severity, sev.pill),
             ]),
-            h('p', { class: 'text-xs font-bold text-on-surface break-words mt-0.5' }, an.name),
+            h('p', { class: 'text-xs font-bold text-on-surface break-words mt-1' }, an.name),
             h('p', { class: 'text-[11px] text-on-surface-variant break-words' }, an.detail),
-          ]))),
+          ])
+        })),
+        h('div', {
+          class: 'group flex items-center justify-center h-4 -mb-2 cursor-row-resize touch-none select-none',
+          onMousedown: startAnomaliesResize,
+        }, [
+          h('span', { class: 'w-16 h-1.5 rounded-full bg-outline-variant/40 group-hover:bg-primary/50 transition-colors' }),
+        ]),
       ])
       : null,
-    h('div', { class: 'overflow-x-auto' }, [
+    h('div', { class: 'flex items-center justify-between gap-3 mb-3 flex-wrap' }, [
+      h('h4', { class: 'text-[12px] font-bold uppercase tracking-widest text-on-surface-variant' }, `Assets · ${deptAssets.value.length}`),
+      h('div', { class: 'inline-flex items-center gap-1 p-1 rounded-xl bg-surface-low' },
+        DEPT_PAGE_SIZE_OPTIONS.map((n) => h('button', {
+          type: 'button',
+          class: `px-3 py-1 rounded-lg text-xs font-bold transition-colors ${deptPageSize.value === n ? 'bg-primary text-white shadow-sm' : 'text-on-surface-variant hover:bg-surface-container'}`,
+          onClick: () => { deptPageSize.value = n },
+        }, String(n)))),
+    ]),
+    h('div', { class: 'overflow-x-auto rounded-2xl border border-outline-variant/15' }, [
       h('table', { class: 'w-full text-left border-collapse text-sm sm:text-base' }, [
         h('thead', { class: 'bg-primary/5' }, [h('tr', { class: 'text-[10px] text-on-surface-variant uppercase tracking-widest' }, [
           th('Tag'), th('Name'), th('Type'), th('Condition'), th('Status'),
@@ -2394,6 +2539,8 @@ onActivated(syncTabFromQuery)
 </script>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .inv-page {
   min-height: 100%;
   background: linear-gradient(135deg, #f7f9fb 0%, #d6e8fa 100%);

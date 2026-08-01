@@ -9,9 +9,9 @@
     <!-- ── breadcrumb ─────────────────────────────────────────────────────── -->
     <nav
       class="inline-flex items-center gap-1 bg-white/80 border border-white/50 rounded-xl px-2 py-1.5 text-xs sm:text-sm shadow-sm self-start max-w-full flex-wrap">
-      <NuxtLink :to="{ path: '/assets/overview', query: { tab: 'templates' } }"
-        class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-on-surface transition-colors whitespace-nowrap">
-        <font-awesome-icon :icon="['fas', 'server']" class="text-[11px]" />Assets Overview
+      <NuxtLink :to="{ path: '/assets/overview', query: { tab: originTab } }"
+        class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-on-surface transition-colors">
+        <font-awesome-icon :icon="['fas', originCrumb.icon]" class="text-[11px]" />{{ originCrumb.label }}
       </NuxtLink>
       <font-awesome-icon :icon="['fas', 'chevron-right']" class="text-[9px] text-outline/40 shrink-0" />
       <span class="flex items-center gap-1.5 px-2 py-1 text-on-surface font-semibold min-w-0">
@@ -28,14 +28,16 @@
     </div>
 
     <!-- loading -->
-    <div v-if="loading" class="g-card p-10 sm:p-14 flex flex-col items-center justify-center gap-3 text-on-surface-variant">
+    <div v-if="loading"
+      class="g-card p-10 sm:p-14 flex flex-col items-center justify-center gap-3 text-on-surface-variant">
       <font-awesome-icon :icon="['fas', 'circle-notch']" class="fa-spin text-2xl text-primary/50" />
       <p class="text-sm sm:text-base md:text-lg">Loading template…</p>
     </div>
 
     <!-- missing uuid / not found -->
     <div v-else-if="!uuid || !template" class="g-card p-10 sm:p-14 text-center">
-      <div class="w-14 h-14 mx-auto rounded-2xl bg-ribbon-blue/12 flex items-center justify-center text-ribbon-blue mb-4">
+      <div
+        class="w-14 h-14 mx-auto rounded-2xl bg-ribbon-blue/12 flex items-center justify-center text-ribbon-blue mb-4">
         <font-awesome-icon :icon="['fas', 'clipboard-list']" class="text-xl" />
       </div>
       <p class="text-sm sm:text-base md:text-lg font-semibold text-on-surface break-words">
@@ -69,15 +71,18 @@
 
         <!-- attribute list — key/value rows, ribbon-accented -->
         <dl class="flex flex-col gap-2 text-xs sm:text-sm min-w-0">
-          <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-ribbon-blue/8 border border-ribbon-blue/15 min-w-0">
+          <div
+            class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-ribbon-blue/8 border border-ribbon-blue/15 min-w-0">
             <dt class="font-bold text-ribbon-blue uppercase tracking-wider shrink-0">Type</dt>
             <dd class="font-semibold text-on-surface truncate">{{ titleCase(template.inspection_type) }}</dd>
           </div>
-          <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-ribbon-teal/8 border border-ribbon-teal/15 min-w-0">
+          <div
+            class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-ribbon-teal/8 border border-ribbon-teal/15 min-w-0">
             <dt class="font-bold text-ribbon-teal uppercase tracking-wider shrink-0">Frequency</dt>
             <dd class="font-semibold text-on-surface truncate">{{ titleCase(template.frequency) }}</dd>
           </div>
-          <div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-ribbon-purple/8 border border-ribbon-purple/15 min-w-0">
+          <div
+            class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-ribbon-purple/8 border border-ribbon-purple/15 min-w-0">
             <dt class="font-bold text-ribbon-purple uppercase tracking-wider shrink-0">Asset type</dt>
             <dd class="font-semibold text-on-surface truncate">{{ template.asset_type?.name }}</dd>
           </div>
@@ -86,12 +91,14 @@
         <!-- counters -->
         <div class="grid grid-cols-2 gap-2">
           <div class="rounded-xl border border-ribbon-blue/15 bg-ribbon-blue/8 px-3 py-2.5 min-w-0">
-            <p class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold text-ribbon-blue tabular-nums leading-none">
+            <p
+              class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold text-ribbon-blue tabular-nums leading-none">
               {{ liveSectionCount }}</p>
             <p class="text-xs sm:text-sm font-bold text-on-surface-variant mt-1 truncate">Sections</p>
           </div>
           <div class="rounded-xl border border-ribbon-teal/15 bg-ribbon-teal/8 px-3 py-2.5 min-w-0">
-            <p class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold text-ribbon-teal tabular-nums leading-none">
+            <p
+              class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold text-ribbon-teal tabular-nums leading-none">
               {{ liveTaskCount }}</p>
             <p class="text-xs sm:text-sm font-bold text-on-surface-variant mt-1 truncate">Tasks</p>
           </div>
@@ -125,16 +132,15 @@
         <div class="g-card p-1.5 sm:p-2 max-w-full overflow-hidden">
           <div class="flex items-center gap-1 overflow-x-auto no-scrollbar">
             <button v-for="(s, i) in workSections" :key="i"
-              class="tab-btn shrink-0 whitespace-nowrap text-sm sm:text-base"
-              :class="{ 'tab-active': activeIdx === i }" @click="activeIdx = i">
+              class="tab-btn shrink-0 whitespace-nowrap text-sm sm:text-base" :class="{ 'tab-active': activeIdx === i }"
+              @click="activeIdx = i">
               <span class="w-2 h-2 rounded-full shrink-0" :class="activeIdx === i ? 'bg-white' : tint(i).dot" />
               <span class="truncate max-w-[38vw] sm:max-w-[240px]">{{ s.section || 'Untitled' }}</span>
               <span class="text-xs sm:text-sm font-bold tabular-nums px-1.5 rounded-full"
                 :class="activeIdx === i ? 'bg-white/20 text-white' : tint(i).pill">{{ taskCountOf(s) }}</span>
             </button>
             <button v-if="editing" type="button"
-              class="tab-btn shrink-0 whitespace-nowrap text-sm sm:text-base !text-ribbon-blue"
-              @click="addSection">
+              class="tab-btn shrink-0 whitespace-nowrap text-sm sm:text-base !text-ribbon-blue" @click="addSection">
               <font-awesome-icon :icon="['fas', 'plus']" class="text-xs" /><span>Add section</span>
             </button>
           </div>
@@ -180,8 +186,9 @@
                 :class="tint(activeIdx).tick">
                 <font-awesome-icon :icon="['fas', 'check']" class="text-[9px]" />
               </span>
-              <span class="text-sm sm:text-base md:text-lg text-on-surface leading-relaxed break-words flex-1 min-w-0">{{
-                task }}</span>
+              <span
+                class="text-sm sm:text-base md:text-lg text-on-surface leading-relaxed break-words flex-1 min-w-0">{{
+                  task }}</span>
               <span class="text-xs sm:text-sm font-mono shrink-0 pt-0.5 tabular-nums" :class="tint(activeIdx).num">{{
                 pad(ti + 1) }}</span>
             </li>
@@ -193,7 +200,8 @@
               class="group/task flex items-center gap-2 sm:gap-2.5 p-2 rounded-2xl border min-w-0"
               :class="tint(activeIdx).row">
               <span class="text-xs sm:text-sm font-mono w-6 text-right tabular-nums shrink-0"
-                :class="tint(activeIdx).num">{{ ti + 1 }}</span>
+                :class="tint(activeIdx).num">{{
+                ti + 1 }}</span>
               <input v-model="activeSectionData.tasks[ti]" placeholder="Task description…"
                 class="cust-input !py-2 flex-1 min-w-0 text-sm sm:text-base"
                 @keydown.enter.prevent="addTaskAfter(activeSectionData, ti)" />
@@ -264,6 +272,27 @@ const SECTION_TINT = [
   { border: 'border-ribbon-red', text: 'text-ribbon-red', iconBox: 'bg-ribbon-red/12 text-ribbon-red', pill: 'bg-ribbon-red/12 text-ribbon-red', row: 'bg-ribbon-red/8 border-ribbon-red/15', tick: 'bg-ribbon-red', dot: 'bg-ribbon-red', num: 'text-ribbon-red/50' },
 ]
 const tint = (i: number) => SECTION_TINT[i % 5]!
+
+type Crumb = { label: string; icon: string }
+const ORIGIN_TABS = {
+  overview: { label: 'Overview', icon: 'gauge-high' },
+  assets: { label: 'Assets', icon: 'server' },
+  issues: { label: 'All Assets Issues', icon: 'triangle-exclamation' },
+  maintenances: { label: 'All Assets Maintenances', icon: 'screwdriver-wrench' },
+  inspections: { label: 'All Assets Inspections', icon: 'clipboard-check' },
+  damages: { label: 'All Assets Damages', icon: 'house-crack' },
+  disposals: { label: 'All Assets Disposals', icon: 'trash-can' },
+  templates: { label: 'Inspection Templates', icon: 'clipboard-list' },
+  tools: { label: 'Tools', icon: 'wrench' },
+} satisfies Record<string, Crumb>
+// DEFAULT differs per page:  _uuid_ → assets | inspect → inspections
+//                            maintenance → maintenances | checklist → templates
+const originTab = computed(() => {
+  const f = route.query.from as string | undefined
+  return f && f in ORIGIN_TABS ? f : 'assets' /* ← per-page default */
+})
+// literal-key access → concrete Crumb (never undefined), so the ?? fallback collapses the union
+const originCrumb = computed<Crumb>(() => ORIGIN_TABS[originTab.value as keyof typeof ORIGIN_TABS] ?? ORIGIN_TABS.assets)
 
 // feedback
 const feedback = reactive<{ msg: string; kind: 'success' | 'error' | '' }>({ msg: '', kind: '' })
@@ -355,6 +384,8 @@ onMounted(loadTemplate)
 </script>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 /* glass island — duplicated from assets overview (scoped styles don't cross components) */
 .g-card {
   position: relative;
@@ -369,12 +400,21 @@ onMounted(loadTemplate)
 }
 
 @keyframes g-island-in {
-  0% { opacity: 0; transform: translateY(10px) scale(0.98); }
-  100% { opacity: 1; transform: translateY(0) scale(1); }
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 /* active section panel entrance when switching tabs */
-.animate-panel-in { animation: g-island-in 0.25s ease-out backwards; }
+.animate-panel-in {
+  animation: g-island-in 0.25s ease-out backwards;
+}
 
 /* section tab pills — same recipe as the overview tab bar */
 .tab-btn {
@@ -387,7 +427,11 @@ onMounted(loadTemplate)
   color: var(--color-on-surface-variant, #424656);
   transition: all 0.18s ease;
 }
-.tab-btn:hover:not(.tab-active) { background: rgba(61, 127, 191, 0.06); }
+
+.tab-btn:hover:not(.tab-active) {
+  background: rgba(61, 127, 191, 0.06);
+}
+
 .tab-active {
   background: var(--color-primary, #3d7fbf);
   color: #fff;
@@ -395,8 +439,14 @@ onMounted(loadTemplate)
 }
 
 /* hide scrollbar on the tab strip */
-.no-scrollbar::-webkit-scrollbar { display: none; }
-.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
 
 /* soft filled inputs — same recipe as the overview/register-customer inputs */
 .cust-input {
@@ -410,7 +460,18 @@ onMounted(loadTemplate)
   transition: all 0.2s ease;
   box-shadow: inset 0 0 0 1.5px transparent;
 }
-.cust-input::placeholder { color: rgba(114, 118, 135, 0.6); }
-.cust-input:focus { outline: none; box-shadow: inset 0 0 0 1.5px #3d7fbf; background: #f7f9fb; }
-.cust-input:hover:not(:focus) { background: #e6e8ea; }
+
+.cust-input::placeholder {
+  color: rgba(114, 118, 135, 0.6);
+}
+
+.cust-input:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 1.5px #3d7fbf;
+  background: #f7f9fb;
+}
+
+.cust-input:hover:not(:focus) {
+  background: #e6e8ea;
+}
 </style>

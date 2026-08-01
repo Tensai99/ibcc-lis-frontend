@@ -184,7 +184,7 @@ const columns = [
         <AppAlert v-if="formError" type="error" :title="formError" />
 
         <div class="alert-warning text-xs sm:text-sm">
-          <font-awesome-icon :icon="['fas','triangle-exclamation']" class="flex-shrink-0" />
+          <font-awesome-icon :icon="['fas','triangle-exclamation']" class="shrink-0" />
           All disposal records are permanent and subject to authorisation review.
         </div>
 

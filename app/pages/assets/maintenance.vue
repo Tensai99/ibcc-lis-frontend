@@ -11,9 +11,9 @@
       <div class="mb-5">
         <nav
           class="inline-flex items-center gap-1 bg-white/80 border border-white/50 rounded-xl px-2 py-1.5 text-xs sm:text-sm shadow-sm flex-wrap">
-          <NuxtLink :to="{ path: `/assets/overview`, query: { tab: 'maintenances' } }"
+          <NuxtLink :to="{ path: `/assets/overview`, query: { tab: originTab } }"
             class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-on-surface transition-colors">
-            <font-awesome-icon :icon="['fas', 'server']" class="text-[11px]" />Assets Overview
+            <font-awesome-icon :icon="['fas', originCrumb.icon]" class="text-[11px]" />{{ originCrumb.label }}
           </NuxtLink>
 
           <template v-if="resolvedAssetUuid">
@@ -45,15 +45,16 @@
         <SkeletonStatGrid :count="4" grid-class="grid-cols-2 lg:grid-cols-4" />
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
           <SkeletonPanel :bars="3" />
-          <div class="lg:col-span-2"><SkeletonPanel :bars="4" /></div>
+          <div class="lg:col-span-2">
+            <SkeletonPanel :bars="4" />
+          </div>
         </div>
       </template>
       <div v-else-if="loading" />
 
       <!-- not found -->
       <div v-else-if="!record" class="g-card p-10 text-center">
-        <div
-          class="w-14 h-14 rounded-2xl bg-error/10 text-error flex items-center justify-center mx-auto mb-4">
+        <div class="w-14 h-14 rounded-2xl bg-error/10 text-error flex items-center justify-center mx-auto mb-4">
           <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-2xl" />
         </div>
         <h3 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold text-on-surface mb-1">Maintenance not
@@ -94,10 +95,12 @@
                 <span class="px-3 py-1 rounded-lg font-bold bg-surface-high text-on-surface-variant whitespace-nowrap">
                   {{ titleCase(record.frequency) }}<span v-if="record.quarter"> · {{ record.quarter }}</span>
                 </span>
-                <span v-if="record.department" class="px-3 py-1 rounded-lg font-bold bg-ribbon-purple/12 text-ribbon-purple break-words">
+                <span v-if="record.department"
+                  class="px-3 py-1 rounded-lg font-bold bg-ribbon-purple/12 text-ribbon-purple break-words">
                   <span class="ribbon-dot-purple inline-block mr-1.5" />{{ record.department }}
                 </span>
-                <span v-if="record.by_external_contractor" class="px-3 py-1 rounded-lg font-bold bg-ribbon-amber/12 text-ribbon-amber whitespace-nowrap">
+                <span v-if="record.by_external_contractor"
+                  class="px-3 py-1 rounded-lg font-bold bg-ribbon-amber/12 text-ribbon-amber whitespace-nowrap">
                   <font-awesome-icon :icon="['fas', 'building']" class="mr-1" />External contractor
                 </span>
               </div>
@@ -151,7 +154,7 @@
                 class="flex justify-between gap-3 border-b border-outline-variant/10 pb-2 min-w-0">
                 <span class="text-xs sm:text-sm text-on-surface-variant whitespace-nowrap">{{ row.label }}</span>
                 <span class="text-xs sm:text-sm font-semibold text-on-surface text-right break-words">{{ row.value
-                  }}</span>
+                }}</span>
               </div>
             </div>
 
@@ -302,6 +305,28 @@ const canWrite = computed(() => can('asset_management') || PRIVILEGED_ROLES.incl
 // statuses that still allow completion
 const OPEN_STATUSES = ['PLANNED', 'SCHEDULED', 'IN_PROGRESS', 'ON_HOLD']
 
+// ── Tabs ────────────────────────────────────────────────────────────
+type Crumb = { label: string; icon: string }
+const ORIGIN_TABS = {
+  overview: { label: 'Overview', icon: 'gauge-high' },
+  assets: { label: 'Assets', icon: 'server' },
+  issues: { label: 'All Assets Issues', icon: 'triangle-exclamation' },
+  maintenances: { label: 'All Assets Maintenances', icon: 'screwdriver-wrench' },
+  inspections: { label: 'All Assets Inspections', icon: 'clipboard-check' },
+  damages: { label: 'All Assets Damages', icon: 'house-crack' },
+  disposals: { label: 'All Assets Disposals', icon: 'trash-can' },
+  templates: { label: 'Inspection Templates', icon: 'clipboard-list' },
+  tools: { label: 'Tools', icon: 'wrench' },
+} satisfies Record<string, Crumb>
+// DEFAULT differs per page:  _uuid_ → assets | inspect → inspections
+//                            maintenance → maintenances | checklist → templates
+const originTab = computed(() => {
+  const f = route.query.from as string | undefined
+  return f && f in ORIGIN_TABS ? f : 'assets' /* ← per-page default */
+})
+// literal-key access → concrete Crumb (never undefined), so the ?? fallback collapses the union
+const originCrumb = computed<Crumb>(() => ORIGIN_TABS[originTab.value as keyof typeof ORIGIN_TABS] ?? ORIGIN_TABS.assets)
+
 // ── feedback ─────────────────────────────────────────────────────────────────
 const feedback = reactive<{ msg: string; kind: 'success' | 'error' | '' }>({ msg: '', kind: '' })
 const flash = (msg: string, kind: 'success' | 'error' = 'success') => {
@@ -414,6 +439,8 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .g-card {
   position: relative;
   background: rgba(255, 255, 255, 0.72);
@@ -436,13 +463,29 @@ onMounted(async () => {
   border-radius: 9999px;
 }
 
-.ribbon-dot-blue { background: #3d7fbf; }
-.ribbon-dot-teal { background: #3dae8c; }
-.ribbon-dot-amber { background: #e8a33d; }
-.ribbon-dot-purple { background: #b05fa8; }
-.ribbon-dot-red { background: #c0395a; }
+.ribbon-dot-blue {
+  background: #3d7fbf;
+}
 
-.filter-wrap { position: relative; }
+.ribbon-dot-teal {
+  background: #3dae8c;
+}
+
+.ribbon-dot-amber {
+  background: #e8a33d;
+}
+
+.ribbon-dot-purple {
+  background: #b05fa8;
+}
+
+.ribbon-dot-red {
+  background: #c0395a;
+}
+
+.filter-wrap {
+  position: relative;
+}
 
 .filter-select {
   appearance: none;
@@ -478,7 +521,14 @@ onMounted(async () => {
 }
 
 @keyframes island-in {
-  from { opacity: 0; transform: translateY(16px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 </style>

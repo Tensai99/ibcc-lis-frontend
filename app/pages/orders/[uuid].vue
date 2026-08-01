@@ -4,35 +4,38 @@
 
     <!-- Breadcrumb (pill) -->
     <div class="mb-1">
-      <nav class="inline-flex items-center gap-1 bg-white/80 border border-white/50 rounded-xl px-2 py-1.5 text-xs shadow-sm">
+      <nav
+        class="inline-flex items-center gap-1 bg-white/80 border border-white/50 rounded-xl px-2 py-1.5 text-xs shadow-sm">
         <NuxtLink to="/orders"
           class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-on-surface transition-colors">
           <font-awesome-icon :icon="['fas', 'vials']" class="text-[11px]" />Laboratory Orders
         </NuxtLink>
         <font-awesome-icon :icon="['fas', 'chevron-right']" class="text-[9px] text-outline/40" />
         <span v-if="order" class="flex items-center gap-1.5 px-2 py-1 text-on-surface font-semibold">
-          <font-awesome-icon :icon="['fas', 'flask-vial']" class="text-[11px] text-primary" />{{ order.accession_number }}
+          <font-awesome-icon :icon="['fas', 'flask-vial']" class="text-[11px] text-primary" />{{ order.accession_number
+          }}
         </span>
       </nav>
     </div>
 
     <!-- Loading -->
     <div v-if="loading" class="island flex flex-col items-center justify-center gap-3 py-20">
-      <font-awesome-icon :icon="['fas','circle-notch']" class="text-3xl text-primary animate-spin" />
+      <font-awesome-icon :icon="['fas', 'circle-notch']" class="text-3xl text-primary animate-spin" />
       <p class="text-sm text-on-surface-variant">Loading order…</p>
     </div>
 
     <!-- Error -->
     <div v-else-if="error" class="island flex flex-col items-center justify-center gap-3 py-20 text-center">
       <div class="w-14 h-14 rounded-full bg-error-container flex items-center justify-center">
-        <font-awesome-icon :icon="['fas','triangle-exclamation']" class="text-2xl text-error" />
+        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-2xl text-error" />
       </div>
       <p class="text-sm text-on-surface-variant max-w-md">{{ error }}</p>
       <div class="flex gap-2">
         <NuxtLink to="/orders" class="btn-secondary">
-          <font-awesome-icon :icon="['fas','arrow-left']" /><span>Back to orders</span>
+          <font-awesome-icon :icon="['fas', 'arrow-left']" /><span>Back to orders</span>
         </NuxtLink>
-        <button type="button" class="btn-secondary" @click="load"><font-awesome-icon :icon="['fas','rotate-right']" /><span>Retry</span></button>
+        <button type="button" class="btn-secondary" @click="load"><font-awesome-icon
+            :icon="['fas', 'rotate-right']" /><span>Retry</span></button>
       </div>
     </div>
 
@@ -60,22 +63,26 @@
             <!-- Advanced options dropdown (holds all workflow actions) -->
             <div class="relative">
               <button type="button" class="hdr-btn" @click="advOpen = !advOpen">
-                <font-awesome-icon :icon="['fas','sliders']" />
+                <font-awesome-icon :icon="['fas', 'sliders']" />
                 <span>Advanced options</span>
-                <font-awesome-icon :icon="['fas','chevron-down']"
-                  class="text-[0.65rem] transition-transform" :class="advOpen ? 'rotate-180' : ''" />
+                <font-awesome-icon :icon="['fas', 'chevron-down']" class="text-[0.65rem] transition-transform"
+                  :class="advOpen ? 'rotate-180' : ''" />
               </button>
               <div v-if="advOpen" class="fixed inset-0 z-20" @click="advOpen = false" />
               <div v-if="advOpen"
                 class="absolute right-0 top-full mt-2 w-56 rounded-xl bg-surface-lowest shadow-island border border-outline-variant/40 py-1 z-30">
                 <button type="button" class="adv-item" @click="openUpdate(); advOpen = false">
-                  <font-awesome-icon :icon="['fas','pen-to-square']" class="text-primary" /><span>Update order</span>
+                  <font-awesome-icon :icon="['fas', 'pen-to-square']" class="text-primary" /><span>Update order</span>
                 </button>
                 <button type="button" class="adv-item" @click="openCollect(); advOpen = false">
-                  <font-awesome-icon :icon="['fas','droplet']" class="text-ribbon-teal" /><span>Collect specimen</span>
+                  <font-awesome-icon :icon="['fas', 'droplet']" class="text-ribbon-teal" /><span>Collect specimen</span>
                 </button>
                 <button type="button" class="adv-item" @click="receiveOpen = true; advOpen = false">
-                  <font-awesome-icon :icon="['fas','inbox']" class="text-ribbon-amber" /><span>Receive order</span>
+                  <font-awesome-icon :icon="['fas', 'inbox']" class="text-ribbon-amber" /><span>Receive order</span>
+                </button>
+                <div class="my-1 h-px bg-outline-variant/40" />
+                <button type="button" class="adv-item" @click="openVoid(); advOpen = false">
+                  <font-awesome-icon :icon="['fas', 'trash-can']" class="text-ribbon-red" /><span>Delete order</span>
                 </button>
               </div>
             </div>
@@ -127,14 +134,14 @@
           <div class="island">
             <h3 class="section-heading">Workflow</h3>
             <div v-if="order.encounters?.length" class="space-y-3">
-              <div v-for="e in order.encounters" :key="e.id"
-                class="rounded-xl border-l-4 bg-surface-low/60 px-3 py-2.5" :class="tatAccent(e.tat_status)">
+              <div v-for="e in order.encounters" :key="e.id" class="rounded-xl border-l-4 bg-surface-low/60 px-3 py-2.5"
+                :class="tatAccent(e.tat_status)">
                 <div class="flex items-center justify-between gap-2">
                   <span class="font-semibold text-sm">{{ titleCase(e.type) }}</span>
                   <span :class="tatChip(e.tat_status)">{{ titleCase(e.tat_status || e.status) }}</span>
                 </div>
                 <p class="text-xs text-on-surface-variant mt-1">
-                  <font-awesome-icon :icon="['fas','clock']" class="mr-1 opacity-70" />
+                  <font-awesome-icon :icon="['fas', 'clock']" class="mr-1 opacity-70" />
                   Due {{ fmtDate(e.due_at) }}
                 </p>
                 <p v-if="e.performed_by" class="text-xs text-on-surface-variant">By {{ e.performed_by }}</p>
@@ -149,7 +156,7 @@
           <h3 class="section-heading">Notes</h3>
           <ul class="space-y-2">
             <li v-for="(n, i) in order.notes" :key="i" class="text-sm text-on-surface flex gap-2">
-              <font-awesome-icon :icon="['fas','notes-medical']" class="text-ribbon-purple mt-0.5" />
+              <font-awesome-icon :icon="['fas', 'notes-medical']" class="text-ribbon-purple mt-0.5" />
               <span>{{ typeof n === 'string' ? n : (n.body || n.note || JSON.stringify(n)) }}</span>
             </li>
           </ul>
@@ -162,17 +169,26 @@
           <div class="overflow-x-auto">
             <table class="his-table">
               <thead>
-                <tr><th>Accession</th><th>Test</th><th>Code</th><th>Sample</th><th>Status</th></tr>
+                <tr>
+                  <th>Accession</th>
+                  <th>Test</th>
+                  <th>Code</th>
+                  <th>Sample</th>
+                  <th>Status</th>
+                </tr>
               </thead>
               <tbody>
-                <tr v-for="t in order.tests" :key="t.uuid">
-                  <!-- ribbon variant: status-coloured left accent on the row -->
+                <tr v-for="t in order.tests" :key="t.uuid" class="cursor-pointer"
+                  @click="router.push({ path: `/orders/test/${t.uuid}`, query: { order: order.uuid } })">
                   <td class="font-semibold text-primary whitespace-nowrap border-l-4" :class="rowAccent(t.status)">
-                    {{ t.accession_number }}
+                    <NuxtLink :to="{ path: `/orders/test/${t.uuid}`, query: { order: order.uuid } }"
+                      class="hover:underline" @click.stop>
+                      {{ t.accession_number }}
+                    </NuxtLink>
                   </td>
-                  <td>{{ t.test_name }}</td>
-                  <td class="text-on-surface-variant">{{ t.test_code }}</td>
-                  <td>{{ t.sample_name || '—' }}</td>
+                  <td class="break-words">{{ t.test_name }}</td>
+                  <td class="text-on-surface-variant whitespace-nowrap">{{ t.test_code }}</td>
+                  <td class="break-words">{{ t.sample_name || '—' }}</td>
                   <td><span :class="statusClass(t.status)">{{ titleCase(t.status) }}</span></td>
                 </tr>
                 <tr v-if="!order.tests?.length">
@@ -186,15 +202,17 @@
     </template>
 
     <!-- ═══ Update modal ═══ -->
-    <Modal v-model="updateOpen" title="Update order" :subtitle="order?.accession_number" class="w-[760px] max-w-[95vw]">
+    <Modal v-model="updateOpen" title="Update order" :subtitle="order?.accession_number"
+      class="w-[760px] max-w-[70%  ]">
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label class="input-label">Scheduled for</label>
           <input v-model="uForm.scheduled_for" type="datetime-local" class="input-field" />
         </div>
         <div>
-          <label class="input-label">Specimen site ID</label>
-          <input v-model="uForm.laboratory_specimen_site_id" type="number" class="input-field" placeholder="laboratory_specimen_site_id" />
+          <label class="input-label">Specimen site</label>
+          <SearchSelect v-model="uForm.laboratory_specimen_site_uuid" :options="siteOptions" label-key="label"
+            value-key="value" placeholder="Search specimen site…" :clearable="true" />
         </div>
         <div>
           <label class="input-label">Requested by</label>
@@ -210,7 +228,8 @@
         </div>
         <div>
           <label class="input-label">Referring facility type</label>
-          <input v-model="uForm.referring_facility_type" type="text" class="input-field" placeholder="e.g. hospital, clinic" />
+          <input v-model="uForm.referring_facility_type" type="text" class="input-field"
+            placeholder="e.g. hospital, clinic" />
         </div>
         <div>
           <label class="input-label">Urgency</label>
@@ -228,58 +247,95 @@
         </div>
         <div class="sm:col-span-2">
           <label class="input-label">Clinical details</label>
-          <textarea v-model="uForm.clinical_details" rows="3" class="input-field" placeholder="Relevant clinical history / indication…" />
-          <p class="text-xs text-on-surface-variant mt-1">Sent as <code>laboratory_order[clinical_details]</code> ({{ '{' }} notes: … {{ '}' }}). Adjust the shape if your API expects different keys.</p>
+          <ConsultNoteEditor v-model="uForm.clinical_details"
+            placeholder="Relevant clinical history, indication, prior findings…" />
         </div>
       </div>
       <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
       <template #footer>
         <button type="button" class="btn-secondary" @click="updateOpen = false">Cancel</button>
         <button type="button" class="btn-primary" :disabled="saving" @click="submitUpdate">
-          <font-awesome-icon v-if="saving" :icon="['fas','circle-notch']" class="animate-spin" />
+          <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
           <span>Save changes</span>
         </button>
       </template>
     </Modal>
 
     <!-- ═══ Collect modal ═══ -->
-    <Modal v-model="collectOpen" title="Collect specimen" :subtitle="order?.accession_number" class="w-[520px] max-w-[95vw]">
+    <Modal v-model="collectOpen" title="Collect specimen" :subtitle="order?.accession_number"
+      class="w-[520px] max-w-2xl">
       <div class="space-y-4">
         <div>
           <label class="input-label">Collected at</label>
           <input v-model="cForm.collected_at" type="datetime-local" class="input-field" />
         </div>
         <div>
-          <label class="input-label">Specimen site ID</label>
-          <input v-model="cForm.laboratory_specimen_site_id" type="number" class="input-field" placeholder="laboratory_specimen_site_id" />
+          <label class="input-label">Specimen site</label>
+          <SearchSelect v-model="cForm.laboratory_specimen_site_uuid" :options="siteOptions" label-key="label"
+            value-key="value" placeholder="Search specimen site…" :clearable="true" />
         </div>
       </div>
       <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
       <template #footer>
         <button type="button" class="btn-secondary" @click="collectOpen = false">Cancel</button>
         <button type="button" class="btn-primary" :disabled="saving" @click="submitCollect">
-          <font-awesome-icon v-if="saving" :icon="['fas','circle-notch']" class="animate-spin" />
+          <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
           <span>Mark collected</span>
         </button>
       </template>
     </Modal>
 
     <!-- ═══ Receive modal ═══ -->
-    <Modal v-model="receiveOpen" title="Receive order" :subtitle="order?.accession_number" class="w-[460px] max-w-[95vw]">
+    <Modal v-model="receiveOpen" title="Receive order" :subtitle="order?.accession_number" class="w-[460px] max-w-xl">
       <div class="flex items-start gap-3">
         <div class="w-11 h-11 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
-          <font-awesome-icon :icon="['fas','inbox']" class="text-primary" />
+          <font-awesome-icon :icon="['fas', 'inbox']" class="text-primary" />
         </div>
         <p class="text-sm text-on-surface">
-          Mark <span class="font-semibold">{{ order?.accession_number }}</span> as received at the laboratory? This stamps the reception step.
+          Mark <span class="font-semibold">{{ order?.accession_number }}</span> as received at the laboratory? This
+          stamps
+          the reception step.
         </p>
       </div>
       <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
       <template #footer>
         <button type="button" class="btn-secondary" @click="receiveOpen = false">Cancel</button>
         <button type="button" class="btn-primary" :disabled="saving" @click="submitReceive">
-          <font-awesome-icon v-if="saving" :icon="['fas','circle-notch']" class="animate-spin" />
+          <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
           <span>Confirm receive</span>
+        </button>
+      </template>
+    </Modal>
+
+    <!-- ═══ Void (delete) modal ═══ -->
+    <Modal v-model="voidOpen" title="Delete order" :subtitle="order?.accession_number" class="w-[640px] max-w-[95vw]">
+      <div class="flex items-start gap-3 mb-4">
+        <div class="w-11 h-11 rounded-full bg-error-container flex items-center justify-center shrink-0">
+          <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-error" />
+        </div>
+        <p class="text-sm text-on-surface">
+          Void <span class="font-semibold">{{ order?.accession_number }}</span>? This cancels the order and preserves
+          the
+          audit trail — it cannot be undone.
+        </p>
+      </div>
+
+      <div>
+        <label class="input-label">Reason for voiding <span class="text-error">*</span></label>
+        <ConsultNoteEditor v-model="vForm.voided_reason"
+          placeholder="Explain why this order is being voided (mis-accession, duplicate, wrong patient, sample rejected…)" />
+        <p class="text-xs text-on-surface-variant mt-1">
+          Sent as <code>voided_reason</code>. Required.
+        </p>
+      </div>
+
+      <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
+
+      <template #footer>
+        <button type="button" class="btn-secondary" @click="voidOpen = false">Cancel</button>
+        <button type="button" class="btn-danger" :disabled="saving || !hasVoidReason" @click="submitVoid">
+          <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
+          <span>Confirm delete</span>
         </button>
       </template>
     </Modal>
@@ -301,15 +357,34 @@
 <script setup lang="ts">
 import { ref, reactive, computed, h, onMounted } from 'vue'
 import type { LabOrderDetail } from '~/composables/useLaboratory'
+import { useLaboratorySettings } from '~/composables/useLaboratorySettings'
 
 const route = useRoute()
-const { showOrder, updateOrder, collectOrder, receiveOrder } = useLaboratory()
+const router = useRouter()
+const { showOrder, updateOrder, collectOrder, receiveOrder, voidOrder } = useLaboratory()
+
+// Preloaded settings — specimen sites for the searchable combobox
+const { specimenSites, loaded: settingsLoaded, preload: preloadSettings } = useLaboratorySettings()
+// Belt-and-braces: if the client plugin didn't run yet, kick a load now.
+onMounted(() => { if (!settingsLoaded.value) preloadSettings() })
+
+// ── Specimen-site combobox state ─────────────────────────────────────────
+
+const activeSites = computed(() => specimenSites.value.filter(s => s.active))
+
+// Options for SearchSelect: [{ label: "Breast — Breast", value: "<uuid>" }, …]
+const siteOptions = computed(() =>
+  activeSites.value.map(s => ({
+    label: s.body_system ? `${s.name} — ${s.body_system}` : s.name,
+    value: s.uuid,
+  })),
+)
 
 const uuid = computed(() => (route.params.uuid as string) || '')
 
-const order   = ref<LabOrderDetail | null>(null)
+const order = ref<LabOrderDetail | null>(null)
 const loading = ref(true)
-const error   = ref<string | null>(null)
+const error = ref<string | null>(null)
 
 // active body tab + header dropdown
 const tab = ref<'general' | 'tests'>('general')
@@ -349,19 +424,34 @@ const toLocalInput = (iso: string | null) => {
 const toIso = (local: string) => (local ? new Date(local).toISOString() : undefined)
 
 // ── modal state ──────────────────────────────────────────────────────────────
-const updateOpen  = ref(false)
+const updateOpen = ref(false)
 const collectOpen = ref(false)
 const receiveOpen = ref(false)
-const saving      = ref(false)
-const formError   = ref<string | null>(null)
+const saving = ref(false)
+const formError = ref<string | null>(null)
+
+const voidOpen = ref(false)
+const vForm = reactive<{ voided_reason: string }>({ voided_reason: '' })
+
+// The ConsultNoteEditor outputs HTML — strip tags to check there's actual content
+// (an empty CKEditor emits "<p>&nbsp;</p>" or "<p></p>").
+const hasVoidReason = computed(() => {
+  const text = (vForm.voided_reason || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim()
+  return text.length > 0
+})
+
+const openVoid = () => {
+  vForm.voided_reason = ''
+  voidOpen.value = true
+}
 
 const uForm = reactive<Record<string, any>>({
-  scheduled_for: '', laboratory_specimen_site_id: '',
+  scheduled_for: '', laboratory_specimen_site_uuid: '',
   requested_by_name: '', requested_by_occupation: '',
   referring_facility: '', referring_facility_type: '',
   urgency: '', disposition: '', clinical_details: '',
 })
-const cForm = reactive<Record<string, any>>({ collected_at: '', laboratory_specimen_site_id: '' })
+const cForm = reactive<Record<string, any>>({ collected_at: '', laboratory_specimen_site_uuid: '' })
 
 const openUpdate = () => {
   formError.value = null
@@ -374,7 +464,7 @@ const openUpdate = () => {
     uForm.referring_facility_type = ''
     uForm.urgency = o.urgency ?? ''
     uForm.disposition = o.disposition ?? ''
-    uForm.laboratory_specimen_site_id = ''
+    uForm.laboratory_specimen_site_uuid = ''
     uForm.clinical_details = o.clinical_details?.notes ?? ''
   }
   updateOpen.value = true
@@ -382,7 +472,7 @@ const openUpdate = () => {
 const openCollect = () => {
   formError.value = null
   cForm.collected_at = toLocalInput(new Date().toISOString())
-  cForm.laboratory_specimen_site_id = ''
+  cForm.laboratory_specimen_site_uuid = ''
   collectOpen.value = true
 }
 
@@ -402,24 +492,34 @@ const run = async (fn: () => Promise<any>, ok: string, close: () => void) => {
 }
 
 const submitUpdate = () => run(() => updateOrder(uuid.value, {
-  scheduled_for: toIso(uForm.scheduled_for),
-  laboratory_specimen_site_id: uForm.laboratory_specimen_site_id || undefined,
+  laboratory_specimen_site_uuid: uForm.laboratory_specimen_site_uuid || undefined,
+  scheduled_for: toIso(uForm.scheduled_for) || undefined,
   requested_by_name: uForm.requested_by_name || undefined,
   requested_by_occupation: uForm.requested_by_occupation || undefined,
   referring_facility: uForm.referring_facility || undefined,
   referring_facility_type: uForm.referring_facility_type || undefined,
   urgency: uForm.urgency || undefined,
   disposition: uForm.disposition || undefined,
-  // object → JSON-stringified by toForm; reshape if the API expects other keys
-  clinical_details: uForm.clinical_details ? { notes: uForm.clinical_details } : undefined,
+  clinical_details: uForm.clinical_details
+    ? { notes: uForm.clinical_details }
+    : undefined,
 }), 'Order updated.', () => (updateOpen.value = false))
 
 const submitCollect = () => run(() => collectOrder(uuid.value, {
-  collected_at: toIso(cForm.collected_at),
-  laboratory_specimen_site_id: cForm.laboratory_specimen_site_id || undefined,
+  collected_at: toIso(cForm.collected_at) || undefined,
+  laboratory_specimen_site_uuid: cForm.laboratory_specimen_site_uuid || undefined,
 }), 'Specimen collected.', () => (collectOpen.value = false))
 
 const submitReceive = () => run(() => receiveOrder(uuid.value), 'Order received.', () => (receiveOpen.value = false))
+
+const submitVoid = () => {
+  if (!hasVoidReason.value) { formError.value = 'A reason is required to void an order.'; return }
+  return run(
+    () => voidOrder(uuid.value, vForm.voided_reason),
+    'Order voided.',
+    () => { voidOpen.value = false; router.push('/orders') },
+  )
+}
 
 // ── toast ────────────────────────────────────────────────────────────────────
 const toast = reactive({ show: false, ok: true, msg: '' })
@@ -480,20 +580,33 @@ const Detail = (props: { label: string; value: string | number | null | undefine
 </script>
 
 <style scoped>
-.sub-label { @apply text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-2; }
-.empty-line { @apply text-sm text-on-surface-variant py-6 text-center; }
+.sub-label {
+  @apply text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-2;
+}
+
+.empty-line {
+  @apply text-sm text-on-surface-variant py-6 text-center;
+}
 
 /* translucent header action button on the gradient card */
 .hdr-btn {
-  @apply inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold
-         text-white bg-white/15 hover:bg-white/25 transition-colors;
+  @apply inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold text-white bg-white/15 hover:bg-white/25 transition-colors;
 }
+
 /* advanced-options dropdown items (white menu) */
 .adv-item {
   @apply w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors;
 }
 
 /* toast transition */
-.toast-enter-active, .toast-leave-active { transition: all 0.25s ease; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(10px); }
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.25s ease;
+}
+
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
 </style>

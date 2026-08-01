@@ -8,9 +8,9 @@
       <div class="mb-5">
         <nav
           class="inline-flex items-center gap-1 bg-white/80 border border-white/50 rounded-xl px-2 py-1.5 text-xs shadow-sm">
-          <NuxtLink :to="{ path: `/assets/overview`, query: { tab: 'assets' } }"
+          <NuxtLink :to="assetsHomeLink"
             class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-on-surface transition-colors">
-            <font-awesome-icon :icon="['fas', 'server']" class="text-[11px]" />Assets Overview
+            <font-awesome-icon :icon="['fas', originCrumb.icon]" class="text-[11px]" />{{ originCrumb.label }}
           </NuxtLink>
           <font-awesome-icon :icon="['fas', 'chevron-right']" class="text-[9px] text-outline/40" />
           <span v-if="asset" class="flex items-center gap-1.5 px-2 py-1 text-on-surface font-semibold">
@@ -33,7 +33,8 @@
           :class="{ 'tab-active': activeTab === t.key }" @click="activeTab = t.key">
           <font-awesome-icon :icon="['fas', t.icon]" class="text-sm" />
           <span>{{ t.label }}</span>
-          <span v-if="t.count != null" class="ml-0.5 min-w-[1.25rem] text-center text-[10px] font-bold px-1.5 py-0.5 rounded-full"
+          <span v-if="t.count != null"
+            class="ml-0.5 min-w-[1.25rem] text-center text-[10px] font-bold px-1.5 py-0.5 rounded-full"
             :class="activeTab === t.key ? 'bg-white/25' : 'bg-primary/10 text-primary'">{{ t.count }}</span>
         </button>
       </div>
@@ -53,18 +54,19 @@
                 <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-on-surface break-words">{{ asset.name }}</h1>
                 <span
                   class="bg-surface-high text-on-surface-variant px-3 py-1 rounded-full text-[11px] font-bold tracking-wide font-mono">{{
-                  asset.asset_tag }}</span>
+                    asset.asset_tag }}</span>
               </div>
               <div class="flex flex-wrap items-center gap-2 text-[12px]">
                 <span v-if="asset.type?.name"
-                  class="bg-primary/10 text-primary px-3 py-1 rounded-lg font-bold break-words">{{ asset.type.name
+                  class="bg-primary/10 text-primary px-3 py-1 rounded-lg font-bold break-words">Type: {{ asset.type.name
                   }}</span>
-                <span class="px-3 py-1 rounded-lg font-bold" :class="statusClass(asset.operational_status)">{{
+                <span class="px-3 py-1 rounded-lg font-bold" :class="statusClass(asset.operational_status)">Status: {{
                   titleCase(asset.operational_status) }}</span>
-                <span class="px-3 py-1 rounded-lg font-bold" :class="conditionClass(asset.condition)">{{
+                <span class="px-3 py-1 rounded-lg font-bold" :class="conditionClass(asset.condition)">Condition: {{
                   titleCase(asset.condition) }}</span>
                 <span v-if="asset.serial_number"
-                  class="bg-surface-variant text-on-surface-variant px-3 py-1 rounded-lg font-bold break-words">SN {{
+                  class="bg-surface-variant text-on-surface-variant px-3 py-1 rounded-lg font-bold break-words">Serial
+                  No: {{
                     asset.serial_number }}</span>
                 <span v-if="asset.has_pending_disposal_approval"
                   class="bg-ribbon-amber/15 text-ribbon-amber px-3 py-1 rounded-lg font-bold">disposal pending</span>
@@ -82,7 +84,7 @@
             <div class="flex items-center gap-2 shrink-0">
 
               <!-- Advanced Options -->
-              <div v-if="canWrite" class="relative">
+              <div class="relative">
                 <button
                   class="px-5 py-2.5 bg-white/60 border border-white/40 text-primary rounded-xl text-sm sm:text-base font-bold flex items-center gap-2 hover:bg-white/80 transition-all shadow-sm"
                   @click.stop="headerMenu = !headerMenu">
@@ -90,22 +92,26 @@
                     :icon="['fas', 'chevron-down']" class="text-xs" />
                 </button>
                 <div v-if="headerMenu" class="menu-pop" @click.stop>
-                  <button class="menu-item" @click="closeMenus(); openEdit()"><font-awesome-icon :icon="['fas', 'pen']"
-                      class="text-[14px]" /> Edit asset</button>
-                  <button v-if="asset.operational_status === 'IN_USE'"
-                    class="bg-ribbon-teal text-white px-5 py-3 text-sm sm:text-base font-bold flex items-center rounded-lg gap-2 hover:scale-105 active:scale-95 transition-all w-fit"
-                    @click="closeMenus(); navigateTo(`/assets/inspect?asset_uuid=${asset.uuid || route.params.uuid}`)"><font-awesome-icon
-                      :icon="['fas', 'clipboard-check']" /><span>Make Inspection</span></button>
-                  <button class="menu-item" @click="closeMenus(); openSchedule()"><font-awesome-icon
-                      :icon="['fas', 'screwdriver']" class="text-[14px]" />Schedule Maintenance</button>
-                  <button class="menu-item" @click="closeMenus(); openAllocate()"><font-awesome-icon
-                      :icon="['fas', 'dolly']" class="text-[14px]" /> Allocate</button>
-                  <button class="menu-item" @click="closeMenus(); openIssue()"><font-awesome-icon
-                      :icon="['fas', 'triangle-exclamation']" class="text-[14px]" /> Report issue</button>
-                  <button class="menu-item" @click="closeMenus(); openDamage()"><font-awesome-icon
-                      :icon="['fas', 'house-crack']" class="text-[14px]" /> Report damage</button>
-                  <button class="menu-item text-error" @click="closeMenus(); openDispose()"><font-awesome-icon
-                      :icon="['fas', 'trash-can']" class="text-[14px]" /> Dispose</button>
+                  <template v-if="canWrite">
+                    <button v-if="asset.operational_status === 'IN_USE'" class="menu-item"
+                      @click="closeMenus(); navigateTo(`/assets/inspect?asset_uuid=${asset.uuid || route.params.uuid}`)"><font-awesome-icon
+                        :icon="['fas', 'screwdriver-wrench']" />Inspect Asset</button>
+                    <button class="menu-item" @click="closeMenus(); openEdit()"><font-awesome-icon
+                        :icon="['fas', 'pen']" class="text-[14px]" /> Edit asset</button>
+                    <button class="menu-item" @click="closeMenus(); openSchedule()"><font-awesome-icon
+                        :icon="['fas', 'screwdriver']" class="text-[14px]" />Schedule Maintenance</button>
+                    <button class="menu-item" @click="closeMenus(); openAllocate()"><font-awesome-icon
+                        :icon="['fas', 'dolly']" class="text-[14px]" /> Allocate</button>
+                  </template>
+                  <template v-if="isCustodian">
+                    <button class="menu-item" @click="closeMenus(); openIssue()"><font-awesome-icon
+                        :icon="['fas', 'triangle-exclamation']" class="text-[14px]" /> Report issue</button>
+                    <button class="menu-item" @click="closeMenus(); openDamage()"><font-awesome-icon
+                        :icon="['fas', 'house-crack']" class="text-[14px]" /> Report damage</button>
+                    <button v-if="can('asset_management')" class="menu-item text-error"
+                      @click="closeMenus(); openDispose()"><font-awesome-icon :icon="['fas', 'trash-can']"
+                        class="text-[14px]" /> Dispose</button>
+                  </template>
                 </div>
               </div>
             </div>
@@ -121,7 +127,7 @@
                 class="flex justify-between gap-3 border-b border-outline-variant/10 pb-2">
                 <span class="text-xs sm:text-sm text-on-surface-variant">{{ row.label }}</span>
                 <span class="text-xs sm:text-sm font-semibold text-on-surface text-right break-words">{{ row.value
-                  }}</span>
+                }}</span>
               </div>
             </div>
 
@@ -180,7 +186,7 @@
                     titleCase(iss.severity) }}</span>
                   <span class="text-[10px] font-bold px-2 py-0.5 rounded-full"
                     :class="iss.status === 'RESOLVED' ? 'bg-ribbon-teal/15 text-ribbon-teal' : 'bg-ribbon-amber/15 text-ribbon-amber'">{{
-                    titleCase(iss.status) }}</span>
+                      titleCase(iss.status) }}</span>
                 </div>
               </div>
               <p class="text-sm sm:text-base text-on-surface break-words">{{ iss.fault_description }}</p>
@@ -191,8 +197,9 @@
                   @click="openFiles(iss, `Issue ${iss.reference_no} — Files`)">
                   <font-awesome-icon :icon="['fas', 'paperclip']" /><span>View Files ({{ filesOf(iss).length }})</span>
                 </button>
-                <button v-if="canWrite && iss.status !== 'RESOLVED'" class="btn-secondary !px-3 !py-1.5 text-xs sm:text-sm"
-                  @click="openSchedule(iss)"><font-awesome-icon :icon="['fas', 'screwdriver-wrench']" /><span>Schedule
+                <button v-if="canWrite && iss.status !== 'RESOLVED'"
+                  class="btn-secondary !px-3 !py-1.5 text-xs sm:text-sm" @click="openSchedule(iss)"><font-awesome-icon
+                    :icon="['fas', 'screwdriver-wrench']" /><span>Schedule
                     maintenance</span></button>
               </div>
             </div>
@@ -231,7 +238,7 @@
                     <div class="min-w-0">
                       <p class="font-medium break-words">{{ row.task }}</p>
                       <p class="text-on-surface-variant text-[11px]">{{ row.section }}<span v-if="row.comment"> · {{
-                          row.comment }}</span></p>
+                        row.comment }}</span></p>
                     </div>
                     <span class="shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full"
                       :class="row.result === 'PASSED' ? 'bg-ribbon-teal/15 text-ribbon-teal' : 'bg-error/10 text-error'">{{
@@ -273,19 +280,24 @@
                 m.fault_reported }}</p>
               <p v-if="m.work_description" class="text-sm text-on-surface break-words mt-1">{{ m.work_description }}</p>
               <p class="text-[11px] text-on-surface-variant mt-1">
-                Scheduled {{ m.scheduled_date }}<span v-if="m.completed_at"> · completed {{ fmtDateTime(m.completed_at) }}</span>
+                Scheduled {{ m.scheduled_date }}<span v-if="m.completed_at"> · completed {{ fmtDateTime(m.completed_at)
+                  }}</span>
                 <span v-if="m.next_due_on"> · next due {{ m.next_due_on }}</span>
               </p>
-              <p v-if="m.by_external_contractor && m.external_contractor" class="text-[11px] text-on-surface-variant mt-1">
+              <p v-if="m.by_external_contractor && m.external_contractor"
+                class="text-[11px] text-on-surface-variant mt-1">
                 Contractor: {{ m.external_contractor.entity_name }} ({{ m.external_contractor.full_name }} · {{
-                m.external_contractor.phone }})
+                  m.external_contractor.phone }})
               </p>
 
               <div v-if="m.parts?.length" class="mt-2 overflow-x-auto rounded-lg border border-outline-variant/10">
                 <table class="w-full text-left text-xs">
                   <thead class="bg-primary/5 text-on-surface-variant uppercase tracking-wider text-[10px]">
-                    <tr><th class="px-3 py-1.5">Part</th><th class="px-3 py-1.5 text-right">Qty</th>
-                      <th class="px-3 py-1.5 text-right">Cost</th></tr>
+                    <tr>
+                      <th class="px-3 py-1.5">Part</th>
+                      <th class="px-3 py-1.5 text-right">Qty</th>
+                      <th class="px-3 py-1.5 text-right">Cost</th>
+                    </tr>
                   </thead>
                   <tbody class="divide-y divide-outline-variant/10">
                     <tr v-for="(p, i) in m.parts" :key="i">
@@ -426,8 +438,9 @@
             @change="editPics = Array.from(($event.target as HTMLInputElement).files || [])" /></div>
       </div>
       <template #footer><button class="btn-secondary" @click="editModal = false">Cancel</button><button
-          class="btn-primary" :disabled="busy" @click="submitEdit"><font-awesome-icon :icon="['fas', 'check']" /><span>{{
-            busy ? 'Saving…' : 'Save changes' }}</span></button></template>
+          class="btn-primary" :disabled="busy" @click="submitEdit"><font-awesome-icon
+            :icon="['fas', 'check']" /><span>{{
+              busy ? 'Saving…' : 'Save changes' }}</span></button></template>
     </Modal>
 
     <!-- Allocate -->
@@ -656,7 +669,8 @@
     <!-- Files / pictures preview -->
     <Modal v-model="filesModal" :title="filesModalTitle" :show-logo="false" class="max-w-2xl">
       <div v-if="filesModalItems.length" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div v-for="f in filesModalItems" :key="f.id" class="rounded-xl border border-outline-variant/30 overflow-hidden">
+        <div v-for="f in filesModalItems" :key="f.id"
+          class="rounded-xl border border-outline-variant/30 overflow-hidden">
           <a v-if="isImageFile(f.url)" :href="f.url" target="_blank" rel="noopener" class="block">
             <img :src="f.url" :alt="fileName(f.url)" class="w-full h-48 object-cover" />
           </a>
@@ -665,7 +679,8 @@
             <font-awesome-icon :icon="['fas', 'file-lines']" class="text-3xl" />
             <span class="text-xs break-all px-3 text-center">{{ fileName(f.url) }}</span>
           </a>
-          <p v-if="f.uploaded_on" class="text-[10px] text-on-surface-variant px-3 py-1.5 border-t border-outline-variant/10">
+          <p v-if="f.uploaded_on"
+            class="text-[10px] text-on-surface-variant px-3 py-1.5 border-t border-outline-variant/10">
             Uploaded {{ fmtDateTime(f.uploaded_on) }}
           </p>
         </div>
@@ -690,6 +705,20 @@ const auth = useAuthStore()
 const can = (p: string) => auth.can(p)
 const PRIVILEGED_ROLES = ['system_administrator', 'bme_lead']
 const canWrite = computed(() => can('asset_management') || PRIVILEGED_ROLES.includes(auth.currentRole))
+const isCustodian = computed<boolean>(() =>
+  asset.value?.custodies?.some(
+    (c: { department: string;[key: string]: any }) =>
+      c.department === auth.currentUser?.department
+  ) ?? false
+)
+// Breadcrumb back-target: system_administrator + bme_lead see the full overview;
+// everyone else gets bounced to the departmental view.
+const OVERVIEW_ROLES = ['system_administrator', 'bme_lead']
+const assetsHomeLink = computed(() =>
+  OVERVIEW_ROLES.includes(auth.currentRole)
+    ? { path: '/assets/overview', query: { tab: originTab.value ?? 'assets' } }
+    : { path: '/assets/department' },
+)
 
 // enum option sets
 const CONDITIONS = ['VERY_GOOD', 'GOOD', 'FAIR', 'POOR', 'FAULTY']
@@ -732,6 +761,27 @@ const tabs = computed<{ key: TabKey; label: string; icon: string; count: number 
   { key: 'adjustments', label: 'Adjustments', icon: 'house-crack', count: adjustments.value.length || null },
 ])
 const activeTab = ref<TabKey>('overview')
+
+type Crumb = { label: string; icon: string }
+const ORIGIN_TABS = {
+  overview: { label: 'Overview', icon: 'gauge-high' },
+  assets: { label: 'Assets', icon: 'server' },
+  issues: { label: 'All Assets Issues', icon: 'triangle-exclamation' },
+  maintenances: { label: 'All Assets Maintenances', icon: 'screwdriver-wrench' },
+  inspections: { label: 'All Assets Inspections', icon: 'clipboard-check' },
+  damages: { label: 'All Assets Damages', icon: 'house-crack' },
+  disposals: { label: 'All Assets Disposals', icon: 'trash-can' },
+  templates: { label: 'Inspection Templates', icon: 'clipboard-list' },
+  tools: { label: 'Tools', icon: 'wrench' },
+} satisfies Record<string, Crumb>
+// DEFAULT differs per page:  _uuid_ → assets | inspect → inspections
+//                            maintenance → maintenances | checklist → templates
+const originTab = computed(() => {
+  const f = route.query.from as string | undefined
+  return f && f in ORIGIN_TABS ? f : 'assets' /* ← per-page default */
+})
+// literal-key access → concrete Crumb (never undefined), so the ?? fallback collapses the union
+const originCrumb = computed<Crumb>(() => ORIGIN_TABS[originTab.value as keyof typeof ORIGIN_TABS] ?? ORIGIN_TABS.assets)
 
 // damages + disposals merged into one feed, tagged with _kind for the shared card/actions
 const adjustments = computed(() => [
@@ -865,13 +915,11 @@ const submitIssue = async () => {
   catch (e: any) { flash(e.message || 'Failed to report issue', 'error') } finally { busy.value = false }
 }
 
-// ════════ INSPECT → page wizard ════════
-// inspection is now its own page; deep-link with the asset uuid pre-selected
-const goInspect = () => navigateTo(`/assets/inspect?asset_uuid=${uuid}`)
-
-// view an existing record on its dedicated page — both pages read ?uuid=<record_uuid>
-const goInspection = (insp: any) => navigateTo(`/assets/inspect?uuid=${insp.uuid}`)
-const goMaintenance = (m: any) => navigateTo(`/assets/maintenance?uuid=${m.uuid}`)
+// forward the origin tab so downstream breadcrumbs point back to the same tab
+const originFwd = (route.query.from as string) || 'assets'
+const goInspect = () => navigateTo(`/assets/inspect?asset_uuid=${uuid}&from=${originFwd}`)
+const goInspection = (insp: any) => navigateTo(`/assets/inspect?uuid=${insp.uuid}&from=${originFwd}`)
+const goMaintenance = (m: any) => navigateTo(`/assets/maintenance?uuid=${m.uuid}&from=${originFwd}`)
 
 // ════════ SCHEDULE MAINTENANCE ════════
 const scheduleModal = ref(false)
@@ -956,6 +1004,8 @@ onMounted(() => { loadAsset(); loadHistory(); loadTypes(); loadCountries(); load
 </script>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .detail-page {
   min-height: 100%;
   background: linear-gradient(135deg, #f7f9fb 0%, #d6e8fa 100%);

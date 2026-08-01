@@ -75,6 +75,11 @@ export interface LabOrderDetail extends LabOrderRow {
   notes: any[]
 }
 
+export interface LabTestDetail {
+  order: LabOrderDetail
+  test: LabOrderTest
+}
+
 // ── composable ───────────────────────────────────────────────────────────────
 export const useLaboratory = () => {
   const { request } = useApi()
@@ -97,6 +102,10 @@ export const useLaboratory = () => {
   const showOrder = (uuid: string) =>
     request<LabOrderDetail>(`/laboratory/order/show?uuid=${uuid}`)
 
+  // GET single test (order context + full test payload)
+  const showTest = (uuid: string, testUuid: string) =>
+    request<LabTestDetail>(`/laboratory/order/test/show${buildQuery({ uuid, test_uuid: testUuid })}`)
+
   // PATCH update — uuid + laboratory_order[...] keys
   const updateOrder = (uuid: string, fields: Record<string, any>) =>
     request<LabOrderDetail>('/laboratory/order/update', {
@@ -118,5 +127,20 @@ export const useLaboratory = () => {
       body: toForm({ uuid }),
     })
 
-  return { listOrders, showOrder, updateOrder, collectOrder, receiveOrder }
+  // PATCH void — uuid + voided_reason (flat keys)
+  const voidOrder = (uuid: string, voided_reason: string) =>
+    request<LabOrderDetail>('/laboratory/order/void', {
+      method: 'PATCH',
+      body: toForm({ uuid, voided_reason }),
+    })
+
+  // POST gross — uuid + test_uuid + blocks[] (each block: laboratory_order_test_container_type_uuid,
+  // label_range, description, decalcified, tissue_embedded)
+  const grossTest = (uuid: string, testUuid: string, blocks: Record<string, any>[]) =>
+    request<LabTestDetail>('/laboratory/order/test/gross', {
+      method: 'POST',
+      body: toForm({ uuid, test_uuid: testUuid, blocks }),
+    })
+
+  return { listOrders, showOrder, showTest, updateOrder, collectOrder, receiveOrder, voidOrder, grossTest }
 }

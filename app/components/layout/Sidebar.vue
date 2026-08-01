@@ -31,7 +31,7 @@
     <!-- ── Logo ──────────────────────────────────────────────────────── -->
     <div class="flex items-center justify-center px-4 pt-5 pb-5 flex-shrink-0">
       <img src="/images/ibcc_logo.png" alt="IBCC" class="object-contain"
-        style="height: auto; width: 220px; max-width: 100%;"
+        style="height: 100px; width: auto; max-width: 100%;"
         @error="($event.target as HTMLImageElement).style.display = 'none'" />
     </div>
 
@@ -102,7 +102,8 @@
               :style="{ gridTemplateRows: hovered === item.label ? '1fr' : '0fr' }">
               <div class="overflow-hidden">
                 <div class="pt-1.5 pb-1">
-                  <NuxtLink v-for="child in inactiveChildren(item)" :key="child.to" :to="child.to" class="flex items-center gap-2.5 py-2 ml-6 pl-3 mr-2
+                  <NuxtLink v-for="child in inactiveChildren(item)" :key="child.to" :to="child.to"
+                    class="flex items-center gap-2.5 py-2 ml-6 pl-3 mr-2
                            text-purple-400 hover:text-primary hover:border-b hover:border-primary transition-all duration-200 group/child" @click="$emit('close')">
                     <span class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center flex-shrink-0">
                       <font-awesome-icon :icon="child.icon"
@@ -135,9 +136,9 @@
               :style="{ gridTemplateRows: hovered === item.label ? '1fr' : '0fr' }">
               <div class="overflow-hidden">
                 <div class="pt-1 pb-1">
-                  <NuxtLink v-for="child in item.children" :key="child.to" :to="child.to" class="flex items-center gap-2.5 py-2 ml-6 pl-3 mr-2
-                           text-purple-400 hover:text-primary hover:border-b hover:border-primary transition-all duration-200 group/child"
-                    @click="$emit('close')">
+                  <NuxtLink v-for="child in item.children" :key="child.to" :to="child.to"
+                    class="flex items-center gap-2.5 py-2 ml-6 pl-3 mr-2
+                           text-purple-400 hover:text-primary hover:border-b hover:border-primary transition-all duration-200 group/child" @click="$emit('close')">
                     <span class="w-7 h-7 sm:w-8 sm:h-8 flex items-center justify-center flex-shrink-0">
                       <font-awesome-icon :icon="child.icon"
                         class="text-[0.8rem] group-hover/child:scale-110 transition-transform duration-200" />
@@ -249,14 +250,10 @@ const navItems = computed<NavItem[]>(() => {
     { to:'/billing/reports', icon:['fas','chart-bar'],           label:'Reports',  show: canAny(['report_view','report_export']) },*/
     // ── Settings GROUP — add a sub-page by appending ONE line to children ──
     {
-      to: '/admin/settings', icon: ['fas', 'sliders'], label: 'Settings',
-      show: canAny(['admin_users', 'admin_system']),
-      children: [
-        { to: '/admin/settings/billing', icon: ['fas', 'file-invoice-dollar'], label: 'Billing' },
-        { to: '/admin/settings/customers', icon: ['fas', 'user-tag'], label: 'Customers' },
-        { to: '/admin/settings/departments', icon: ['fas', 'hospital'], label: 'Departments' },
-        { to: '/admin/settings/users', icon: ['fas', 'user-gear'], label: 'Users' },
-      ],
+      to: '/admin/settings/laboratory',
+      icon: ['fas', 'sliders'],
+      label: 'Settings',
+      show: LAB_ADMIN_ROLES.includes(auth.currentRole),
     },
   ]
   return items.filter(i => i.show)
