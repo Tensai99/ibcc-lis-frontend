@@ -136,11 +136,44 @@ export const useLaboratory = () => {
 
   // POST gross — uuid + test_uuid + blocks[] (each block: laboratory_order_test_container_type_uuid,
   // label_range, description, decalcified, tissue_embedded)
-  const grossTest = (uuid: string, testUuid: string, blocks: Record<string, any>[]) =>
+  const grossTest = (
+    uuid: string,
+    testUuid: string,
+    blocks: Record<string, any>[],
+  ) =>
     request<LabTestDetail>('/laboratory/order/test/gross', {
       method: 'POST',
-      body: toForm({ uuid, test_uuid: testUuid, blocks }),
+      body: ({ uuid, test_uuid: testUuid, blocks }),
+      headers: { 'Content-Type': 'application/json' },
     })
 
-  return { listOrders, showOrder, showTest, updateOrder, collectOrder, receiveOrder, voidOrder, grossTest }
+  // POST section blocks — uuid + test_uuid + slides[]
+  // each slide: laboratory_order_test_block_uuid, label_range, stain, stain_category
+  const sectionBlocks = (
+    uuid: string,
+    testUuid: string,
+    slides: Record<string, any>[],
+  ) =>
+    request<LabTestDetail>('/laboratory/order/test/blocks/section', {
+      method: 'POST',
+      body: ({ uuid, test_uuid: testUuid, slides }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+  // PATCH stain slides — uuid + test_uuid + slide_uuids[]
+  const stainSlides = (
+    uuid: string,
+    testUuid: string,
+    slideUuids: string[],
+  ) =>
+    request<LabTestDetail>('/laboratory/order/test/slides/stain', {
+      method: 'PATCH',
+      body: ({ uuid, test_uuid: testUuid, slide_uuids: slideUuids }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+  return {
+    listOrders, showOrder, showTest, updateOrder, collectOrder, receiveOrder,
+    voidOrder, grossTest, sectionBlocks, stainSlides,
+  }
 }
