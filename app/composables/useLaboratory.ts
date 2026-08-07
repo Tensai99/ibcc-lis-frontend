@@ -172,8 +172,57 @@ export const useLaboratory = () => {
       headers: { 'Content-Type': 'application/json' },
     })
 
+  // PATCH image slides — uuid + test_uuid + slides[{ uuid, image_url }]
+  const imageSlides = (
+    uuid: string,
+    testUuid: string,
+    slides: { uuid: string; image_url: string }[],
+  ) =>
+    request<LabTestDetail>('/laboratory/order/test/slides/image', {
+      method: 'PATCH',
+      body: ({ uuid, test_uuid: testUuid, slides }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+  // POST results — uuid + test_uuid + results[]
+  // each row: analyte_name, one of (value_numeric | value_coded | value_text),
+  // optional: analyte_code, loinc_code, unit, reference_low/high/text,
+  // flag, status, is_critical, instrument, method, comment,
+  // critical_notified_to, critical_notified_at
+  const createResults = (
+    uuid: string,
+    testUuid: string,
+    results: Record<string, any>[],
+  ) =>
+    request<LabTestDetail>('/laboratory/order/test/results', {
+      method: 'POST',
+      body: ({ uuid, test_uuid: testUuid, results }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
+  // PATCH validate a single result — uuid + test_uuid + result_uuid + level (+ optional status)
+  const validateResult = (
+    uuid: string,
+    testUuid: string,
+    resultUuid: string,
+    level: 'technical' | 'clinical',
+    status?: 'final' | 'corrected' | 'amended',
+  ) =>
+    request<LabTestDetail>('/laboratory/order/test/result/validate', {
+      method: 'PATCH',
+      body: ({
+        uuid,
+        test_uuid: testUuid,
+        result_uuid: resultUuid,
+        level,
+        ...(status ? { status } : {}),
+      }),
+      headers: { 'Content-Type': 'application/json' },
+    })
+
   return {
     listOrders, showOrder, showTest, updateOrder, collectOrder, receiveOrder,
-    voidOrder, grossTest, sectionBlocks, stainSlides,
+    voidOrder, grossTest, sectionBlocks, stainSlides, imageSlides,
+    createResults, validateResult,
   }
 }

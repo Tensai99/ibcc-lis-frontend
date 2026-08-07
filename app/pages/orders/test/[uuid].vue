@@ -39,12 +39,21 @@
 
                 <Transition name="menu-fade">
                     <div v-if="advancedMenuOpen"
-                        class="absolute right-0 top-full mt-2 w-44 bg-white rounded-xl shadow-island-active border border-outline-variant/20 py-1.5 z-30">
+                        class="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-island-active border border-outline-variant/20 py-1.5 z-30">
                         <button type="button"
                             class="w-full flex items-center gap-2 px-3 py-2 text-sm sm:text-base text-on-surface hover:bg-surface-low transition-colors"
-                            @click="openGrossModal">
+                            @click="openGrossModal(); advancedMenuOpen = false">
                             <font-awesome-icon :icon="['fas', 'flask']" class="text-ribbon-purple shrink-0" />
                             <span>Gross</span>
+                        </button>
+
+                        <div class="my-1 border-t border-outline-variant/40"></div>
+
+                        <button type="button"
+                            class="w-full flex items-center gap-2 px-3 py-2 text-sm sm:text-base text-on-surface hover:bg-surface-low transition-colors"
+                            @click="openResultWizard(); advancedMenuOpen = false">
+                            <font-awesome-icon :icon="['fas', 'clipboard-check']" class="text-ribbon-blue shrink-0" />
+                            <span>Record result</span>
                         </button>
                     </div>
                 </Transition>
@@ -484,6 +493,25 @@
                                                     selected slides stained</p>
                                             </div>
                                         </button>
+
+                                        <div class="my-1 border-t border-outline-variant/40"></div>
+
+                                        <button type="button"
+                                            class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                            :disabled="imaging" @click="runImageSelected">
+                                            <span
+                                                class="w-7 h-7 rounded-lg bg-ribbon-teal/15 flex items-center justify-center text-ribbon-teal shrink-0">
+                                                <font-awesome-icon v-if="imaging" :icon="['fas', 'circle-notch']"
+                                                    class="animate-spin text-xs" />
+                                                <font-awesome-icon v-else :icon="['fas', 'camera']" class="text-xs" />
+                                            </span>
+                                            <div class="min-w-0 text-left">
+                                                <p class="font-semibold leading-tight">{{ imaging ? 'Uploading…' : 'Add slide images' }}</p>
+                                                <p class="text-[11px] text-on-surface-variant leading-tight">
+                                                    Attach each block's cassette label as the slide image
+                                                </p>
+                                            </div>
+                                        </button>
                                     </div>
                                 </Transition>
                             </div>
@@ -495,6 +523,13 @@
                             <font-awesome-icon :icon="['fas', 'triangle-exclamation']"
                                 class="text-error text-sm mt-0.5 shrink-0" />
                             <p class="text-xs sm:text-sm text-error break-words">{{ stainError }}</p>
+                        </div>
+
+                        <div v-if="imageError"
+                            class="flex items-start gap-2 p-3 rounded-xl bg-error-container/40 border border-error/20 mb-4 min-w-0">
+                            <font-awesome-icon :icon="['fas', 'triangle-exclamation']"
+                                class="text-error text-sm mt-0.5 shrink-0" />
+                            <p class="text-xs sm:text-sm text-error break-words">{{ imageError }}</p>
                         </div>
 
                         <!-- Grid -->
@@ -531,13 +566,28 @@
                                     </div>
                                 </div>
 
-                                <!-- Slide image preview (if any) -->
-                                <div v-if="slide.image_url"
-                                    class="rounded-xl border border-outline-variant/30 bg-white overflow-hidden mb-3">
+                                <!-- Slide image — first visual element so the card reads like a slide -->
+                                <div
+                                    class="rounded-xl border border-outline-variant/30 bg-white overflow-hidden mb-3 relative">
                                     <div
                                         class="relative bg-gradient-to-br from-secondary-fixed/40 to-surface-low aspect-[5/2] flex items-center justify-center">
-                                        <img :src="slide.image_url" :alt="`Slide ${slide.label}`"
-                                            class="max-h-full max-w-full object-contain p-1.5" loading="lazy" />
+                                        <!-- Actual image -->
+                                        <img v-if="slide.image_url" :src="slide.image_url" :alt="`Slide ${slide.label}`"
+                                            class="max-h-full max-w-full object-contain p-1.5" loading="lazy"
+                                            @error="($event.target as HTMLImageElement).dataset.failed = '1'" />
+
+                                        <!-- No image yet -->
+                                        <div v-else class="flex flex-col items-center gap-1 text-outline">
+                                            <font-awesome-icon :icon="['fas', 'image']" class="text-2xl" />
+                                            <span class="text-xs">Not imaged</span>
+                                        </div>
+
+                                        <!-- Imaged badge (top-right of preview) -->
+                                        <span v-if="slide.imaged"
+                                            class="absolute top-1.5 right-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-ribbon-teal text-white shadow-sm">
+                                            <font-awesome-icon :icon="['fas', 'camera']" class="text-[9px]" />
+                                            Imaged
+                                        </span>
                                     </div>
                                 </div>
 
@@ -551,7 +601,7 @@
                                         <span class="truncate">{{ slide.stain || '—' }}</span>
                                         <span class="text-[10px] font-normal text-on-surface-variant truncate">
                                             · {{ STAIN_CATEGORY_LABELS[slide.stain_category] ||
-                                            titleCase(slide.stain_category) }}
+                                                titleCase(slide.stain_category) }}
                                         </span>
                                     </p>
                                 </div>
@@ -606,8 +656,206 @@
                         </div>
                     </template>
                 </template>
-                <GenericRecordList v-else-if="tab === 'results'" :items="test.results" empty-icon="clipboard-check"
-                    empty-text="No results recorded yet." accent="purple" />
+                <!-- ── Results tab ────────────────────────────────────────────────── -->
+                <template v-else-if="tab === 'results'">
+                    <div v-if="!test.results?.length" class="text-center py-12 px-4">
+                        <div
+                            class="w-14 h-14 rounded-2xl bg-ribbon-purple/10 flex items-center justify-center mx-auto mb-3">
+                            <font-awesome-icon :icon="['fas', 'clipboard-check']"
+                                class="text-xl text-ribbon-purple/60" />
+                        </div>
+                        <p class="text-sm sm:text-base font-semibold text-on-surface">No results recorded yet</p>
+                        <p class="text-xs sm:text-sm text-on-surface-variant mt-0.5">
+                            Use <strong>Advanced Options → Record result</strong> to enter results for this test.
+                        </p>
+                    </div>
+
+                    <template v-else>
+                        <!-- Toolbar (unchanged) -->
+                        <div class="flex items-center justify-between gap-3 mb-4 sm:mb-5 min-w-0 flex-wrap">
+                            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                                <button type="button" class="checkbox-btn" :class="{
+                                    'checkbox-btn--checked': allResultsSelected,
+                                    'checkbox-btn--indeterminate': someResultsSelected,
+                                }" :aria-label="allResultsSelected ? 'Deselect all results' : 'Select all results'"
+                                    @click="toggleSelectAllResults">
+                                    <font-awesome-icon v-if="allResultsSelected" :icon="['fas', 'check']"
+                                        class="text-[10px] text-white" />
+                                    <font-awesome-icon v-else-if="someResultsSelected" :icon="['fas', 'minus']"
+                                        class="text-[10px] text-white" />
+                                </button>
+
+                                <div class="flex items-baseline gap-2 min-w-0">
+                                    <span class="text-sm font-semibold text-on-surface">
+                                        {{ selectedResultUuids.size ? `${selectedResultUuids.size} selected` : 'Select results' }}
+                                    </span>
+                                    <span class="text-[11px] text-on-surface-variant hidden sm:inline">
+                                        of {{ test.results.length }} total
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0">
+                                <span v-if="finalResultsCount"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs sm:text-sm font-semibold bg-ribbon-teal/10 text-ribbon-teal border border-ribbon-teal/25">
+                                    <font-awesome-icon :icon="['fas', 'circle-check']" class="text-[10px]" />
+                                    {{ finalResultsCount }} final
+                                </span>
+                                <span v-if="preliminaryResultsCount"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs sm:text-sm font-semibold bg-accent-fixed text-accent-on border border-accent/25">
+                                    <font-awesome-icon :icon="['fas', 'hourglass-half']" class="text-[10px]" />
+                                    {{ preliminaryResultsCount }} preliminary
+                                </span>
+                                <span v-if="criticalResultsCount"
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs sm:text-sm font-semibold bg-error text-white border border-error">
+                                    <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-[10px]" />
+                                    {{ criticalResultsCount }} critical
+                                </span>
+                            </div>
+
+                            <div v-if="selectedResultUuids.size" ref="resultsBulkMenuRef" class="relative shrink-0">
+                                <button type="button"
+                                    class="inline-flex items-center gap-2 pl-3 pr-2.5 py-2 rounded-xl bg-primary-gradient text-white shadow-island-active text-xs sm:text-sm font-semibold transition-all hover:opacity-95 active:scale-[0.98]"
+                                    :class="{ 'ring-2 ring-white/40': resultsBulkMenuOpen }"
+                                    @click="resultsBulkMenuOpen = !resultsBulkMenuOpen">
+                                    <span>Actions</span>
+                                    <font-awesome-icon :icon="['fas', 'ellipsis-vertical']" class="text-xs" />
+                                </button>
+                                <Transition name="menu-fade">
+                                    <div v-if="resultsBulkMenuOpen"
+                                        class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-island-active border border-outline-variant/20 py-1.5 z-30">
+                                        <button type="button"
+                                            class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors"
+                                            @click="openValidationModal">
+                                            <span
+                                                class="w-7 h-7 rounded-lg bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue shrink-0">
+                                                <font-awesome-icon :icon="['fas', 'user-check']" class="text-xs" />
+                                            </span>
+                                            <div class="min-w-0 text-left">
+                                                <p class="font-semibold leading-tight">Validate test result</p>
+                                                <p class="text-[11px] text-on-surface-variant leading-tight">Sign or
+                                                    authorise selected rows</p>
+                                            </div>
+                                        </button>
+                                    </div>
+                                </Transition>
+                            </div>
+                        </div>
+
+                        <!-- ═══════════ Results grid — same layout as blocks/slides ═════════ -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
+                            <div v-for="(r, i) in test.results" :key="r.uuid || i" class="block-card group" :class="{
+                                'block-card--selected': selectedResultUuids.has(r.uuid),
+                                'ring-1 ring-error/20': r.is_critical,
+                            }" @click="toggleResultSelection(r.uuid)">
+
+                                <!-- Header: checkbox + numbered chip + status -->
+                                <div class="flex items-center justify-between gap-2 mb-3 min-w-0">
+                                    <div class="flex items-center gap-2.5 min-w-0">
+                                        <span class="checkbox-btn"
+                                            :class="{ 'checkbox-btn--checked': selectedResultUuids.has(r.uuid) }"
+                                            aria-hidden="true">
+                                            <font-awesome-icon v-if="selectedResultUuids.has(r.uuid)"
+                                                :icon="['fas', 'check']" class="text-[10px] text-white" />
+                                        </span>
+                                        <span
+                                            class="inline-flex items-center justify-center px-2.5 h-8 rounded-lg bg-gradient-to-br from-ribbon-purple to-ribbon-blue text-white text-xs font-bold shadow-sm shrink-0 tracking-wide">
+                                            {{ i + 1 }}
+                                        </span>
+                                        <span :class="resultStatusClass(r.status)"
+                                            class="!py-0.5 !px-2 !text-[10px] shrink-0">
+                                            {{ titleCase(r.status || 'preliminary') }}
+                                        </span>
+                                    </div>
+                                    <span v-if="r.is_critical"
+                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-error text-white shrink-0">
+                                        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-[9px]" />
+                                        Critical
+                                    </span>
+                                </div>
+
+                                <!-- Analyte (title) -->
+                                <div class="mb-2.5 min-w-0">
+                                    <p class="text-[10px] text-ribbon-purple font-bold uppercase tracking-wider mb-0.5">
+                                        Section</p>
+                                    <p
+                                        class="text-sm sm:text-base font-semibold text-on-surface break-words line-clamp-2">
+                                        {{ r.analyte || '—' }}
+                                    </p>
+                                    <p v-if="r.code" class="text-[11px] text-on-surface-variant font-mono truncate">{{
+                                        r.code }}</p>
+                                </div>
+
+                                <!-- Value (kept compact — 3-line clamp) -->
+                                <div class="mb-2.5 min-w-0">
+                                    <p class="text-[10px] text-ribbon-blue font-bold uppercase tracking-wider mb-0.5">
+                                        Value</p>
+                                    <div v-if="isHtmlValue(r.value)"
+                                        class="result-rich text-xs sm:text-sm text-on-surface break-words line-clamp-3"
+                                        v-html="r.value"></div>
+                                    <p v-else class="text-xs sm:text-sm text-on-surface break-words line-clamp-3">
+                                        <span class="font-semibold">{{ r.value ?? '—' }}</span>
+                                        <span v-if="r.unit" class="text-on-surface-variant"> {{ r.unit }}</span>
+                                        <span v-if="r.reference" class="text-[11px] text-on-surface-variant">
+                                            (ref {{ r.reference }})
+                                        </span>
+                                    </p>
+                                </div>
+
+                                <!-- Validation state chip + flag chip (inline row) -->
+                                <div class="flex flex-wrap items-center gap-1.5 mb-2.5">
+                                    <span :class="validationChipClass(validationStateOf(r))"
+                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold">
+                                        <font-awesome-icon
+                                            :icon="['fas', validationStateOf(r) === 'authorised' ? 'stamp' : (validationStateOf(r) === 'tech_signed' ? 'user-check' : 'hourglass-half')]"
+                                            class="text-[9px]" />
+                                        {{ validationChipLabel(validationStateOf(r)) }}
+                                    </span>
+                                    <span :class="flagChipClass(r.flag)"
+                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold">
+                                        <font-awesome-icon :icon="['fas', 'flag']" class="text-[9px]" />
+                                        {{(FLAG_OPTIONS.find(f => f.value === r.flag)?.label) || titleCase(r.flag ||
+                                        'normal') }}
+                                    </span>
+                                </div>
+
+                                <!-- Validators (compact grid) -->
+                                <div class="grid grid-cols-2 gap-2 pt-2.5 border-t border-outline-variant/30 min-w-0">
+                                    <div class="flex items-start gap-1.5 min-w-0">
+                                        <span class="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                                            :class="r.technically_validated_by ? 'bg-ribbon-teal/15 text-ribbon-teal' : 'bg-surface-container text-outline'">
+                                            <font-awesome-icon :icon="['fas', 'user-check']" class="text-[9px]" />
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="text-[9px] font-bold uppercase tracking-wider"
+                                                :class="r.technically_validated_by ? 'text-ribbon-teal' : 'text-on-surface-variant'">
+                                                Tech
+                                            </p>
+                                            <p class="text-[11px] text-on-surface truncate">
+                                                {{ r.technically_validated_by || 'Pending' }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-start gap-1.5 min-w-0">
+                                        <span class="w-5 h-5 rounded-md flex items-center justify-center shrink-0"
+                                            :class="r.clinically_validated_by ? 'bg-ribbon-blue/15 text-ribbon-blue' : 'bg-surface-container text-outline'">
+                                            <font-awesome-icon :icon="['fas', 'stamp']" class="text-[9px]" />
+                                        </span>
+                                        <div class="min-w-0">
+                                            <p class="text-[9px] font-bold uppercase tracking-wider"
+                                                :class="r.clinically_validated_by ? 'text-ribbon-blue' : 'text-on-surface-variant'">
+                                                Clinical
+                                            </p>
+                                            <p class="text-[11px] text-on-surface truncate">
+                                                {{ r.clinically_validated_by || 'Pending' }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </template>
                 <GenericRecordList v-else :items="test.notes" empty-icon="notes-medical"
                     empty-text="No notes recorded yet." accent="amber" />
             </div>
@@ -702,8 +950,9 @@
                             <!-- Search state -->
                             <div v-else class="relative">
                                 <font-awesome-icon :icon="['fas', 'magnifying-glass']"
-                                    class="absolute left-3 top-1/2 -translate-y-1/2 text-outline text-xs sm:text-sm" />
-                                <input v-model="block.containerSearch" type="text" class="input-field pl-9"
+                                    class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-outline text-sm leading-none z-10" />
+                                <input v-model="block.containerSearch" type="text"
+                                    class="input-field !pl-10 !py-2.5 leading-normal"
                                     placeholder="Search container type…" @focus="block.containerOpen = true"
                                     @blur="onContainerBlur(block)" />
                                 <div v-if="block.containerOpen"
@@ -792,7 +1041,7 @@
 
         <!-- ── Section blocks modal ──────────────────────────────────────────── -->
         <Modal v-model="sectionModalOpen" title="Section blocks"
-            :subtitle="`${sectionSlides.length} slide${sectionSlides.length === 1 ? '' : 's'} · ${test?.accession_number || ''}`"
+            :subtitle="`${sectionSlides.length} slide${sectionSlides.length === 1 ? '' : 's'} · ${test?.test_name || ''}`"
             class="w-[860px] max-w-[75%]">
             <div class="flex flex-col gap-4 sm:gap-5 min-w-0">
 
@@ -898,7 +1147,915 @@
                 </button>
             </template>
         </Modal>
+
+        <!-- ── Result-entry wizard ───────────────────────────────────────────── -->
+        <Modal v-model="resultWizardOpen" title="Record results"
+            :subtitle="`${test?.test_name || ''} - ${test?.sample_name || ''} · ${resultRows.length} row${resultRows.length === 1 ? '' : 's'}`"
+            class="w-[960px] max-w-[92%]">
+            <div class="flex flex-col gap-4 sm:gap-5 min-w-0">
+
+                <!-- Context header -->
+                <div
+                    class="rounded-2xl border border-ribbon-blue/20 bg-gradient-to-br from-ribbon-blue/10 to-ribbon-teal/5 p-3 sm:p-4 md:p-5 min-w-0">
+                    <div class="flex items-start gap-3 min-w-0">
+                        <div
+                            class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue shrink-0">
+                            <font-awesome-icon :icon="['fas', 'clipboard-check']" />
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs sm:text-sm font-semibold uppercase tracking-wide text-ribbon-blue">Result
+                                entry
+                            </p>
+                            <p
+                                class="text-sm sm:text-base md:text-lg font-semibold text-on-surface break-words truncate">
+                                {{ test?.test_name || '—' }}
+                            </p>
+                            <p class="text-xs sm:text-sm text-on-surface-variant break-words">
+                                {{ order?.patient_name || '—' }} · {{ order?.age ?? '—' }}y ·
+                                {{ order?.department?.section || order?.department?.name || '—' }}
+                            </p>
+                        </div>
+                        <div class="flex flex-col items-end gap-1 shrink-0">
+                            <span v-if="isAnatomicPath"
+                                class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs sm:text-sm font-semibold bg-ribbon-purple/10 text-ribbon-purple border border-ribbon-purple/25">
+                                <font-awesome-icon :icon="['fas', 'microscope']" class="text-[10px]" />
+                                AP narrative
+                            </span>
+                            <span v-if="autosaveStamp"
+                                class="text-[10px] sm:text-xs text-on-surface-variant inline-flex items-center gap-1">
+                                <font-awesome-icon :icon="['fas', 'floppy-disk']" class="text-ribbon-teal" />
+                                Draft saved
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- How-to strip -->
+                <div class="rounded-xl bg-primary-fixed/50 border border-primary/20 p-3 sm:p-4 min-w-0">
+                    <div class="flex items-start gap-2 min-w-0">
+                        <font-awesome-icon :icon="['fas', 'circle-info']"
+                            class="text-primary mt-0.5 shrink-0 text-sm" />
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs sm:text-sm font-semibold text-primary">How to fill this in</p>
+                            <p class="text-xs sm:text-sm text-on-surface-variant break-words">
+                                Fill each row's <strong>value</strong>. Pick a <strong>value type</strong> to change the
+                                input
+                                (narrative / text / numeric / coded). Open <strong>Advanced</strong> for codes,
+                                references,
+                                instrument and method. Set the <strong>flag</strong> and <strong>status</strong>, then
+                                <strong>Save results</strong>. Your progress saves automatically.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ── Wizard progress spine ─────────────────────────────────────── -->
+                <div class="rounded-2xl border border-outline-variant/30 bg-white/70 p-3 sm:p-4 min-w-0">
+                    <div class="flex items-start justify-between gap-3 mb-2 min-w-0">
+                        <div class="min-w-0">
+                            <p class="text-[10px] sm:text-xs font-bold text-primary uppercase tracking-wider">
+                                Step {{ wizardStep + 1 }} of {{ totalSteps }}
+                            </p>
+                            <p class="text-sm sm:text-base md:text-lg font-semibold text-on-surface break-words">
+                                <template v-if="isSetupStep">Getting started</template>
+                                <template v-else-if="isReviewStep">Review &amp; submit</template>
+                                <template v-else>{{ resultRows[currentRowIdx]?.analyte_name || `Row ${currentRowIdx +
+                                    1}` }}</template>
+                            </p>
+                        </div>
+                        <span
+                            class="text-[10px] sm:text-xs text-on-surface-variant font-semibold shrink-0 mt-1 tabular-nums">
+                            {{ progressPct }}%
+                        </span>
+                    </div>
+
+                    <!-- Progress bar -->
+                    <div class="h-1.5 rounded-full bg-surface-low overflow-hidden">
+                        <div class="h-full bg-primary-gradient transition-all duration-300"
+                            :style="{ width: progressPct + '%' }" />
+                    </div>
+
+                    <!-- Clickable chips -->
+                    <div class="flex gap-1.5 overflow-x-auto mt-3 pb-1 -mx-1 px-1">
+                        <button type="button"
+                            class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-colors whitespace-nowrap"
+                            :class="wizardStep === 0
+                                ? 'bg-primary text-white border-primary'
+                                : (wizardStep > 0
+                                    ? 'bg-primary/10 text-primary border-primary/25 hover:bg-primary/20'
+                                    : 'bg-white text-on-surface-variant border-outline-variant hover:border-primary/40')"
+                            @click="jumpToStep(0)">
+                            <font-awesome-icon :icon="['fas', 'play']" class="text-[9px]" />
+                            <span>1. Setup</span>
+                        </button>
+
+                        <button v-for="(r, i) in resultRows" :key="r._uid" type="button"
+                            class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-colors whitespace-nowrap max-w-[180px]"
+                            :class="wizardStep === i + 1
+                                ? 'bg-primary text-white border-primary'
+                                : (wizardStep > i + 1
+                                    ? 'bg-primary/10 text-primary border-primary/25 hover:bg-primary/20'
+                                    : 'bg-white text-on-surface-variant border-outline-variant hover:border-primary/40')"
+                            @click="jumpToRow(i)">
+                            <span class="tabular-nums shrink-0">{{ i + 2 }}.</span>
+                            <span class="truncate">{{ stepShortLabel(r, i) }}</span>
+                        </button>
+
+                        <button type="button"
+                            class="shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold border transition-colors whitespace-nowrap"
+                            :class="isReviewStep
+                                ? 'bg-primary text-white border-primary'
+                                : 'bg-white text-on-surface-variant border-outline-variant hover:border-primary/40'"
+                            @click="jumpToStep(resultRows.length + 1)">
+                            <font-awesome-icon :icon="['fas', 'clipboard-list']" class="text-[9px]" />
+                            <span>{{ resultRows.length + 2 }}. Review</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- ── Setup step ─────────────────────────────────────────────────── -->
+                <div v-show="isSetupStep"
+                    class="rounded-2xl border border-outline-variant/30 bg-white/70 p-4 sm:p-5 flex flex-col gap-3 min-w-0">
+                    <div class="flex items-start gap-3 min-w-0">
+                        <div
+                            class="w-10 h-10 rounded-xl bg-ribbon-teal/15 flex items-center justify-center text-ribbon-teal shrink-0">
+                            <font-awesome-icon :icon="['fas', 'play']" />
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider">
+                                What you'll
+                                do</p>
+                            <p v-if="isAnatomicPath" class="text-sm sm:text-base text-on-surface break-words">
+                                We've prepared <strong class="text-primary">{{ resultRows.length }} standard
+                                    sections</strong>
+                                for a {{ order?.department?.section || 'histopathology' }} sign-out.
+                                Fill each section, review, then submit.
+                            </p>
+                            <p v-else class="text-sm sm:text-base text-on-surface break-words">
+                                Add one row per analyte or result. Each row can be a number, coded value, short text, or
+                                long
+                                narrative.
+                            </p>
+                        </div>
+                    </div>
+
+                    <p class="text-xs sm:text-sm font-bold text-on-surface-variant uppercase tracking-wider mt-1">
+                        {{ isAnatomicPath ? 'Sections' : 'Rows' }} to fill
+                    </p>
+                    <div class="flex flex-col gap-1">
+                        <button v-for="(r, i) in resultRows" :key="r._uid" type="button"
+                            class="flex items-center gap-2.5 p-2 rounded-lg hover:bg-surface-low transition-colors min-w-0 text-left"
+                            @click="jumpToRow(i)">
+                            <span
+                                class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary text-[11px] font-bold shrink-0">
+                                {{ i + 1 }}
+                            </span>
+                            <span class="text-sm sm:text-base text-on-surface truncate flex-1 min-w-0">
+                                {{ r.analyte_name || `Row ${i + 1}` }}
+                            </span>
+                            <span class="text-[10px] sm:text-xs text-on-surface-variant shrink-0 hidden sm:inline">
+                                {{ titleCase(r.value_type) }}
+                            </span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Draft restored banner -->
+                <div v-if="draftRestored"
+                    class="flex items-start gap-2 p-3 rounded-xl bg-secondary-fixed/60 border border-secondary/25 min-w-0">
+                    <font-awesome-icon :icon="['fas', 'clock-rotate-left']"
+                        class="text-secondary-on-fixed text-sm mt-0.5 shrink-0" />
+                    <div class="min-w-0 flex-1">
+                        <p class="text-xs sm:text-sm font-semibold text-secondary-on-fixed">Draft restored</p>
+                        <p class="text-xs sm:text-sm text-on-surface-variant break-words">
+                            Picked up where you left off. Changes save automatically.
+                        </p>
+                    </div>
+                    <button type="button"
+                        class="inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] sm:text-xs font-semibold text-secondary-on-fixed hover:bg-secondary/10 transition-colors shrink-0"
+                        @click="discardDraftAndReset" title="Discard draft and start over">
+                        <font-awesome-icon :icon="['fas', 'rotate-left']" class="text-[10px]" />
+                        <span class="hidden sm:inline">Start over</span>
+                    </button>
+                </div>
+
+                <!-- Critical banner -->
+                <div v-if="hasCriticalRow"
+                    class="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl bg-error-container/60 border border-error/30 min-w-0">
+                    <font-awesome-icon :icon="['fas', 'triangle-exclamation']"
+                        class="text-error text-base mt-0.5 shrink-0" />
+                    <div class="min-w-0">
+                        <p class="text-sm sm:text-base font-semibold text-error break-words">Critical value(s) present
+                        </p>
+                        <p class="text-xs sm:text-sm text-error/90 break-words">
+                            Capture who was notified and when before marking any critical row as "final".
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Rows — only the active step is visible (v-show keeps state) -->
+                <div v-show="!isSetupStep && !isReviewStep" class="flex flex-col gap-3 sm:gap-4">
+                    <div v-for="(r, i) in resultRows" :key="r._uid" v-show="currentRowIdx === i"
+                        class="relative rounded-2xl border border-outline-variant/30 bg-white/80 p-3 sm:p-4 md:p-5 flex flex-col gap-3 min-w-0"
+                        :class="{ 'ring-2 ring-error/25 bg-error-container/20': r.is_critical || r.flag === 'critical_high' || r.flag === 'critical_low' }">
+
+                        <!-- Row header -->
+                        <div class="flex items-start justify-between gap-2 min-w-0">
+                            <div class="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+                                <span
+                                    class="inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-ribbon-blue to-ribbon-teal text-white text-xs font-bold shadow-sm shrink-0">
+                                    {{ i + 1 }}
+                                </span>
+                                <div class="min-w-0 flex-1">
+                                    <input v-model="r.analyte_name" type="text"
+                                        class="input-field !text-sm sm:!text-base md:!text-lg !font-semibold min-w-0 w-full"
+                                        placeholder="Analyte / section name" />
+                                    <p v-if="sectionHint(r)"
+                                        class="text-[11px] sm:text-xs text-on-surface-variant mt-1 flex items-start gap-1 break-words">
+                                        <font-awesome-icon :icon="['fas', 'lightbulb']"
+                                            class="text-accent text-[9px] mt-0.5 shrink-0" />
+                                        <span>{{ sectionHint(r) }}</span>
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-1 shrink-0">
+                                <button type="button" class="btn-icon" title="Move up" :disabled="i === 0"
+                                    @click="moveResultRow(i, -1)">
+                                    <font-awesome-icon :icon="['fas', 'arrow-up']" class="text-xs" />
+                                </button>
+                                <button type="button" class="btn-icon" title="Move down"
+                                    :disabled="i === resultRows.length - 1" @click="moveResultRow(i, 1)">
+                                    <font-awesome-icon :icon="['fas', 'arrow-down']" class="text-xs" />
+                                </button>
+                                <button type="button" class="btn-icon btn-icon--danger" title="Remove row"
+                                    :disabled="resultRows.length === 1" @click="removeResultRow(i)">
+                                    <font-awesome-icon :icon="['fas', 'trash']" class="text-xs" />
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Value type picker with hint -->
+                        <div class="min-w-0">
+                            <div
+                                class="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-surface-low border border-outline-variant/30 self-start">
+                                <button v-for="t in (['narrative', 'text', 'numeric', 'coded'] as ResultValueType[])"
+                                    :key="t" type="button"
+                                    class="px-2.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-semibold transition-colors"
+                                    :class="r.value_type === t
+                                        ? 'bg-white text-primary shadow-sm'
+                                        : 'text-on-surface-variant hover:text-on-surface'" @click="r.value_type = t">
+                                    {{ titleCase(t) }}
+                                </button>
+                            </div>
+                            <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1.5 break-words">
+                                {{ VALUE_TYPE_HINT[r.value_type] }}
+                            </p>
+                        </div>
+
+                        <!-- (a) NARRATIVE -->
+                        <div v-if="r.value_type === 'narrative'" class="min-w-0">
+                            <label class="input-label">Narrative <span class="text-error">*</span></label>
+                            <div class="rich-editor-wrap">
+                                <ConsultNoteEditor v-model="r.value_text"
+                                    :placeholder="`Enter ${r.analyte_name || 'section'} narrative…`" />
+                            </div>
+                        </div>
+
+                        <!-- (b) TEXT — plain textarea -->
+                        <div v-else-if="r.value_type === 'text'" class="min-w-0">
+                            <label class="input-label">Text value <span class="text-error">*</span></label>
+                            <textarea v-model="r.value_text" rows="2"
+                                class="input-field !text-sm sm:!text-base resize-y break-words"
+                                placeholder="Short free-text value…"></textarea>
+                        </div>
+
+                        <!-- (c) NUMERIC -->
+                        <div v-else-if="r.value_type === 'numeric'"
+                            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 min-w-0">
+                            <div class="min-w-0">
+                                <label class="input-label">Value <span class="text-error">*</span></label>
+                                <input v-model.number="r.value_numeric" type="number" step="any" class="input-field"
+                                    placeholder="e.g. 5.2" @input="autoFlagNumeric(r)" />
+                            </div>
+                            <div class="min-w-0">
+                                <label class="input-label">Unit</label>
+                                <input v-model="r.unit" type="text" class="input-field" placeholder="e.g. mmol/L" />
+                            </div>
+                            <div class="min-w-0">
+                                <label class="input-label">Ref. low</label>
+                                <input v-model.number="r.reference_low" type="number" step="any" class="input-field"
+                                    placeholder="—" @input="autoFlagNumeric(r)" />
+                            </div>
+                            <div class="min-w-0">
+                                <label class="input-label">Ref. high</label>
+                                <input v-model.number="r.reference_high" type="number" step="any" class="input-field"
+                                    placeholder="—" @input="autoFlagNumeric(r)" />
+                            </div>
+                            <p
+                                class="sm:col-span-2 lg:col-span-4 text-[11px] sm:text-xs text-on-surface-variant break-words">
+                                <font-awesome-icon :icon="['fas', 'lightbulb']" class="text-accent text-[9px] mr-1" />
+                                Fill reference low and high — the flag auto-derives to normal / high / low as you type.
+                            </p>
+                        </div>
+
+                        <!-- (d) CODED -->
+                        <div v-else class="min-w-0">
+                            <label class="input-label">Coded value <span class="text-error">*</span></label>
+                            <div class="flex flex-wrap gap-1.5 mb-2">
+                                <button v-for="opt in CODED_PRESETS" :key="opt" type="button"
+                                    class="px-2.5 py-1 rounded-full text-xs sm:text-sm font-semibold border transition-colors"
+                                    :class="r.value_coded === opt
+                                        ? 'bg-primary text-white border-primary'
+                                        : 'bg-white text-on-surface-variant border-outline-variant hover:border-primary/40'"
+                                    @click="r.value_coded = opt">
+                                    {{ opt }}
+                                </button>
+                            </div>
+                            <input v-model="r.value_coded" type="text" class="input-field"
+                                placeholder="Or type a custom coded value…" />
+                            <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1.5 break-words">
+                                <font-awesome-icon :icon="['fas', 'lightbulb']" class="text-accent text-[9px] mr-1" />
+                                Tap a preset or type a custom term.
+                            </p>
+                        </div>
+
+                        <!-- Flag / status / critical row -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 min-w-0">
+                            <div class="min-w-0">
+                                <label class="input-label">Flag</label>
+                                <div class="flex items-center gap-2 min-w-0">
+                                    <select v-model="r.flag" class="input-field flex-1 min-w-0">
+                                        <option v-for="f in FLAG_OPTIONS" :key="f.value" :value="f.value">{{ f.label }}
+                                        </option>
+                                    </select>
+                                    <span :class="flagChipClass(r.flag)"
+                                        class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-semibold shrink-0 truncate">
+                                        <font-awesome-icon :icon="['fas', 'flag']" class="text-[9px]" />
+                                        {{(FLAG_OPTIONS.find(f => f.value === r.flag)?.label) || r.flag}}
+                                    </span>
+                                </div>
+                                <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1">
+                                    Numeric flags auto-derive; you can still override.
+                                </p>
+                            </div>
+                            <div class="min-w-0">
+                                <label class="input-label">Status</label>
+                                <div
+                                    class="flex items-center gap-1 p-1 rounded-lg bg-surface-low border border-outline-variant/30">
+                                    <button v-for="s in (['preliminary', 'final'] as ResultStatus[])" :key="s"
+                                        type="button"
+                                        class="flex-1 py-1 rounded-md text-xs sm:text-sm font-semibold transition-colors truncate"
+                                        :class="r.status === s
+                                            ? 'bg-white text-primary shadow-sm'
+                                            : 'text-on-surface-variant hover:text-on-surface'" @click="r.status = s">
+                                        {{ titleCase(s) }}
+                                    </button>
+                                </div>
+                                <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1">
+                                    Preliminary = draft; Final = signed off.
+                                </p>
+                            </div>
+                            <div class="min-w-0">
+                                <label class="input-label">Critical</label>
+                                <button type="button"
+                                    class="w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-md border transition-colors"
+                                    :class="r.is_critical
+                                        ? 'bg-error-container/50 border-error/30 text-error'
+                                        : 'bg-white border-outline-variant text-on-surface-variant hover:border-primary/40'"
+                                    @click="r.is_critical = !r.is_critical">
+                                    <span class="text-xs sm:text-sm font-semibold truncate">
+                                        {{ r.is_critical ? 'Marked critical' : 'Mark as critical' }}
+                                    </span>
+                                    <font-awesome-icon
+                                        :icon="['fas', r.is_critical ? 'triangle-exclamation' : 'circle']"
+                                        class="text-xs shrink-0" />
+                                </button>
+                                <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1">
+                                    Toggle if the result changes management.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Critical notification capture -->
+                        <div v-if="r.is_critical || r.flag === 'critical_high' || r.flag === 'critical_low'"
+                            class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl bg-error-container/30 border border-error/25 min-w-0">
+                            <div class="min-w-0">
+                                <label class="input-label">Notified to <span class="text-error">*</span></label>
+                                <input v-model="r.critical_notified_to" type="text" class="input-field"
+                                    placeholder="e.g. Dr. Chisomo Phiri" />
+                            </div>
+                            <div class="min-w-0">
+                                <label class="input-label">Notified at <span class="text-error">*</span></label>
+                                <input v-model="r.critical_notified_at" type="datetime-local" class="input-field" />
+                            </div>
+                        </div>
+
+                        <!-- Comment -->
+                        <div class="min-w-0">
+                            <label class="input-label">
+                                Comment
+                                <span class="text-[10px] font-normal text-on-surface-variant">(optional)</span>
+                            </label>
+                            <input v-model="r.comment" type="text" class="input-field"
+                                placeholder="Optional note about this row…" />
+                        </div>
+
+                        <!-- Advanced disclosure -->
+                        <div class="min-w-0">
+                            <button type="button"
+                                class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors"
+                                @click="r._advancedOpen = !r._advancedOpen">
+                                <font-awesome-icon :icon="['fas', r._advancedOpen ? 'chevron-down' : 'chevron-right']"
+                                    class="text-[10px]" />
+                                Advanced options
+                                <span class="text-[10px] font-normal text-on-surface-variant/70">
+                                    (codes, references, instrument, method)
+                                </span>
+                            </button>
+                            <div v-show="r._advancedOpen"
+                                class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 min-w-0">
+                                <div class="min-w-0">
+                                    <label class="input-label">Analyte code</label>
+                                    <input v-model="r.analyte_code" type="text" class="input-field"
+                                        placeholder="e.g. CLIN_HX" />
+                                </div>
+                                <div class="min-w-0">
+                                    <label class="input-label">LOINC code</label>
+                                    <input v-model="r.loinc_code" type="text" class="input-field"
+                                        placeholder="e.g. 22634-0" />
+                                </div>
+                                <div v-if="r.value_type === 'numeric'" class="min-w-0 sm:col-span-2">
+                                    <label class="input-label">Reference text (fallback)</label>
+                                    <input v-model="r.reference_text" type="text" class="input-field"
+                                        placeholder="e.g. Adults 3.5–5.1 mmol/L" />
+                                </div>
+                                <div class="min-w-0">
+                                    <label class="input-label">Instrument</label>
+                                    <input v-model="r.instrument" type="text" class="input-field"
+                                        placeholder="e.g. Leica BOND-III" />
+                                </div>
+                                <div class="min-w-0">
+                                    <label class="input-label">Method</label>
+                                    <input v-model="r.method" type="text" class="input-field"
+                                        placeholder="e.g. Immunohistochemistry" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add row -->
+                <button v-show="isSetupStep" type="button"
+                    class="w-full inline-flex items-center justify-center gap-2 py-3 rounded-2xl border-2 border-dashed border-outline-variant/50 text-sm sm:text-base font-semibold text-on-surface-variant hover:border-primary/40 hover:text-primary transition-colors"
+                    @click="addResultRow">
+                    <font-awesome-icon :icon="['fas', 'plus']" class="text-xs" />
+                    Add another row
+                </button>
+
+                <!-- ── Review step ────────────────────────────────────────────────── -->
+                <div v-show="isReviewStep" class="flex flex-col gap-3 sm:gap-4 min-w-0">
+                    <div
+                        class="rounded-2xl border border-ribbon-teal/25 bg-gradient-to-br from-ribbon-teal/10 to-ribbon-blue/5 p-4 sm:p-5">
+                        <div class="flex items-start gap-3 min-w-0">
+                            <div
+                                class="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-ribbon-teal/15 flex items-center justify-center text-ribbon-teal shrink-0">
+                                <font-awesome-icon :icon="['fas', 'clipboard-list']" class="text-lg sm:text-xl" />
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-xs sm:text-sm font-semibold uppercase tracking-wide text-ribbon-teal">
+                                    Review
+                                    &amp; submit</p>
+                                <p class="text-sm sm:text-base md:text-lg font-semibold text-on-surface break-words">
+                                    Ready to send {{ resultRows.length }} {{ resultRows.length === 1 ? 'row' : 'rows' }}
+                                </p>
+                                <p class="text-xs sm:text-sm text-on-surface-variant break-words">
+                                    Check each entry below. Tap <strong>Edit</strong> to jump back and change anything
+                                    before
+                                    submitting.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="hasCriticalRow"
+                        class="flex items-start gap-2 p-3 rounded-xl bg-error-container/50 border border-error/30 min-w-0">
+                        <font-awesome-icon :icon="['fas', 'triangle-exclamation']"
+                            class="text-error text-sm mt-0.5 shrink-0" />
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs sm:text-sm font-semibold text-error">Critical result(s) present</p>
+                            <p class="text-xs sm:text-sm text-error break-words">
+                                Notification details are required before submitting any critical row as final.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col gap-2.5">
+                        <div v-for="(r, i) in resultRows" :key="r._uid"
+                            class="rounded-2xl border border-outline-variant/30 bg-white/80 p-3 sm:p-4 flex items-start gap-3 min-w-0"
+                            :class="{ 'ring-2 ring-error/25 bg-error-container/10': r.is_critical || r.flag === 'critical_high' || r.flag === 'critical_low' }">
+                            <span
+                                class="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-ribbon-blue to-ribbon-teal text-white text-xs font-bold shrink-0">
+                                {{ i + 1 }}
+                            </span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center flex-wrap gap-1.5 mb-1">
+                                    <p class="text-sm sm:text-base font-semibold text-on-surface break-words">
+                                        {{ r.analyte_name || `Row ${i + 1}` }}
+                                    </p>
+                                    <span :class="flagChipClass(r.flag)"
+                                        class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold shrink-0">
+                                        <font-awesome-icon :icon="['fas', 'flag']" class="text-[8px]" />
+                                        {{(FLAG_OPTIONS.find(f => f.value === r.flag)?.label) || r.flag}}
+                                    </span>
+                                    <span
+                                        class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold shrink-0"
+                                        :class="r.status === 'final' ? 'bg-primary/10 text-primary' : 'bg-accent-fixed text-accent-on'">
+                                        {{ titleCase(r.status) }}
+                                    </span>
+                                    <span v-if="r.is_critical"
+                                        class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-error text-white shrink-0">
+                                        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-[8px]" />
+                                        Critical
+                                    </span>
+                                </div>
+                                <p class="text-xs sm:text-sm text-on-surface-variant break-words line-clamp-3">
+                                    {{ rowValuePreview(r) || 'No value entered yet' }}
+                                </p>
+                            </div>
+                            <button type="button"
+                                class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors shrink-0"
+                                @click="jumpToRow(i)">
+                                <font-awesome-icon :icon="['fas', 'pen-to-square']" class="text-[10px]" />
+                                <span class="hidden sm:inline">Edit</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Error -->
+                <div v-if="resultError"
+                    class="flex items-start gap-2 p-3 rounded-xl bg-error-container/40 border border-error/20 min-w-0">
+                    <font-awesome-icon :icon="['fas', 'triangle-exclamation']"
+                        class="text-error text-sm mt-0.5 shrink-0" />
+                    <p class="text-xs sm:text-sm text-error break-words">{{ resultError }}</p>
+                </div>
+            </div>
+
+            <template #footer>
+                <div class="flex items-center gap-2 text-xs sm:text-sm text-on-surface-variant mr-auto min-w-0">
+                    <font-awesome-icon :icon="['fas', 'list-check']" />
+                    <span class="truncate">Step {{ wizardStep + 1 }} / {{ totalSteps }}</span>
+                </div>
+
+                <button type="button" class="btn-secondary text-sm sm:text-base" v-if="isSetupStep"
+                    @click="resultWizardOpen = false">
+                    Cancel
+                </button>
+                <button type="button" class="btn-secondary text-sm sm:text-base" v-else @click="goPrev">
+                    <font-awesome-icon :icon="['fas', 'arrow-left']" />
+                    <span class="hidden sm:inline">Back</span>
+                </button>
+
+                <button v-if="!isReviewStep" type="button" class="btn-primary text-sm sm:text-base" @click="goNext">
+                    <span>{{ isSetupStep ? 'Get started' : 'Next' }}</span>
+                    <font-awesome-icon :icon="['fas', 'arrow-right']" />
+                </button>
+                <button v-else type="button" class="btn-primary text-sm sm:text-base" :disabled="resultSubmitting"
+                    @click="submitResults">
+                    <font-awesome-icon v-if="resultSubmitting" :icon="['fas', 'circle-notch']" class="animate-spin" />
+                    <font-awesome-icon v-else :icon="['fas', 'check']" />
+                    <span>{{ resultSubmitting ? 'Saving…' : 'Submit results' }}</span>
+                </button>
+            </template>
+        </Modal>
+
+        <!-- ── Validate test results modal ────────────────────────────────── -->
+        <Modal v-model="validationModalOpen" title="Validate Test Result"
+            :subtitle="`${test?.test_name || ''} - ${test?.sample_name || ''} · ${validationRows.length} row${validationRows.length === 1 ? '' : 's'}`"
+            class="max-w-[70%]">
+            <div class="flex flex-col gap-4 sm:gap-5 min-w-0">
+
+                <!-- Nothing to do -->
+                <div v-if="hasNothingToDo"
+                    class="rounded-2xl border border-secondary/30 bg-secondary-fixed/60 p-4 sm:p-5 flex items-start gap-3 min-w-0">
+                    <div
+                        class="w-10 h-10 rounded-xl bg-secondary/15 text-secondary-on-fixed flex items-center justify-center shrink-0">
+                        <font-awesome-icon :icon="['fas', 'circle-check']" />
+                    </div>
+                    <div class="min-w-0">
+                        <p class="text-sm sm:text-base md:text-lg font-semibold text-secondary-on-fixed break-words">
+                            All selected rows are already authorised
+                        </p>
+                        <p class="text-xs sm:text-sm text-on-surface-variant break-words">
+                            Nothing to sign or release. Close this modal and pick different rows if needed.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- What we're about to do — auto-detected level -->
+                <template v-else>
+                    <div class="rounded-2xl border p-3 sm:p-4 md:p-5 min-w-0 transition-colors" :class="validationLevel === 'technical'
+                        ? 'bg-primary-fixed/60 border-primary/25'
+                        : 'bg-secondary-fixed/60 border-secondary/25'">
+                        <div class="flex items-start gap-3 min-w-0">
+                            <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center shrink-0"
+                                :class="validationLevel === 'technical'
+                                    ? 'bg-primary/15 text-primary'
+                                    : 'bg-secondary/15 text-secondary-on-fixed'">
+                                <font-awesome-icon
+                                    :icon="['fas', validationLevel === 'technical' ? 'user-check' : 'stamp']" />
+                            </div>
+                            <div class="min-w-0 flex-1">
+                                <p class="text-[10px] sm:text-xs font-bold uppercase tracking-wider"
+                                    :class="validationLevel === 'technical' ? 'text-primary' : 'text-secondary-on-fixed'">
+                                    Step {{ validationLevel === 'technical' ? '1 of 2' : '2 of 2' }}
+                                </p>
+                                <p class="text-sm sm:text-base md:text-lg font-semibold text-on-surface break-words">
+                                    <template v-if="validationLevel === 'technical'">Sign (technical)</template>
+                                    <template v-else>Authorise &amp; release (clinical)</template>
+                                </p>
+                                <p class="text-xs sm:text-sm text-on-surface-variant break-words">
+                                    <template v-if="validationLevel === 'technical'">
+                                        Confirm each row is analytically sound. This step does not change status —
+                                        it prepares the row for clinical release.
+                                    </template>
+                                    <template v-else>
+                                        Release each row as final. This locks the value and cannot be undone
+                                        without a correction or amendment.
+                                    </template>
+                                </p>
+                            </div>
+                            <span v-if="!hasMixedSelection && onlyLevel"
+                                class="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold shrink-0"
+                                :class="validationLevel === 'technical'
+                                    ? 'bg-primary/10 text-primary border border-primary/25'
+                                    : 'bg-secondary/10 text-secondary-on-fixed border border-secondary/25'">
+                                <font-awesome-icon :icon="['fas', 'wand-magic-sparkles']" class="text-[10px]" />
+                                Auto-selected
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Mixed selection notice -->
+                    <div v-if="hasMixedSelection"
+                        class="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl bg-accent-fixed border border-accent/30 min-w-0">
+                        <font-awesome-icon :icon="['fas', 'circle-info']"
+                            class="text-accent-on text-base mt-0.5 shrink-0" />
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm sm:text-base font-semibold text-accent-on break-words">
+                                Your selection contains rows at different stages
+                            </p>
+                            <p class="text-xs sm:text-sm text-accent-on/90 break-words mb-2">
+                                We'll process <strong>{{ validationLevel === 'technical' ? 'technical sign-off' :
+                                    'clinical release'
+                                }}</strong> first
+                                ({{validationRows.filter(r => nextLevelForRow(r) === validationLevel).length}} row{{
+                                    validationRows.filter(r => nextLevelForRow(r) === validationLevel).length === 1 ? '' :
+                                        's'}}).
+                                The other rows will be ready in the next step.
+                            </p>
+                            <div
+                                class="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-white/60 border border-accent/20 self-start">
+                                <button v-for="lvl in (['technical', 'clinical'] as ValidationLevel[])" :key="lvl"
+                                    type="button"
+                                    class="px-2.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-semibold transition-colors"
+                                    :class="validationLevel === lvl
+                                        ? 'bg-white text-primary shadow-sm'
+                                        : 'text-accent-on hover:text-primary'" :disabled="!selectionLevels.has(lvl)"
+                                    @click="validationLevel = lvl">
+                                    {{ lvl === 'technical' ? 'Sign first' : 'Authorise first' }}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Clinical release-as picker (only shown when clinical is active) -->
+                    <div v-if="validationLevel === 'clinical'"
+                        class="rounded-xl border border-outline-variant/40 bg-white p-3 sm:p-4 min-w-0">
+                        <p
+                            class="text-[10px] sm:text-xs font-bold text-on-surface-variant uppercase tracking-wider mb-2">
+                            Release as
+                        </p>
+                        <div
+                            class="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-surface-low border border-outline-variant/30 self-start">
+                            <button v-for="s in (['final', 'corrected', 'amended'] as ValidationStatus[])" :key="s"
+                                type="button"
+                                class="px-2.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-semibold transition-colors"
+                                :class="validationStatus === s
+                                    ? 'bg-white text-primary shadow-sm'
+                                    : 'text-on-surface-variant hover:text-on-surface'" @click="validationStatus = s">
+                                {{ titleCase(s) }}
+                            </button>
+                        </div>
+                        <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1.5 break-words">
+                            <font-awesome-icon :icon="['fas', 'lightbulb']" class="text-accent text-[9px] mr-1" />
+                            Use <strong>Corrected</strong> or <strong>Amended</strong> only when re-releasing an
+                            already-final result.
+                        </p>
+                    </div>
+
+                    <!-- Critical banner -->
+                    <div v-if="anyCriticalUnAckd"
+                        class="flex items-start gap-2 sm:gap-3 p-3 sm:p-4 rounded-2xl bg-error-container/60 border border-error/30 min-w-0">
+                        <font-awesome-icon :icon="['fas', 'triangle-exclamation']"
+                            class="text-error text-base mt-0.5 shrink-0" />
+                        <div class="min-w-0">
+                            <p class="text-sm sm:text-base font-semibold text-error break-words">
+                                Critical results present
+                            </p>
+                            <p class="text-xs sm:text-sm text-error/90 break-words">
+                                Tick <strong>Acknowledged</strong> on each critical row below to confirm you reviewed
+                                the value and recorded notification. Authorisation is blocked until then.
+                            </p>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Rows to validate -->
+                <div class="flex flex-col gap-2.5 sm:gap-3">
+                    <div v-for="row in validationRows" :key="row.uuid"
+                        class="rounded-2xl border bg-white p-3 sm:p-4 flex flex-col gap-2 min-w-0 transition-colors"
+                        :class="[
+                            row.is_critical ? 'border-error/30' : 'border-outline-variant/40',
+                            row._state === 'ok' ? 'bg-secondary-fixed/40 border-secondary/30' : '',
+                            row._state === 'failed' ? 'bg-error-container/30 border-error/30' : '',
+                        ]">
+
+                        <!-- Row header -->
+                        <div class="flex items-start justify-between gap-2 min-w-0">
+                            <div class="min-w-0 flex-1">
+                                <p class="text-sm sm:text-base font-semibold text-on-surface break-words">
+                                    {{ row.analyte || '—' }}
+                                </p>
+                                <div class="flex flex-wrap items-center gap-1.5 mt-1">
+                                    <span :class="flagChipClass(row.flag as any)"
+                                        class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold">
+                                        <font-awesome-icon :icon="['fas', 'flag']" class="text-[8px]" />
+                                        {{(FLAG_OPTIONS.find(f => f.value === row.flag)?.label) || row.flag}}
+                                    </span>
+                                    <span :class="resultStatusClass(row.status)"
+                                        class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold">
+                                        {{ titleCase(row.status) }}
+                                    </span>
+                                    <span v-if="row.is_critical"
+                                        class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold bg-error text-white">
+                                        Critical
+                                    </span>
+                                    <span :class="validationChipClass(validationStateOf(row))"
+                                        class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold">
+                                        {{ validationChipLabel(validationStateOf(row)) }}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Per-row runtime state -->
+                            <div class="shrink-0">
+                                <span v-if="row._state === 'running'"
+                                    class="inline-flex items-center gap-1 text-xs sm:text-sm text-primary">
+                                    <font-awesome-icon :icon="['fas', 'circle-notch']"
+                                        class="animate-spin text-[10px]" />
+                                    Working…
+                                </span>
+                                <span v-else-if="row._state === 'ok'"
+                                    class="inline-flex items-center gap-1 text-xs sm:text-sm text-secondary-on-fixed font-semibold">
+                                    <font-awesome-icon :icon="['fas', 'circle-check']" class="text-[10px]" />
+                                    Done
+                                </span>
+                                <span v-else-if="row._state === 'failed'"
+                                    class="inline-flex items-center gap-1 text-xs sm:text-sm text-error font-semibold"
+                                    :title="row._error || ''">
+                                    <font-awesome-icon :icon="['fas', 'circle-xmark']" class="text-[10px]" />
+                                    Failed
+                                </span>
+                                <span v-else class="text-[10px] sm:text-xs text-on-surface-variant">
+                                    {{ rowIsEligible(row).ok ? 'Ready' : rowIsEligible(row).reason }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Critical acknowledgement (clinical only) -->
+                        <label
+                            v-if="validationLevel === 'clinical' && (row.is_critical || row.flag === 'critical_high' || row.flag === 'critical_low') && row._state !== 'ok'"
+                            class="flex items-center gap-2 mt-1 p-2 rounded-lg bg-error-container/40 border border-error/25 cursor-pointer min-w-0">
+                            <span class="checkbox-btn" :class="{ 'checkbox-btn--checked': row._acknowledged }"
+                                aria-hidden="true">
+                                <font-awesome-icon v-if="row._acknowledged" :icon="['fas', 'check']"
+                                    class="text-[10px] text-white" />
+                            </span>
+                            <input type="checkbox" v-model="row._acknowledged" class="sr-only" />
+                            <span class="text-xs sm:text-sm text-error font-semibold break-words">
+                                I reviewed this critical value and recorded notification.
+                            </span>
+                        </label>
+
+                        <!-- Failure reason -->
+                        <p v-if="row._state === 'failed' && row._error"
+                            class="text-xs sm:text-sm text-error break-words">
+                            {{ row._error }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Summary + banner -->
+                <div v-if="validationDone && !validationRunning" class="rounded-2xl border p-3 sm:p-4 min-w-0" :class="failedCount
+                    ? 'bg-accent-fixed border-accent/30'
+                    : 'bg-secondary-fixed/60 border-secondary/25'">
+                    <div class="flex items-start gap-2 sm:gap-3 min-w-0">
+                        <font-awesome-icon :icon="['fas', failedCount ? 'circle-info' : 'circle-check']"
+                            class="text-base sm:text-lg mt-0.5 shrink-0"
+                            :class="failedCount ? 'text-accent-on' : 'text-secondary-on-fixed'" />
+                        <div class="min-w-0">
+                            <p class="text-sm sm:text-base font-semibold break-words"
+                                :class="failedCount ? 'text-accent-on' : 'text-secondary-on-fixed'">
+                                {{ failedCount
+                                    ? `${successCount} succeeded, ${failedCount} failed`
+                                    : `All ${successCount} row${successCount === 1 ? '' : 's'} processed` }}
+                            </p>
+                            <p class="text-xs sm:text-sm break-words"
+                                :class="failedCount ? 'text-accent-on/90' : 'text-on-surface-variant'">
+                                {{ failedCount
+                                    ? 'Fix the failed rows or close the modal — the queue will remember which are still pending.'
+                                : 'You can close this modal.' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Global error -->
+                <div v-if="validationError"
+                    class="flex items-start gap-2 p-3 rounded-xl bg-error-container/40 border border-error/20 min-w-0">
+                    <font-awesome-icon :icon="['fas', 'triangle-exclamation']"
+                        class="text-error text-sm mt-0.5 shrink-0" />
+                    <p class="text-xs sm:text-sm text-error break-words">{{ validationError }}</p>
+                </div>
+            </div>
+
+            <template #footer>
+                <div class="flex items-center gap-2 text-xs sm:text-sm text-on-surface-variant mr-auto min-w-0">
+                    <font-awesome-icon :icon="['fas', 'list-check']" />
+                    <span class="truncate">
+                        {{ eligibleRowCount }} eligible · {{ validationRows.length }} total
+                    </span>
+                </div>
+                <button type="button" class="btn-secondary text-sm sm:text-base" @click="validationModalOpen = false">
+                    {{ validationDone ? 'Close' : 'Cancel' }}
+                </button>
+                <button v-if="!hasNothingToDo" type="button" class="btn-primary text-sm sm:text-base"
+                    :disabled="validationRunning || !eligibleRowCount" @click="submitValidation">
+                    <font-awesome-icon v-if="validationRunning" :icon="['fas', 'circle-notch']" class="animate-spin" />
+                    <font-awesome-icon v-else
+                        :icon="['fas', validationLevel === 'technical' ? 'user-check' : 'stamp']" />
+                    <span>
+                        {{ validationRunning
+                            ? 'Processing…'
+                            : (validationLevel === 'technical' ? `Sign ${eligibleRowCount}` : `Authorise
+                        ${eligibleRowCount}`) }}
+                    </span>
+                </button>
+            </template>
+        </Modal>
     </div>
+
+    <!-- ═══════════ Floating Actions (bottom-right, when toolbar off-screen) ═════════ -->
+    <Teleport to="body">
+        <!-- Blocks -->
+        <Transition name="fab-pop">
+            <button v-if="tab === 'blocks' && selectedBlockUuids.size && !blocksToolbarInView" type="button"
+                class="fab-actions" @click="bulkMenuOpen = !bulkMenuOpen; scrollToolbarIntoView('blocks')">
+                <font-awesome-icon :icon="['fas', 'ellipsis-vertical']" class="text-sm" />
+                <span class="fab-actions__label">
+                    {{ selectedBlockUuids.size }} · Actions
+                </span>
+            </button>
+        </Transition>
+
+        <!-- Slides -->
+        <Transition name="fab-pop">
+            <button v-if="tab === 'slides' && selectedSlideUuids.size && !slidesToolbarInView" type="button"
+                class="fab-actions" :disabled="staining || imaging"
+                @click="slidesBulkMenuOpen = !slidesBulkMenuOpen; scrollToolbarIntoView('slides')">
+                <font-awesome-icon v-if="staining || imaging" :icon="['fas', 'circle-notch']"
+                    class="animate-spin text-sm" />
+                <font-awesome-icon v-else :icon="['fas', 'ellipsis-vertical']" class="text-sm" />
+                <span class="fab-actions__label">
+                    {{ selectedSlideUuids.size }} · Actions
+                </span>
+            </button>
+        </Transition>
+
+        <!-- Results -->
+        <Transition name="fab-pop">
+            <button v-if="tab === 'results' && selectedResultUuids.size && !resultsToolbarInView" type="button"
+                class="fab-actions"
+                @click="resultsBulkMenuOpen = !resultsBulkMenuOpen; scrollToolbarIntoView('results')">
+                <font-awesome-icon :icon="['fas', 'ellipsis-vertical']" class="text-sm" />
+                <span class="fab-actions__label">
+                    {{ selectedResultUuids.size }} · Actions
+                </span>
+            </button>
+        </Transition>
+    </Teleport>
+
 </template>
 
 <script setup lang="ts">
@@ -907,7 +2064,8 @@ import type { LabOrderDetail, LabOrderTest } from '~/composables/useLaboratory'
 import type { ContainerType } from '~/composables/useLaboratorySettings'
 
 const route = useRoute()
-const { showTest, grossTest, sectionBlocks, stainSlides } = useLaboratory()
+const { showTest, grossTest, sectionBlocks, stainSlides, imageSlides,
+    createResults, validateResult } = useLaboratory()
 const { getContainerTypes } = useLaboratorySettings()
 
 // Route is /orders/test/[uuid].vue — [uuid] is the TEST uuid.
@@ -1017,6 +2175,494 @@ const runStainSelected = async () => {
         stainError.value = e?.message || 'Failed to stain slides.'
     } finally {
         staining.value = false
+    }
+}
+
+// Bulk "add slide images" — image each selected slide with its parent block's cassette_label URL
+const imaging = ref(false)
+const imageError = ref<string | null>(null)
+
+const runImageSelected = async () => {
+    if (!selectedSlideUuids.value.size) return
+    imageError.value = null
+    slidesBulkMenuOpen.value = false
+
+    // Build payload: one entry per selected slide, image_url pulled from its parent block's cassette_label
+    const selectedSlides = (test.value?.slides || []).filter((s: any) =>
+        selectedSlideUuids.value.has(s.uuid),
+    )
+    const payload: { uuid: string; image_url: string }[] = []
+    const missing: string[] = []
+
+    for (const s of selectedSlides) {
+        // preview_url = renderable PNG; url = .nlbl zip download (browsers can't display it)
+        const cassette = blockByUuid.value[s.block_uuid]?.cassette_label
+        const previewUrl = cassette?.preview_url || cassette?.url
+        if (!previewUrl) {
+            missing.push(s.label)
+            continue
+        }
+        payload.push({ uuid: s.uuid, image_url: previewUrl })
+    }
+
+    if (missing.length) {
+        imageError.value = `No cassette label available for slide(s): ${missing.join(', ')}.`
+        return
+    }
+    if (!payload.length) {
+        imageError.value = 'Nothing to image.'
+        return
+    }
+
+    imaging.value = true
+    try {
+        await imageSlides(orderUuid.value, testUuid.value, payload)
+        selectedSlideUuids.value = new Set()
+        await load()
+    } catch (e: any) {
+        imageError.value = e?.message || 'Failed to add slide images.'
+    } finally {
+        imaging.value = false
+    }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RESULT WIZARD — POST /laboratory/order/test/results
+   Adapts inputs by row value_type; falls back to AP narrative template
+   for histopathology test_codes (11xxx). Single-page for now; steps preserved
+   as sections so the layout stays predictable across breakpoints.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+type ResultValueType = 'narrative' | 'text' | 'numeric' | 'coded'
+type ResultFlag =
+    | 'normal' | 'high' | 'low' | 'critical_high' | 'critical_low' | 'abnormal'
+    | 'positive' | 'negative' | 'reactive' | 'non_reactive' | 'indeterminate'
+type ResultStatus = 'preliminary' | 'final'
+
+interface ResultRow {
+    _uid: number
+    value_type: ResultValueType
+    analyte_name: string
+    analyte_code?: string
+    loinc_code?: string
+    value_numeric?: number | null
+    value_coded?: string
+    value_text?: string
+    unit?: string
+    reference_low?: number | null
+    reference_high?: number | null
+    reference_text?: string
+    flag: ResultFlag
+    status: ResultStatus
+    is_critical: boolean
+    instrument?: string
+    method?: string
+    comment?: string
+    critical_notified_to?: string
+    critical_notified_at?: string
+    _advancedOpen: boolean
+}
+
+const FLAG_OPTIONS: { value: ResultFlag; label: string; tone: 'ok' | 'warn' | 'crit' }[] = [
+    { value: 'normal', label: 'Normal', tone: 'ok' },
+    { value: 'negative', label: 'Negative', tone: 'ok' },
+    { value: 'non_reactive', label: 'Non-reactive', tone: 'ok' },
+    { value: 'high', label: 'High', tone: 'warn' },
+    { value: 'low', label: 'Low', tone: 'warn' },
+    { value: 'abnormal', label: 'Abnormal', tone: 'warn' },
+    { value: 'positive', label: 'Positive', tone: 'warn' },
+    { value: 'reactive', label: 'Reactive', tone: 'warn' },
+    { value: 'indeterminate', label: 'Indeterminate', tone: 'warn' },
+    { value: 'critical_high', label: 'Critical high', tone: 'crit' },
+    { value: 'critical_low', label: 'Critical low', tone: 'crit' },
+]
+
+const CODED_PRESETS: string[] = [
+    'Positive', 'Negative', 'Reactive', 'Non-reactive',
+    'Detected', 'Not detected', 'Indeterminate',
+]
+
+// Inline hints shown next to key controls. Keep them short — they are hints,
+// not tutorials. Longer guidance stays in the "Advanced" disclosure.
+const VALUE_TYPE_HINT: Record<ResultValueType, string> = {
+    narrative: 'Long-form rich text — use for AP report sections.',
+    text: 'Short free-text note. Plain text only.',
+    numeric: 'Measured value + unit + reference range. Flag auto-derives.',
+    coded: 'Controlled term (Positive, Reactive, Detected, …).',
+}
+
+const AP_SECTION_HINT: Record<string, string> = {
+    'Clinical History': 'The referral context — presenting complaint, duration, prior workup.',
+    'Gross Description': 'Macroscopic exam — dimensions, cut surface, how submitted.',
+    'Microscopic Description': 'What you see under the scope — architecture, cells, atypia, mitoses.',
+    'Immunohistochemistry': 'IHC panel — positive and negative markers, Ki-67 index.',
+    'Final Diagnosis': 'Definitive interpretation. Mark critical if it changes management.',
+    'Comment / Synopsis': 'Recommendations, follow-up, and staging pointers.',
+}
+
+const sectionHint = (r: ResultRow) =>
+    AP_SECTION_HINT[r.analyte_name] || VALUE_TYPE_HINT[r.value_type]
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Guidance shown per step in the wizard
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+interface StepGuidance {
+    icon: string
+    what: string
+    tips: string[]
+}
+
+const AP_SECTION_GUIDANCE: Record<string, StepGuidance> = {
+    'Clinical History': {
+        icon: 'notes-medical',
+        what: 'The referring clinician\'s context — why the biopsy was sent.',
+        tips: [
+            'Presenting complaint, duration and site.',
+            'Prior investigations or working diagnosis.',
+            'Relevant medications or comorbidities.',
+        ],
+    },
+    'Gross Description': {
+        icon: 'ruler',
+        what: 'Macroscopic examination of the specimen as received.',
+        tips: [
+            'Fixation state and container labelling.',
+            'Dimensions (three axes) and weight where relevant.',
+            'Cut surface and how the specimen was submitted (e.g. A1–A6).',
+        ],
+    },
+    'Microscopic Description': {
+        icon: 'microscope',
+        what: 'Findings under the microscope — architecture, cells, features.',
+        tips: [
+            'Overall tissue architecture and any effacement.',
+            'Cell populations, atypia, mitoses.',
+            'State what is present AND what is notably absent.',
+        ],
+    },
+    'Immunohistochemistry': {
+        icon: 'vial',
+        what: 'IHC panel results — positive and negative markers.',
+        tips: [
+            'Group markers as tumour cells / background / other.',
+            'Include Ki-67 proliferation index where applicable.',
+            'Note any performed but non-contributory stains.',
+        ],
+    },
+    'Final Diagnosis': {
+        icon: 'stamp',
+        what: 'The definitive interpretation — the answer to the referral question.',
+        tips: [
+            'Lead with anatomical site, then the diagnosis.',
+            'Include subtype/grade where relevant.',
+            'Mark critical if this changes clinical management.',
+        ],
+    },
+    'Comment / Synopsis': {
+        icon: 'comment-medical',
+        what: 'Recommendations, staging pointers, or follow-up guidance.',
+        tips: [
+            'Suggest confirmatory tests if needed.',
+            'Recommend clinical follow-up or referral.',
+            'Flag anything the clinician should be aware of.',
+        ],
+    },
+}
+
+const VALUE_TYPE_GUIDANCE: Record<ResultValueType, StepGuidance> = {
+    narrative: {
+        icon: 'align-left',
+        what: 'A long-form written description — use paragraphs and formatting.',
+        tips: ['e.g. "Sections show effacement of the normal architecture…"'],
+    },
+    text: {
+        icon: 'quote-left',
+        what: 'A short free-text value — a note or brief statement.',
+        tips: ['e.g. "Haemolysed sample."'],
+    },
+    numeric: {
+        icon: 'hashtag',
+        what: 'A measured quantity with a unit and reference range.',
+        tips: ['e.g. Potassium = 5.2 mmol/L (ref 3.5–5.1) → auto-flagged high.'],
+    },
+    coded: {
+        icon: 'list-check',
+        what: 'A controlled vocabulary result — pick or type a standard term.',
+        tips: ['e.g. "Reactive", "Non-reactive", "Detected".'],
+    },
+}
+
+// Standard AP (anatomic pathology) report sections, seeded when a test
+// is routed down the histo/cyto path. Order mirrors AP_SECTION_GUIDANCE.
+const AP_TEMPLATE: Partial<ResultRow>[] = Object.keys(AP_SECTION_GUIDANCE).map(name => ({
+    analyte_name: name,
+    value_type: 'narrative' as ResultValueType,
+}))
+
+let resultRowSeq = 0
+const makeRow = (init: Partial<ResultRow> = {}): ResultRow => ({
+    _uid: ++resultRowSeq,
+    value_type: init.value_type || 'text',
+    analyte_name: init.analyte_name || '',
+    analyte_code: init.analyte_code,
+    loinc_code: init.loinc_code,
+    value_numeric: null,
+    value_coded: '',
+    value_text: '',
+    unit: '',
+    reference_low: null,
+    reference_high: null,
+    reference_text: '',
+    flag: 'normal',
+    status: 'final',
+    is_critical: false,
+    instrument: '',
+    method: '',
+    comment: '',
+    critical_notified_to: '',
+    critical_notified_at: '',
+    _advancedOpen: false,
+})
+
+const resultWizardOpen = ref(false)
+const resultSubmitting = ref(false)
+const resultError = ref<string | null>(null)
+const resultRows = ref<ResultRow[]>([])
+
+// ── Wizard step spine ───────────────────────────────────────────────────────
+// Step 0 = Setup, steps 1..N = one row each, last step = Review
+const wizardStep = ref(0)
+const totalSteps = computed(() => 2 + resultRows.value.length)
+const isSetupStep = computed(() => wizardStep.value === 0)
+const isReviewStep = computed(() => wizardStep.value === resultRows.value.length + 1)
+const currentRowIdx = computed(() => wizardStep.value - 1)  // -1 on setup, N on review
+const progressPct = computed(() =>
+    Math.round(((wizardStep.value + 1) / totalSteps.value) * 100),
+)
+
+const goNext = () => {
+    if (wizardStep.value < totalSteps.value - 1) wizardStep.value++
+}
+const goPrev = () => {
+    if (wizardStep.value > 0) wizardStep.value--
+}
+const jumpToStep = (i: number) => {
+    if (i >= 0 && i < totalSteps.value) wizardStep.value = i
+}
+const jumpToRow = (i: number) => jumpToStep(i + 1)
+
+// Short label for the step chip (first word of analyte name, or fallback)
+const stepShortLabel = (r: ResultRow, i: number) =>
+    (r.analyte_name?.split(/\s+/)[0]) || `Row ${i + 1}`
+
+// Compact one-line value preview for the Review step (strips HTML)
+const rowValuePreview = (r: ResultRow): string => {
+    switch (r.value_type) {
+        case 'numeric':
+            return r.value_numeric != null
+                ? `${r.value_numeric}${r.unit ? ' ' + r.unit : ''}` +
+                (r.reference_low != null && r.reference_high != null
+                    ? ` (ref ${r.reference_low}–${r.reference_high})`
+                    : '')
+                : ''
+        case 'coded':
+            return r.value_coded || ''
+        default:
+            return (r.value_text || '').replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim()
+    }
+}
+
+// Guard against the step going out of range when rows are added/removed
+watch(() => resultRows.value.length, (n) => {
+    const max = n + 1  // Setup + N rows + Review = last index is n+1
+    if (wizardStep.value > max) wizardStep.value = max
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Draft persistence — saves to localStorage keyed by test UUID
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const DRAFT_KEY_PREFIX = 'ibcc-result-wizard:'
+const draftRestored = ref(false)
+const autosaveStamp = ref<string | null>(null)
+
+const draftKey = () => `${DRAFT_KEY_PREFIX}${testUuid.value}`
+
+const saveDraft = () => {
+    if (!import.meta.client || !resultRows.value.length) return
+    try {
+        const payload = {
+            version: 2,
+            savedAt: new Date().toISOString(),
+            step: wizardStep.value,
+            rows: resultRows.value,
+        }
+        localStorage.setItem(draftKey(), JSON.stringify(payload))
+        autosaveStamp.value = payload.savedAt
+    } catch { /* quota, ignore */ }
+}
+
+const loadDraft = (): boolean => {
+    if (!import.meta.client) return false
+    try {
+        const raw = localStorage.getItem(draftKey())
+        if (!raw) return false
+        const parsed = JSON.parse(raw)
+        if (!Array.isArray(parsed?.rows) || !parsed.rows.length) return false
+        resultRows.value = parsed.rows.map((r: any) => ({ ...r, _uid: ++resultRowSeq }))
+        wizardStep.value = Math.max(0, Math.min(Number(parsed.step) || 0, resultRows.value.length + 1))
+        autosaveStamp.value = parsed.savedAt || null
+        draftRestored.value = true
+        return true
+    } catch { return false }
+}
+
+const clearDraft = () => {
+    if (!import.meta.client) return
+    try { localStorage.removeItem(draftKey()) } catch { /* noop */ }
+    draftRestored.value = false
+    autosaveStamp.value = null
+}
+
+const discardDraftAndReset = () => {
+    clearDraft()
+    resultRows.value = isAnatomicPath.value
+        ? AP_TEMPLATE.map(t => makeRow(t))
+        : [makeRow({ value_type: 'text' })]
+    wizardStep.value = 0
+}
+
+// Auto-save whenever rows or step change while the wizard is open
+watch(
+    [resultRows, wizardStep],
+    () => { if (resultWizardOpen.value) saveDraft() },
+    { deep: true },
+)
+
+const isAnatomicPath = computed(() => {
+    const code = String(test.value?.test_code || '')
+    const section = String(order.value?.department?.section || '').toLowerCase()
+    return code.startsWith('11') || section.includes('histo') || section.includes('cyto')
+})
+
+const openResultWizard = () => {
+    resultError.value = null
+    const restored = loadDraft()
+    if (!restored) {
+        resultRows.value = isAnatomicPath.value
+            ? AP_TEMPLATE.map(t => makeRow(t))
+            : [makeRow({ value_type: 'text' })]
+        wizardStep.value = 0
+    }
+    resultWizardOpen.value = true
+}
+
+const addResultRow = () => resultRows.value.push(makeRow({ value_type: 'text' }))
+const removeResultRow = (i: number) => resultRows.value.splice(i, 1)
+const moveResultRow = (i: number, dir: -1 | 1) => {
+    const arr = resultRows.value
+    const j = i + dir
+    if (j < 0 || j >= arr.length) return
+    const a = arr[i]
+    const b = arr[j]
+    if (!a || !b) return
+    arr[i] = b
+    arr[j] = a
+}
+
+// Auto-derive flag for numeric rows from ref range
+const autoFlagNumeric = (r: ResultRow) => {
+    if (r.value_type !== 'numeric' || r.value_numeric == null) return
+    const lo = r.reference_low, hi = r.reference_high
+    if (lo != null && r.value_numeric < lo) r.flag = 'low'
+    else if (hi != null && r.value_numeric > hi) r.flag = 'high'
+    else r.flag = 'normal'
+}
+
+// Convenience: any row critical?
+const hasCriticalRow = computed(() =>
+    resultRows.value.some(r =>
+        r.is_critical || r.flag === 'critical_high' || r.flag === 'critical_low',
+    ),
+)
+
+const flagChipClass = (flag: ResultFlag) => {
+    const meta = FLAG_OPTIONS.find(f => f.value === flag)
+    switch (meta?.tone) {
+        case 'ok': return 'bg-ribbon-teal/10 text-ribbon-teal border border-ribbon-teal/25'
+        case 'warn': return 'bg-ribbon-amber/10 text-ribbon-amber border border-ribbon-amber/30'
+        case 'crit': return 'bg-error-container text-error border border-error/30'
+        default: return 'bg-surface-container text-on-surface-variant border border-outline-variant/30'
+    }
+}
+
+const submitResults = async () => {
+    resultError.value = null
+
+    // ── validate ──────────────────────────────────────────────────────────
+    if (!resultRows.value.length) {
+        resultError.value = 'Add at least one result row.'; return
+    }
+    for (const [i, r] of resultRows.value.entries()) {
+        if (!r.analyte_name?.trim()) {
+            resultError.value = `Row ${i + 1}: analyte name is required.`; return
+        }
+        const hasValue =
+            (r.value_type === 'numeric' && r.value_numeric != null && !Number.isNaN(r.value_numeric)) ||
+            (r.value_type === 'coded' && !!r.value_coded?.trim()) ||
+            ((r.value_type === 'text' || r.value_type === 'narrative') && !!r.value_text?.trim())
+        if (!hasValue) {
+            resultError.value = `Row ${i + 1} (${r.analyte_name}): a value is required.`; return
+        }
+        const critical = r.is_critical || r.flag === 'critical_high' || r.flag === 'critical_low'
+        if (critical && r.status === 'final' && (!r.critical_notified_to?.trim() || !r.critical_notified_at?.trim())) {
+            resultError.value = `Row ${i + 1} (${r.analyte_name}): critical results require notification (who + when) before "final".`
+            return
+        }
+    }
+
+    // ── build payload ─────────────────────────────────────────────────────
+    const payload = resultRows.value.map(r => {
+        const row: Record<string, any> = {
+            analyte_name: r.analyte_name.trim(),
+            flag: r.flag,
+            status: r.status,
+        }
+        if (r.analyte_code) row.analyte_code = r.analyte_code
+        if (r.loinc_code) row.loinc_code = r.loinc_code
+        if (r.value_type === 'numeric') {
+            row.value_numeric = Number(r.value_numeric)
+            if (r.unit) row.unit = r.unit
+            if (r.reference_low != null) row.reference_low = Number(r.reference_low)
+            if (r.reference_high != null) row.reference_high = Number(r.reference_high)
+            if (r.reference_text) row.reference_text = r.reference_text
+        } else if (r.value_type === 'coded') {
+            row.value_coded = r.value_coded?.trim()
+        } else {
+            row.value_text = r.value_text?.trim()
+        }
+        if (r.is_critical) row.is_critical = true
+        if (r.instrument) row.instrument = r.instrument
+        if (r.method) row.method = r.method
+        if (r.comment) row.comment = r.comment
+        if (r.critical_notified_to) row.critical_notified_to = r.critical_notified_to
+        if (r.critical_notified_at) row.critical_notified_at = r.critical_notified_at
+        return row
+    })
+
+    resultSubmitting.value = true
+    try {
+        await createResults(orderUuid.value, testUuid.value, payload)
+        clearDraft()
+        wizardStep.value = 0
+        resultWizardOpen.value = false
+        selectedSlideUuids.value = new Set()
+        await load()
+    } catch (e: any) {
+        resultError.value = e?.message || 'Failed to save results.'
+    } finally {
+        resultSubmitting.value = false
     }
 }
 
@@ -1318,6 +2964,341 @@ const urgencyClass = (u: string) => {
     return 'ribbon-chip-teal'
 }
 
+// Results-tab helpers
+const finalResultsCount = computed(() =>
+    (test.value?.results || []).filter((r: any) => r.status === 'final').length,
+)
+const preliminaryResultsCount = computed(() =>
+    (test.value?.results || []).filter((r: any) => r.status === 'preliminary').length,
+)
+const criticalResultsCount = computed(() =>
+    (test.value?.results || []).filter((r: any) => r.is_critical).length,
+)
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Results tab: selection + validation modal
+// ═══════════════════════════════════════════════════════════════════════════
+const selectedResultUuids = ref<Set<string>>(new Set())
+const resultsBulkMenuOpen = ref(false)
+const resultsBulkMenuRef = ref<HTMLElement | null>(null)
+
+// ── Floating-Actions helper ─────────────────────────────────────────────────
+// Watches whether an element is in the viewport; the FAB shows when it isn't.
+const useInView = (target: Ref<HTMLElement | null>) => {
+    const inView = ref(true)
+    let observer: IntersectionObserver | null = null
+
+    onMounted(() => {
+        if (!target.value || typeof IntersectionObserver === 'undefined') return
+        observer = new IntersectionObserver(
+            ([entry]) => { inView.value = !!entry?.isIntersecting },
+            { threshold: 0.05, rootMargin: '-4px 0px 0px 0px' },
+        )
+        observer.observe(target.value)
+    })
+    onBeforeUnmount(() => observer?.disconnect())
+
+    // Re-observe when the ref target changes (e.g. tab switch remounts the toolbar)
+    watch(target, (el, _old) => {
+        observer?.disconnect()
+        if (!el || typeof IntersectionObserver === 'undefined') return
+        observer = new IntersectionObserver(
+            ([entry]) => { inView.value = !!entry?.isIntersecting },
+            { threshold: 0.05, rootMargin: '-4px 0px 0px 0px' },
+        )
+        observer.observe(el)
+    })
+
+    return inView
+}
+
+const scrollToolbarIntoView = (which: 'blocks' | 'slides' | 'results') => {
+    const map: Record<typeof which, HTMLElement | null> = {
+        blocks: bulkMenuRef.value,
+        slides: slidesBulkMenuRef.value,
+        results: resultsBulkMenuRef.value,
+    }
+    const el = map[which]
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+}
+
+const blocksToolbarInView = useInView(bulkMenuRef as unknown as Ref<HTMLElement | null>)
+const slidesToolbarInView = useInView(slidesBulkMenuRef as unknown as Ref<HTMLElement | null>)
+const resultsToolbarInView = useInView(resultsBulkMenuRef as unknown as Ref<HTMLElement | null>)
+
+const allResultsSelected = computed(() =>
+    !!test.value?.results?.length &&
+    selectedResultUuids.value.size === test.value.results.length,
+)
+const someResultsSelected = computed(() =>
+    selectedResultUuids.value.size > 0 && !allResultsSelected.value,
+)
+
+const toggleResultSelection = (uuid: string) => {
+    const s = new Set(selectedResultUuids.value)
+    s.has(uuid) ? s.delete(uuid) : s.add(uuid)
+    selectedResultUuids.value = s
+    if (!s.size) resultsBulkMenuOpen.value = false
+}
+const toggleSelectAllResults = () => {
+    if (allResultsSelected.value) {
+        selectedResultUuids.value = new Set()
+        resultsBulkMenuOpen.value = false
+    } else {
+        selectedResultUuids.value = new Set((test.value?.results || []).map((r: any) => r.uuid))
+    }
+}
+
+// Selected result rows, in test.results order (stable UI ordering)
+const selectedResultRows = computed(() =>
+    (test.value?.results || []).filter((r: any) => selectedResultUuids.value.has(r.uuid)),
+)
+
+// Derived validation state per row
+type ValidationState = 'unvalidated' | 'tech_signed' | 'authorised'
+const validationStateOf = (r: any): ValidationState => {
+    if (r?.clinically_validated_by) return 'authorised'
+    if (r?.technically_validated_by) return 'tech_signed'
+    return 'unvalidated'
+}
+const validationChipClass = (state: ValidationState) => {
+    switch (state) {
+        case 'authorised': return 'bg-ribbon-teal/10 text-ribbon-teal border border-ribbon-teal/30'
+        case 'tech_signed': return 'bg-primary/10 text-primary border border-primary/25'
+        default: return 'bg-surface-container text-on-surface-variant border border-outline-variant/30'
+    }
+}
+const validationChipLabel = (state: ValidationState) =>
+    state === 'authorised' ? 'Authorised'
+        : state === 'tech_signed' ? 'Tech-signed'
+            : 'Unvalidated'
+
+/* ─── Validation modal state ───────────────────────────────────────────── */
+type ValidationLevel = 'technical' | 'clinical'
+type ValidationStatus = 'final' | 'corrected' | 'amended'
+
+interface ValidationRowState {
+    uuid: string
+    analyte: string
+    status: string
+    flag: string
+    is_critical: boolean
+    technically_validated_by: string | null
+    clinically_validated_by: string | null
+    _state: 'idle' | 'running' | 'ok' | 'failed'
+    _error?: string
+    _acknowledged: boolean
+}
+
+const validationModalOpen = ref(false)
+const validationLevel = ref<ValidationLevel>('technical')
+const validationStatus = ref<ValidationStatus>('final')  // clinical only
+const validationRows = ref<ValidationRowState[]>([])
+const validationRunning = ref(false)
+const validationError = ref<string | null>(null)
+const validationDone = ref(false)
+
+// What level is each row eligible for RIGHT NOW?
+//  - null                     → already authorised, nothing to do
+//  - 'technical'              → not yet tech-signed
+//  - 'clinical'               → tech-signed, not yet authorised
+const nextLevelForRow = (r: {
+    technically_validated_by: string | null
+    clinically_validated_by: string | null
+}): ValidationLevel | null => {
+    if (r.clinically_validated_by) return null
+    if (!r.technically_validated_by) return 'technical'
+    return 'clinical'
+}
+
+// Distinct levels present across the selection
+const selectionLevels = computed<Set<ValidationLevel>>(() => {
+    const set = new Set<ValidationLevel>()
+    for (const r of validationRows.value) {
+        const lvl = nextLevelForRow(r)
+        if (lvl) set.add(lvl)
+    }
+    return set
+})
+
+const hasMixedSelection = computed(() => selectionLevels.value.size > 1)
+const hasNothingToDo = computed(() =>
+    validationRows.value.length > 0 && selectionLevels.value.size === 0,
+)
+const onlyLevel = computed<ValidationLevel | null>(() => {
+    if (selectionLevels.value.size !== 1) return null
+    return [...selectionLevels.value][0] as ValidationLevel
+})
+
+const openValidationModal = () => {
+    if (!selectedResultRows.value.length) return
+    resultsBulkMenuOpen.value = false
+    validationError.value = null
+    validationDone.value = false
+    validationStatus.value = 'final'
+
+    validationRows.value = selectedResultRows.value.map(r => ({
+        uuid: r.uuid,
+        analyte: r.analyte,
+        status: r.status,
+        flag: r.flag,
+        is_critical: !!r.is_critical,
+        technically_validated_by: r.technically_validated_by,
+        clinically_validated_by: r.clinically_validated_by,
+        _state: 'idle',
+        _acknowledged: false,
+    }))
+
+    // Auto-detect level: whatever the selection contains.
+    // Mixed selection → default to technical (the earlier phase); user sees the mix banner.
+    if (selectionLevels.value.has('technical')) validationLevel.value = 'technical'
+    else if (selectionLevels.value.has('clinical')) validationLevel.value = 'clinical'
+    else validationLevel.value = 'technical'
+
+    validationModalOpen.value = true
+}
+
+// A row is eligible in this run iff its next required level matches the modal's level
+const rowIsEligible = (row: ValidationRowState): { ok: boolean; reason?: string } => {
+    const next = nextLevelForRow(row)
+    if (next === null) return { ok: false, reason: 'Already authorised' }
+    if (next !== validationLevel.value) {
+        return {
+            ok: false,
+            reason: next === 'technical'
+                ? 'Needs technical sign-off first'
+                : 'Ready for clinical authorisation',
+        }
+    }
+    if (validationLevel.value === 'clinical') {
+        const isCritical = row.is_critical || row.flag === 'critical_high' || row.flag === 'critical_low'
+        if (isCritical && !row._acknowledged) {
+            return { ok: false, reason: 'Acknowledge critical review first' }
+        }
+    }
+    return { ok: true }
+}
+
+const eligibleRowCount = computed(() =>
+    validationRows.value.filter(r => rowIsEligible(r).ok).length,
+)
+const anyCriticalUnAckd = computed(() =>
+    validationLevel.value === 'clinical' &&
+    validationRows.value.some(r => {
+        if (nextLevelForRow(r) !== 'clinical') return false
+        const isCritical = r.is_critical || r.flag === 'critical_high' || r.flag === 'critical_low'
+        return isCritical && !r._acknowledged
+    }),
+)
+
+const successCount = computed(() =>
+    validationRows.value.filter(r => r._state === 'ok').length,
+)
+const failedCount = computed(() =>
+    validationRows.value.filter(r => r._state === 'failed').length,
+)
+
+const submitValidation = async () => {
+    validationError.value = null
+    const rows = validationRows.value.filter(r => rowIsEligible(r).ok && r._state !== 'ok')
+    if (!rows.length) {
+        validationError.value = 'No eligible rows to process.'
+        return
+    }
+    validationRunning.value = true
+    // Process serially — partial failures stay actionable per row.
+    for (const row of rows) {
+        row._state = 'running'
+        row._error = undefined
+        try {
+            const res: any = await validateResult(
+                orderUuid.value, testUuid.value, row.uuid,
+                validationLevel.value,
+                validationLevel.value === 'clinical' ? validationStatus.value : undefined,
+            )
+            // Update local snapshot from response if returned
+            const updated = res?.test?.results?.find((x: any) => x.uuid === row.uuid)
+            if (updated) {
+                row.status = updated.status
+                row.technically_validated_by = updated.technically_validated_by
+                row.clinically_validated_by = updated.clinically_validated_by
+            } else {
+                // Optimistic
+                const who = 'You'
+                const now = new Date().toISOString()
+                if (validationLevel.value === 'technical') row.technically_validated_by = `${who} · ${now}`
+                else row.clinically_validated_by = `${who} · ${now}`
+            }
+            row._state = 'ok'
+        } catch (e: any) {
+            row._state = 'failed'
+            row._error = e?.message || 'Failed'
+        }
+    }
+    validationRunning.value = false
+    validationDone.value = true
+    // Full refresh so the results tab reflects server truth
+    await load()
+    // Trim page selection to only rows that still need attention
+    selectedResultUuids.value = new Set(
+        validationRows.value.filter(r => r._state !== 'ok').map(r => r.uuid),
+    )
+    // If all successes are done and any rows are now ready for the NEXT level, auto-switch
+    const stillPending = validationRows.value.filter(r => nextLevelForRow(r) !== null)
+    if (stillPending.length && !failedCount.value) {
+        const nextLvl = stillPending.every(r => nextLevelForRow(r) === 'clinical') ? 'clinical' : 'technical'
+        if (nextLvl !== validationLevel.value) {
+            // Reset per-row state so the next pass is clean
+            validationRows.value.forEach(r => {
+                if (nextLevelForRow(r) !== null) {
+                    r._state = 'idle'
+                    r._acknowledged = false
+                    r._error = undefined
+                }
+            })
+            validationLevel.value = nextLvl
+            validationDone.value = false
+        }
+    }
+}
+
+// Outside-click close for the results bulk menu
+onMounted(() => {
+    document.addEventListener('click', (e) => {
+        const t = e.target as Node
+        if (resultsBulkMenuOpen.value && resultsBulkMenuRef.value && !resultsBulkMenuRef.value.contains(t)) {
+            resultsBulkMenuOpen.value = false
+        }
+    })
+})
+
+const resultStatusClass = (status?: string) => {
+    switch (status) {
+        case 'final': return 'bg-ribbon-teal/10 text-ribbon-teal border border-ribbon-teal/25'
+        case 'preliminary': return 'bg-accent-fixed text-accent-on border border-accent/30'
+        case 'corrected':
+        case 'amended': return 'bg-ribbon-amber/10 text-ribbon-amber border border-ribbon-amber/30'
+        default: return 'bg-surface-container text-on-surface-variant border border-outline-variant/30'
+    }
+}
+
+// Narrative results come back as HTML (<p>…</p>); everything else is plain
+const isHtmlValue = (v: unknown) =>
+    typeof v === 'string' && /<[a-z][\s\S]*>/i.test(v)
+
+// Compact date formatter (Aug 6, 22:47)
+const fmtDateTime = (iso?: string | null) => {
+    if (!iso) return '—'
+    try {
+        return new Date(iso).toLocaleString(undefined, {
+            month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+        })
+    } catch { return String(iso) }
+}
+
 // ── tiny inline detail renderer (label + value) ──────────────────────────────
 const Detail = (props: { label: string; value: string | number | null | undefined }) =>
     h('div', { class: 'min-w-0' }, [
@@ -1584,5 +3565,149 @@ const GenericRecordList = (props: { items: any[] | null | undefined; emptyIcon: 
 .block-card__selected-badge--teal {
     background: #3dae8c;
     box-shadow: 0 2px 6px rgba(61, 174, 140, 0.35);
+}
+
+/* ── Wizard row toolbar buttons ────────────────────────────────────────── */
+.btn-icon {
+    @apply inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg text-on-surface-variant bg-white border border-outline-variant/40 hover:bg-surface-low hover:text-on-surface transition-colors disabled:opacity-40 disabled:cursor-not-allowed;
+}
+
+.btn-icon--danger {
+    @apply text-error hover:bg-error-container/40 hover:text-error;
+}
+
+/* ── Rich-text editor wrappers inside the result wizard ────────────────── */
+.rich-editor-wrap :deep(.ck-editor__editable) {
+    min-height: 180px;
+    max-height: 480px;
+    overflow-y: auto;
+}
+
+.rich-editor-wrap--compact :deep(.ck-editor__editable) {
+    min-height: 90px;
+    max-height: 220px;
+}
+
+/* Broken slide image → hide the <img> so the placeholder gradient shows through */
+.block-card img[data-failed="1"] {
+    display: none;
+}
+
+/* ── Rendered HTML from the server (narrative results) ─────────────────── */
+.result-rich :deep(p) {
+    margin: 0 0 0.5rem 0;
+    line-height: 1.55;
+}
+
+.result-rich :deep(p:last-child) {
+    margin-bottom: 0;
+}
+
+.result-rich :deep(strong) {
+    font-weight: 700;
+}
+
+.result-rich :deep(em) {
+    font-style: italic;
+}
+
+.result-rich :deep(ul),
+.result-rich :deep(ol) {
+    margin: 0.25rem 0 0.5rem 1.25rem;
+    padding: 0;
+}
+
+.result-rich :deep(li) {
+    margin: 0.15rem 0;
+}
+
+.result-rich :deep(blockquote) {
+    border-left: 3px solid var(--color-outline-variant, #c2c6d8);
+    padding-left: 0.75rem;
+    color: var(--color-on-surface-variant, #424656);
+    margin: 0.5rem 0;
+}
+
+/* ── Floating Actions pill ─────────────────────────────────────────────── */
+.fab-actions {
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+    z-index: 40;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 9999px;
+    color: #ffffff;
+    background: linear-gradient(135deg, #5b9bdb 0%, #3d7fbf 100%);
+    box-shadow:
+        0 8px 24px rgba(61, 127, 191, 0.35),
+        0 2px 6px rgba(0, 0, 0, 0.10),
+        inset 0 1px 0 rgba(255, 255, 255, 0.20);
+    font-weight: 700;
+    font-size: 0.875rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+}
+
+.fab-actions:hover {
+    transform: translateY(-2px);
+    box-shadow:
+        0 12px 28px rgba(61, 127, 191, 0.42),
+        0 4px 10px rgba(0, 0, 0, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.20);
+}
+
+.fab-actions:active {
+    transform: translateY(0);
+}
+
+.fab-actions:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.fab-actions__label {
+    white-space: nowrap;
+}
+
+/* Sit above bottom safe-area on mobile */
+@supports (padding: env(safe-area-inset-bottom)) {
+    .fab-actions {
+        bottom: calc(1rem + env(safe-area-inset-bottom));
+        right: calc(1rem + env(safe-area-inset-right));
+    }
+}
+
+/* Enter / leave animation */
+.fab-pop-enter-from,
+.fab-pop-leave-to {
+    opacity: 0;
+    transform: translateY(12px) scale(0.9);
+}
+
+.fab-pop-enter-active,
+.fab-pop-leave-active {
+    transition: opacity 0.18s ease, transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.fab-pop-enter-to,
+.fab-pop-leave-from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+/* Narrative HTML inside compact result cards — tighter rhythm */
+.block-card .result-rich :deep(p) {
+    margin: 0 0 0.35rem 0;
+    line-height: 1.45;
+}
+
+.block-card .result-rich :deep(ul),
+.block-card .result-rich :deep(ol) {
+    margin: 0.15rem 0 0.35rem 1rem;
 }
 </style>

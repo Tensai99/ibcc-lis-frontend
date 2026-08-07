@@ -53,7 +53,7 @@ withDefaults(
   }>(),
   {
     org: 'International Blantyre Cancer Centre',
-    product: 'Hospital Information System',
+    product: 'Laboratory Information System',
     version: '',
     href: '',
   },

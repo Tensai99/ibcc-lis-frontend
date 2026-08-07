@@ -13,10 +13,9 @@
             <font-awesome-icon :icon="['fas', 'boxes-stacked']" class="text-xl" />
           </div>
           <div class="min-w-0">
-            <h1 class="text-lg sm:text-md text-outline font-bold mt-0.5 uppercase">
-              {{ isPrivileged ? 'Administrative inventory overview' : `${auth.currentUser?.department || 'Department'}
-              inventory overview` }}
-            </h1>
+            <<h1 class="text-lg sm:text-md text-outline font-bold mt-0.5 uppercase">
+  Administrative inventory overview
+</h1>
           </div>
         </div>
         <button v-if="can('inventory_management')" ref="headerMenuBtn" type="button" class="adv-btn"
@@ -36,9 +35,9 @@
       </div>
 
       <!-- ═══════════ PRIVILEGED VIEW (system_administrator / inventory_officer) ═══════════ -->
-      <template>
-        <!-- ── Tab bar: width locked to the primary group, Show more/less scrolls the rest in ── -->
-        <div ref="tabBarEl" class="g-card p-1.5 sm:p-2 inline-flex max-w-full overflow-hidden"
+<template v-if="isPrivileged">
+  <!-- ── Tab bar: width locked to the primary group, Show more/less scrolls the rest in ── -->
+  <div ref="tabBarEl" class="g-card p-1.5 sm:p-2 inline-flex max-w-full overflow-hidden"
           :style="lockedWidth ? { width: lockedWidth + 'px' } : {}">
           <div class="flex items-center gap-1 w-full">
             <div ref="tabScroller"
@@ -1166,8 +1165,8 @@
       :show-logo="false" class="max-w-2xl">
       <div class="space-y-3">
         <div v-for="(r, i) in receipts" :key="`${r.batch_no}-${i}`"
-          class="p-3 rounded-lg border border-white/50"
-          :class="i % 2 === 0 ? 'bg-surface-low' : 'bg-surface-container/60'">
+  class="p-3 rounded-lg border border-white/50"
+  :class="Number(i) % 2 === 0 ? 'bg-surface-low' : 'bg-surface-container/60'">
           <div class="flex justify-between items-center gap-2 mb-1">
             <span class="text-xs font-bold text-on-surface break-words">{{ r.batch_no }}</span>
             <span class="text-[10px] text-outline whitespace-nowrap">{{ relTime(r.received_date) }}</span>
@@ -1408,10 +1407,6 @@ const can = (p: string) => auth.can(p)
 // only these roles see the whole dashboard + other departments
 const PRIVILEGED_ROLES = ['system_administrator', 'inventory_officer']
 const isPrivileged = computed(() => PRIVILEGED_ROLES.includes(auth.currentRole))
-  
-if (!isPrivileged.value) {
-  await navigateTo('/inventory/department', { replace: true })
-}
 
 // ── tabs ────────────────────────────────────────────────────────────────────
 type TabKey = 'overview' | 'items' | 'stock' | 'usage' | 'damages' | 'disposals' | 'expiration'
@@ -1806,7 +1801,7 @@ const lowStock = computed(() => dashboard.value?.low_stock ?? [])
 const expiringSoon = computed(() => dashboard.value?.expiring_soon ?? [])
 const expired = computed(() => dashboard.value?.expired ?? { batches: 0, quantity: '0.0' })
 const approvals = computed(() => dashboard.value?.pending_approvals ?? {})
-const receipts = computed(() => dashboard.value?.recent_receipts ?? [])
+const receipts = computed<any[]>(() => dashboard.value?.recent_receipts ?? [])
 
 // ── usage insights (overview) ────────────────────────────────────────────────
 const usage = computed(() => dashboard.value?.usage_insights ?? {})
@@ -2029,13 +2024,19 @@ const DeptOverviewBody = () => {
 
 // ── mount ───────────────────────────────────────────────────────────────────
 onMounted(() => {
+  // Non-privileged roles get their own department view — bounce them out.
+  if (!isPrivileged.value) {
+    navigateTo('/inventory/department', { replace: true })
+    return
+  }
+
   const qTab = route.query.tab as TabKey | undefined
   if (qTab && tabs.some((x) => x.key === qTab)) activeTab.value = qTab
-  if (isPrivileged.value) {
-    loadDashboard(); loadTypes(); loadItems(); loadDepartments()
-  } else {
-    loadDeptDashboard()   // restricted users: only their own department overview
-  }
+
+  loadDashboard()
+  loadTypes()
+  loadItems()
+  loadDepartments()
 })
 </script>
 
