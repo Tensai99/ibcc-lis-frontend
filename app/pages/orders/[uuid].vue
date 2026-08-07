@@ -1,84 +1,98 @@
 <!-- app/pages/orders/[uuid].vue -->
 <template>
-  <div class="space-y-4 sm:space-y-5 animate-fade-in">
+  <div>
+    <div class="max-w-[98%] mx-auto flex flex-col gap-5">
 
-    <!-- Breadcrumb (pill) -->
-    <div class="mb-1">
-      <nav
-        class="inline-flex items-center gap-1 bg-white/80 border border-white/50 rounded-xl px-2 py-1.5 text-xs shadow-sm">
+      <!-- Breadcrumb (glass pill) -->
+      <nav class="g-card inline-flex self-start items-center gap-1 px-2.5 py-1.5 text-xs">
         <NuxtLink to="/orders"
-          class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-surface-low hover:text-on-surface transition-colors">
-          <font-awesome-icon :icon="['fas', 'vials']" class="text-[11px]" />Laboratory Orders
+          class="flex items-center gap-1.5 px-2 py-1 rounded-lg text-on-surface-variant hover:bg-ribbon-blue/10 hover:text-ribbon-blue transition-colors">
+          <font-awesome-icon :icon="['fas', 'vials']" class="text-[11px]" />
+          <span>Laboratory orders</span>
         </NuxtLink>
         <font-awesome-icon :icon="['fas', 'chevron-right']" class="text-[9px] text-outline/40" />
         <span v-if="order" class="flex items-center gap-1.5 px-2 py-1 text-on-surface font-semibold">
-          <font-awesome-icon :icon="['fas', 'flask-vial']" class="text-[11px] text-primary" />{{ order.accession_number
-          }}
+          <font-awesome-icon :icon="['fas', 'flask-vial']" class="text-[11px] text-ribbon-blue" />
+          <span class="font-mono">{{ order.accession_number }}</span>
         </span>
       </nav>
-    </div>
 
-    <!-- Loading -->
-    <div v-if="loading" class="island flex flex-col items-center justify-center gap-3 py-20">
-      <font-awesome-icon :icon="['fas', 'circle-notch']" class="text-3xl text-primary animate-spin" />
-      <p class="text-sm text-on-surface-variant">Loading order…</p>
-    </div>
-
-    <!-- Error -->
-    <div v-else-if="error" class="island flex flex-col items-center justify-center gap-3 py-20 text-center">
-      <div class="w-14 h-14 rounded-full bg-error-container flex items-center justify-center">
-        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-2xl text-error" />
+      <!-- Loading -->
+      <div v-if="loading" class="g-card flex flex-col items-center justify-center gap-3 py-20">
+        <font-awesome-icon :icon="['fas', 'circle-notch']" class="text-3xl text-primary animate-spin" />
+        <p class="text-sm text-on-surface-variant">Loading order…</p>
       </div>
-      <p class="text-sm text-on-surface-variant max-w-md">{{ error }}</p>
-      <div class="flex gap-2">
-        <NuxtLink to="/orders" class="btn-secondary">
-          <font-awesome-icon :icon="['fas', 'arrow-left']" /><span>Back to orders</span>
-        </NuxtLink>
-        <button type="button" class="btn-secondary" @click="load"><font-awesome-icon
-            :icon="['fas', 'rotate-right']" /><span>Retry</span></button>
+
+      <!-- Error -->
+      <div v-else-if="error" class="g-card flex flex-col items-center justify-center gap-3 py-20 text-center">
+        <div class="w-14 h-14 rounded-full bg-error/10 flex items-center justify-center">
+          <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-2xl text-error" />
+        </div>
+        <p class="text-sm text-on-surface-variant max-w-md">{{ error }}</p>
+        <div class="flex gap-2">
+          <NuxtLink to="/orders" class="pager-btn !w-auto !h-auto !rounded-lg !px-3 !py-2 gap-2 text-sm font-semibold">
+            <font-awesome-icon :icon="['fas', 'arrow-left']" /><span>Back to orders</span>
+          </NuxtLink>
+          <button type="button" class="pager-btn !w-auto !h-auto !rounded-lg !px-3 !py-2 gap-2 text-sm font-semibold" @click="load">
+            <font-awesome-icon :icon="['fas', 'rotate-right']" /><span>Retry</span>
+          </button>
+        </div>
       </div>
-    </div>
 
-    <!-- Order -->
-    <template v-else-if="order">
+      <!-- Order -->
+      <template v-else-if="order">
 
-      <!-- Header card -->
-      <div class="rounded-xl p-4 sm:p-6 bg-primary-gradient text-white shadow-island">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div class="min-w-0">
-            <p class="text-xs sm:text-sm text-white/70 font-semibold uppercase tracking-wide">Accession</p>
-            <h1 class="text-xl sm:text-2xl md:text-3xl font-bold break-words">{{ order.accession_number }}</h1>
-            <p class="text-sm text-white/80 mt-1 break-words">
-              {{ order.patient_name }}
-              <span v-if="order.age != null || order.gender" class="text-white/60">
-                · {{ [order.age != null ? `${order.age}y` : null, order.gender].filter(Boolean).join(' · ') }}
-              </span>
-            </p>
+        <!-- Header (g-card, gradient icon tile — matches department.vue) -->
+        <header class="g-card relative z-30 flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-5 sm:px-8 py-5 sm:py-6">
+          <div class="flex items-center gap-4 min-w-0">
+            <div class="w-12 h-12 bg-primary-gradient rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20 shrink-0">
+              <font-awesome-icon :icon="['fas', 'flask-vial']" class="text-xl" />
+            </div>
+            <div class="min-w-0">
+              <p class="text-[10px] text-ribbon-blue font-bold uppercase tracking-wider">Accession</p>
+              <h1 class="text-xl sm:text-2xl font-bold text-on-surface break-words font-mono">{{ order.accession_number }}</h1>
+              <p class="text-xs sm:text-sm text-on-surface-variant mt-0.5 break-words">
+                <span class="font-semibold text-on-surface">{{ order.patient_name }}</span>
+                <span v-if="order.age != null || order.gender" class="text-outline">
+                  · {{ [order.age != null ? `${order.age}y` : null, order.gender].filter(Boolean).join(' · ') }}
+                </span>
+              </p>
+            </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
-            <span :class="statusClass(order.status)">{{ titleCase(order.status) }}</span>
-            <span :class="urgencyClass(order.urgency)">{{ order.urgency }}</span>
+          <div class="flex flex-wrap items-center gap-2 shrink-0">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap" :class="statusPillClass(order.status)">
+              {{ titleCase(order.status) }}
+            </span>
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap uppercase" :class="urgencyClass(order.urgency)">
+              {{ order.urgency || '—' }}
+            </span>
 
-            <!-- Advanced options dropdown (holds all workflow actions) -->
+            <!-- Advanced options -->
             <div class="relative">
-              <button type="button" class="hdr-btn" @click="advOpen = !advOpen">
+              <button type="button" class="adv-toggle" @click="advOpen = !advOpen">
                 <font-awesome-icon :icon="['fas', 'sliders']" />
-                <span>Advanced options</span>
+                <span class="hidden sm:inline">Actions</span>
                 <font-awesome-icon :icon="['fas', 'chevron-down']" class="text-[0.65rem] transition-transform"
                   :class="advOpen ? 'rotate-180' : ''" />
               </button>
-              <div v-if="advOpen" class="fixed inset-0 z-20" @click="advOpen = false" />
+              <div v-if="advOpen" class="fixed inset-0 z-40" @click="advOpen = false" />
               <div v-if="advOpen"
-                class="absolute right-0 top-full mt-2 w-56 rounded-xl bg-surface-lowest shadow-island border border-outline-variant/40 py-1 z-30">
+                class="absolute right-0 top-full mt-2 w-56 rounded-xl bg-surface-lowest shadow-island border border-outline-variant/40 py-1 z-50">
                 <button type="button" class="adv-item" @click="openUpdate(); advOpen = false">
-                  <font-awesome-icon :icon="['fas', 'pen-to-square']" class="text-primary" /><span>Update order</span>
+                  <font-awesome-icon :icon="['fas', 'pen-to-square']" class="text-ribbon-blue" /><span>Update order</span>
                 </button>
                 <button type="button" class="adv-item" @click="openCollect(); advOpen = false">
                   <font-awesome-icon :icon="['fas', 'droplet']" class="text-ribbon-teal" /><span>Collect specimen</span>
                 </button>
                 <button type="button" class="adv-item" @click="receiveOpen = true; advOpen = false">
                   <font-awesome-icon :icon="['fas', 'inbox']" class="text-ribbon-amber" /><span>Receive order</span>
+                </button>
+                <button type="button" class="adv-item" @click="openReport(); advOpen = false">
+                  <font-awesome-icon :icon="['fas', 'file-signature']" class="text-ribbon-teal" /><span>Complete report</span>
+                </button>
+                <button type="button" class="adv-item" @click="openRelease(); advOpen = false">
+                  <font-awesome-icon :icon="['fas', 'paper-plane']" class="text-ribbon-purple" /><span>Release report</span>
                 </button>
                 <div class="my-1 h-px bg-outline-variant/40" />
                 <button type="button" class="adv-item" @click="openVoid(); advOpen = false">
@@ -87,270 +101,360 @@
               </div>
             </div>
           </div>
+        </header>
+
+        <!-- KPI ribbon strip -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-5">
+          <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-blue">
+            <p class="text-[10px] text-ribbon-blue font-bold uppercase tracking-wider mb-2">Tests</p>
+            <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ order.tests?.length ?? 0 }}</p>
+          </div>
+          <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-amber">
+            <p class="text-[10px] text-ribbon-amber font-bold uppercase tracking-wider mb-2">Blocks</p>
+            <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ counts.blocks }}</p>
+          </div>
+          <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-teal">
+            <p class="text-[10px] text-ribbon-teal font-bold uppercase tracking-wider mb-2">Slides</p>
+            <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ counts.slides }}</p>
+          </div>
+          <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-red bg-ribbon-red/5">
+            <p class="text-[10px] text-ribbon-red font-bold uppercase tracking-wider mb-2">TAT breached</p>
+            <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ counts.breached }}</p>
+          </div>
         </div>
-      </div>
 
-      <!-- Tabs -->
-      <div class="tab-bar">
-        <button type="button" class="tab-item" :class="{ active: tab === 'general' }" @click="tab = 'general'">
-          General
-        </button>
-        <button type="button" class="tab-item" :class="{ active: tab === 'tests' }" @click="tab = 'tests'">
-          Tests <span class="text-on-surface-variant font-normal">({{ order.tests?.length || 0 }})</span>
-        </button>
-      </div>
+        <!-- Tabs (pill row inside a g-card) -->
+        <div class="g-card p-2 flex gap-1 self-start">
+          <button type="button" class="tab-pill" :class="{ 'tab-pill-active': tab === 'general' }" @click="tab = 'general'">
+            <font-awesome-icon :icon="['fas', 'circle-info']" class="text-[11px]" />
+            <span>General</span>
+          </button>
+          <button type="button" class="tab-pill" :class="{ 'tab-pill-active': tab === 'tests' }" @click="tab = 'tests'">
+            <font-awesome-icon :icon="['fas', 'vial']" class="text-[11px]" />
+            <span>Tests</span>
+            <span class="tab-count">{{ order.tests?.length || 0 }}</span>
+          </button>
+        </div>
 
-      <!-- ══ General tab ══ -->
-      <div v-show="tab === 'general'" class="space-y-4">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div class="island lg:col-span-2">
-            <h3 class="section-heading">Order details</h3>
-            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-              <Detail label="Department" :value="order.department?.name" />
-              <Detail label="Section" :value="order.department?.section" />
-              <Detail label="Specimen" :value="order.specimen" />
-              <Detail label="Site" :value="order.site" />
-              <Detail label="Scheduled for" :value="fmtDate(order.scheduled_for)" />
-              <Detail label="Disposition" :value="order.disposition" />
-              <Detail label="Collection time" :value="fmtDate(order.collection_time)" />
-              <Detail label="Reception time" :value="fmtDate(order.reception_time)" />
-              <Detail label="Referring facility" :value="order.referring_facility" />
-              <Detail label="Requested by" :value="order.requested_by" />
-              <Detail label="Requested by occupation" :value="order.requested_by_occupation" />
-              <Detail label="Received by" :value="order.received_by" />
-            </dl>
+        <!-- ══ General tab ══ -->
+        <div v-show="tab === 'general'" class="flex flex-col gap-5">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+            <!-- Order details -->
+            <div class="g-card p-6 sm:p-8 lg:col-span-2">
+              <h3 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold mb-5">Order details</h3>
+              <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
+                <Detail label="Department" :value="order.department?.name" />
+                <Detail label="Section" :value="order.department?.section" />
+                <Detail label="Specimen" :value="order.specimen" />
+                <Detail label="Site" :value="order.site" />
+                <Detail label="Scheduled for" :value="fmtDate(order.scheduled_for)" />
+                <Detail label="Disposition" :value="order.disposition" />
+                <Detail label="Collection time" :value="fmtDate(order.collection_time)" />
+                <Detail label="Reception time" :value="fmtDate(order.reception_time)" />
+                <Detail label="Referring facility" :value="order.referring_facility" />
+                <Detail label="Requested by" :value="order.requested_by" />
+                <Detail label="Requested by occupation" :value="order.requested_by_occupation" />
+                <Detail label="Received by" :value="order.received_by" />
+              </dl>
 
-            <template v-if="clinicalEntries.length">
-              <h4 class="sub-label mt-4">Clinical details</h4>
-              <div class="flex flex-wrap gap-2">
-                <span v-for="[k, v] in clinicalEntries" :key="k" class="ribbon-chip-blue">
-                  {{ titleCase(k) }}: {{ v }}
+              <template v-if="clinicalEntries.length">
+                <h4 class="text-[10px] text-ribbon-purple font-bold uppercase tracking-wider mt-6 mb-3">Clinical details</h4>
+                <div class="flex flex-wrap gap-2">
+                  <span v-for="[k, v] in clinicalEntries" :key="k"
+                    class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-ribbon-blue/15 text-ribbon-blue">
+                    {{ titleCase(k) }}: {{ v }}
+                  </span>
+                </div>
+              </template>
+            </div>
+
+            <!-- Workflow -->
+            <div class="g-card p-6">
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue">
+                  <font-awesome-icon :icon="['fas', 'timeline']" />
+                </div>
+                <h3 class="text-base sm:text-lg font-semibold sm:font-bold">Workflow</h3>
+                <span class="ml-auto text-[11px] font-bold text-ribbon-blue bg-ribbon-blue/10 px-2.5 py-1 rounded-full">
+                  {{ order.encounters?.length ?? 0 }}
                 </span>
               </div>
-            </template>
-          </div>
-
-          <!-- Encounters / workflow -->
-          <div class="island">
-            <h3 class="section-heading">Workflow</h3>
-            <div v-if="order.encounters?.length" class="space-y-3">
-              <div v-for="e in order.encounters" :key="e.id" class="rounded-xl border-l-4 bg-surface-low/60 px-3 py-2.5"
-                :class="tatAccent(e.tat_status)">
-                <div class="flex items-center justify-between gap-2">
-                  <span class="font-semibold text-sm">{{ titleCase(e.type) }}</span>
-                  <span :class="tatChip(e.tat_status)">{{ titleCase(e.tat_status || e.status) }}</span>
+              <div v-if="order.encounters?.length" class="space-y-2 max-h-[420px] overflow-y-auto scroll-area pr-1">
+                <div v-for="e in order.encounters" :key="e.uuid"
+                  class="p-3 rounded-xl border-l-4 bg-white/50" :class="tatAccent(e.tat_status)">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="font-bold text-xs text-on-surface">{{ titleCase(e.type) }}</span>
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
+                      :class="tatChip(e.tat_status)">{{ titleCase(e.tat_status || e.status) }}</span>
+                  </div>
+                  <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
+                    <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
+                    <span>Due {{ fmtDate(e.due_at) }}</span>
+                  </p>
+                  <p v-if="e.performed_by" class="text-[11px] text-outline">By {{ e.performed_by }}</p>
                 </div>
-                <p class="text-xs text-on-surface-variant mt-1">
-                  <font-awesome-icon :icon="['fas', 'clock']" class="mr-1 opacity-70" />
-                  Due {{ fmtDate(e.due_at) }}
-                </p>
-                <p v-if="e.performed_by" class="text-xs text-on-surface-variant">By {{ e.performed_by }}</p>
               </div>
+              <p v-else class="text-sm text-on-surface-variant py-6 text-center">No workflow stations yet.</p>
             </div>
-            <p v-else class="empty-line">No workflow stations yet.</p>
+          </div>
+
+          <!-- Notes -->
+          <div v-if="order.notes?.length" class="g-card p-6 sm:p-8">
+            <h3 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold mb-4">Notes</h3>
+            <ul class="space-y-2">
+              <li v-for="(n, i) in order.notes" :key="i" class="text-sm text-on-surface flex gap-2">
+                <font-awesome-icon :icon="['fas', 'notes-medical']" class="text-ribbon-purple mt-0.5" />
+                <span class="break-words">{{ typeof n === 'string' ? n : (n.body || n.note || JSON.stringify(n)) }}</span>
+              </li>
+            </ul>
           </div>
         </div>
 
-        <!-- Notes -->
-        <div v-if="order.notes?.length" class="island">
-          <h3 class="section-heading">Notes</h3>
-          <ul class="space-y-2">
-            <li v-for="(n, i) in order.notes" :key="i" class="text-sm text-on-surface flex gap-2">
-              <font-awesome-icon :icon="['fas', 'notes-medical']" class="text-ribbon-purple mt-0.5" />
-              <span>{{ typeof n === 'string' ? n : (n.body || n.note || JSON.stringify(n)) }}</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- ══ Tests tab ══ -->
-      <div v-show="tab === 'tests'">
-        <div class="bg-surface-lowest rounded-xl shadow-island overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="his-table">
-              <thead>
-                <tr>
-                  <th>Accession</th>
-                  <th>Test</th>
-                  <th>Code</th>
-                  <th>Sample</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr v-for="t in order.tests" :key="t.uuid" class="cursor-pointer"
-                  @click="router.push({ path: `/orders/test/${t.uuid}`, query: { order: order.uuid } })">
-                  <td class="font-semibold text-primary whitespace-nowrap border-l-4" :class="rowAccent(t.status)">
-                    <NuxtLink :to="{ path: `/orders/test/${t.uuid}`, query: { order: order.uuid } }"
-                      class="hover:underline" @click.stop>
+        <!-- ══ Tests tab ══ -->
+        <div v-show="tab === 'tests'">
+          <div class="g-card p-6 sm:p-8">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+              <h3 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold">Tests</h3>
+              <div class="text-xs sm:text-sm text-on-surface-variant">Click a row to open the test</div>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-left border-collapse text-sm sm:text-base alive-tbl tbl-blue">
+                <thead>
+                  <tr class="text-[11px] text-on-surface-variant uppercase tracking-widest">
+                    <th class="py-4 px-5">Accession</th>
+                    <th class="py-4 px-5">Test</th>
+                    <th class="py-4 px-5">Code</th>
+                    <th class="py-4 px-5">Sample</th>
+                    <th class="py-4 px-5 text-center">Blocks / Slides</th>
+                    <th class="py-4 px-5 text-center">Status</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant/10">
+                  <tr v-for="t in order.tests" :key="t.uuid" class="cursor-pointer transition-colors"
+                    @click="router.push({ path: `/orders/test/${t.uuid}`, query: { order: order.uuid } })">
+                    <td class="py-4 px-5 font-mono text-[11px] text-ribbon-blue whitespace-nowrap border-l-4" :class="rowAccent(t.status)">
                       {{ t.accession_number }}
-                    </NuxtLink>
-                  </td>
-                  <td class="break-words">{{ t.test_name }}</td>
-                  <td class="text-on-surface-variant whitespace-nowrap">{{ t.test_code }}</td>
-                  <td class="break-words">{{ t.sample_name || '—' }}</td>
-                  <td><span :class="statusClass(t.status)">{{ titleCase(t.status) }}</span></td>
-                </tr>
-                <tr v-if="!order.tests?.length">
-                  <td colspan="5" class="text-center text-on-surface-variant py-6">No tests on this order.</td>
-                </tr>
-              </tbody>
-            </table>
+                    </td>
+                    <td class="py-4 px-5">
+                      <p class="font-bold break-words">{{ t.test_name }}</p>
+                    </td>
+                    <td class="py-4 px-5 font-mono text-[11px] text-outline whitespace-nowrap">{{ t.test_code }}</td>
+                    <td class="py-4 px-5 text-xs text-on-surface-variant break-words">{{ t.sample_name || '—' }}</td>
+                    <td class="py-4 px-5 text-center whitespace-nowrap">
+                      <span class="text-xs font-semibold text-ribbon-amber">{{ t.blocks?.length ?? 0 }}</span>
+                      <span class="text-outline mx-1">/</span>
+                      <span class="text-xs font-semibold text-ribbon-teal">{{ t.slides?.length ?? 0 }}</span>
+                    </td>
+                    <td class="py-4 px-5 text-center">
+                      <span class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap" :class="statusPillClass(t.status)">
+                        {{ titleCase(t.status) }}
+                      </span>
+                    </td>
+                  </tr>
+                  <tr v-if="!order.tests?.length">
+                    <td colspan="6" class="py-8 text-center text-on-surface-variant">No tests on this order.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
-      </div>
-    </template>
-
-    <!-- ═══ Update modal ═══ -->
-    <Modal v-model="updateOpen" title="Update order" :subtitle="order?.accession_number"
-      class="w-[760px] max-w-[70%  ]">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label class="input-label">Scheduled for</label>
-          <input v-model="uForm.scheduled_for" type="datetime-local" class="input-field" />
-        </div>
-        <div>
-          <label class="input-label">Specimen site</label>
-          <SearchSelect v-model="uForm.laboratory_specimen_site_uuid" :options="siteOptions" label-key="label"
-            value-key="value" placeholder="Search specimen site…" :clearable="true" />
-        </div>
-        <div>
-          <label class="input-label">Requested by</label>
-          <input v-model="uForm.requested_by_name" type="text" class="input-field" />
-        </div>
-        <div>
-          <label class="input-label">Requested by occupation</label>
-          <input v-model="uForm.requested_by_occupation" type="text" class="input-field" />
-        </div>
-        <div>
-          <label class="input-label">Referring facility</label>
-          <input v-model="uForm.referring_facility" type="text" class="input-field" />
-        </div>
-        <div>
-          <label class="input-label">Referring facility type</label>
-          <input v-model="uForm.referring_facility_type" type="text" class="input-field"
-            placeholder="e.g. hospital, clinic" />
-        </div>
-        <div>
-          <label class="input-label">Urgency</label>
-          <select v-model="uForm.urgency" class="input-field">
-            <option value="">—</option>
-            <option v-for="u in URGENCY_OPTS" :key="u" :value="u">{{ u }}</option>
-          </select>
-        </div>
-        <div>
-          <label class="input-label">Disposition</label>
-          <select v-model="uForm.disposition" class="input-field">
-            <option value="">—</option>
-            <option v-for="d in DISPOSITION_OPTS" :key="d" :value="d">{{ d }}</option>
-          </select>
-        </div>
-        <div class="sm:col-span-2">
-          <label class="input-label">Clinical details</label>
-          <ConsultNoteEditor v-model="uForm.clinical_details"
-            placeholder="Relevant clinical history, indication, prior findings…" />
-        </div>
-      </div>
-      <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
-      <template #footer>
-        <button type="button" class="btn-secondary" @click="updateOpen = false">Cancel</button>
-        <button type="button" class="btn-primary" :disabled="saving" @click="submitUpdate">
-          <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
-          <span>Save changes</span>
-        </button>
       </template>
-    </Modal>
 
-    <!-- ═══ Collect modal ═══ -->
-    <Modal v-model="collectOpen" title="Collect specimen" :subtitle="order?.accession_number"
-      class="w-[520px] max-w-2xl">
-      <div class="space-y-4">
-        <div>
-          <label class="input-label">Collected at</label>
-          <input v-model="cForm.collected_at" type="datetime-local" class="input-field" />
+      <!-- ═══ Update modal ═══ -->
+      <Modal v-model="updateOpen" title="Update order" :subtitle="order?.accession_number" class="w-[760px] max-w-[70%]">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="input-label">Scheduled for</label>
+            <input v-model="uForm.scheduled_for" type="datetime-local" class="input-field" />
+          </div>
+          <div>
+            <label class="input-label">Specimen site</label>
+            <SearchSelect v-model="uForm.laboratory_specimen_site_uuid" :options="siteOptions" label-key="label"
+              value-key="value" placeholder="Search specimen site…" :clearable="true" />
+          </div>
+          <div>
+            <label class="input-label">Requested by</label>
+            <input v-model="uForm.requested_by_name" type="text" class="input-field" />
+          </div>
+          <div>
+            <label class="input-label">Requested by occupation</label>
+            <input v-model="uForm.requested_by_occupation" type="text" class="input-field" />
+          </div>
+          <div>
+            <label class="input-label">Referring facility</label>
+            <input v-model="uForm.referring_facility" type="text" class="input-field" />
+          </div>
+          <div>
+            <label class="input-label">Referring facility type</label>
+            <input v-model="uForm.referring_facility_type" type="text" class="input-field" placeholder="e.g. hospital, clinic" />
+          </div>
+          <div>
+            <label class="input-label">Urgency</label>
+            <select v-model="uForm.urgency" class="input-field">
+              <option value="">—</option>
+              <option v-for="u in URGENCY_OPTS" :key="u" :value="u">{{ u }}</option>
+            </select>
+          </div>
+          <div>
+            <label class="input-label">Disposition</label>
+            <select v-model="uForm.disposition" class="input-field">
+              <option value="">—</option>
+              <option v-for="d in DISPOSITION_OPTS" :key="d" :value="d">{{ d }}</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="input-label">Clinical details</label>
+            <ConsultNoteEditor v-model="uForm.clinical_details" placeholder="Relevant clinical history, indication, prior findings…" />
+          </div>
+        </div>
+        <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
+        <template #footer>
+          <button type="button" class="btn-secondary" @click="updateOpen = false">Cancel</button>
+          <button type="button" class="btn-primary" :disabled="saving" @click="submitUpdate">
+            <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
+            <span>Save changes</span>
+          </button>
+        </template>
+      </Modal>
+
+      <!-- ═══ Collect modal ═══ -->
+      <Modal v-model="collectOpen" title="Collect specimen" :subtitle="order?.accession_number" class="w-[520px] max-w-2xl">
+        <div class="space-y-4">
+          <div>
+            <label class="input-label">Collected at</label>
+            <input v-model="cForm.collected_at" type="datetime-local" class="input-field" />
+          </div>
+          <div>
+            <label class="input-label">Specimen site</label>
+            <SearchSelect v-model="cForm.laboratory_specimen_site_uuid" :options="siteOptions" label-key="label"
+              value-key="value" placeholder="Search specimen site…" :clearable="true" />
+          </div>
+        </div>
+        <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
+        <template #footer>
+          <button type="button" class="btn-secondary" @click="collectOpen = false">Cancel</button>
+          <button type="button" class="btn-primary" :disabled="saving" @click="submitCollect">
+            <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
+            <span>Mark collected</span>
+          </button>
+        </template>
+      </Modal>
+
+      <!-- ═══ Receive modal ═══ -->
+      <Modal v-model="receiveOpen" title="Receive order" :subtitle="order?.accession_number" class="w-[460px] max-w-xl">
+        <div class="flex items-start gap-3">
+          <div class="w-11 h-11 rounded-full bg-ribbon-amber/15 flex items-center justify-center shrink-0">
+            <font-awesome-icon :icon="['fas', 'inbox']" class="text-ribbon-amber" />
+          </div>
+          <p class="text-sm text-on-surface">
+            Mark <span class="font-semibold">{{ order?.accession_number }}</span> as received at the laboratory? This stamps the reception step.
+          </p>
+        </div>
+        <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
+        <template #footer>
+          <button type="button" class="btn-secondary" @click="receiveOpen = false">Cancel</button>
+          <button type="button" class="btn-primary" :disabled="saving" @click="submitReceive">
+            <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
+            <span>Confirm receive</span>
+          </button>
+        </template>
+      </Modal>
+
+      <!-- ═══ Void modal ═══ -->
+      <Modal v-model="voidOpen" title="Delete order" :subtitle="order?.accession_number" class="w-[640px] max-w-[95vw]">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="w-11 h-11 rounded-full bg-error/10 flex items-center justify-center shrink-0">
+            <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-error" />
+          </div>
+          <p class="text-sm text-on-surface">
+            Void <span class="font-semibold">{{ order?.accession_number }}</span>? This cancels the order and preserves the audit trail — it cannot be undone.
+          </p>
         </div>
         <div>
-          <label class="input-label">Specimen site</label>
-          <SearchSelect v-model="cForm.laboratory_specimen_site_uuid" :options="siteOptions" label-key="label"
-            value-key="value" placeholder="Search specimen site…" :clearable="true" />
+          <label class="input-label">Reason for voiding <span class="text-error">*</span></label>
+          <ConsultNoteEditor v-model="vForm.voided_reason"
+            placeholder="Explain why this order is being voided (mis-accession, duplicate, wrong patient, sample rejected…)" />
+          <p class="text-xs text-on-surface-variant mt-1">Sent as <code>voided_reason</code>. Required.</p>
         </div>
-      </div>
-      <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
-      <template #footer>
-        <button type="button" class="btn-secondary" @click="collectOpen = false">Cancel</button>
-        <button type="button" class="btn-primary" :disabled="saving" @click="submitCollect">
-          <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
-          <span>Mark collected</span>
-        </button>
-      </template>
-    </Modal>
+        <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
+        <template #footer>
+          <button type="button" class="btn-secondary" @click="voidOpen = false">Cancel</button>
+          <button type="button" class="btn-danger" :disabled="saving || !hasVoidReason" @click="submitVoid">
+            <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
+            <span>Confirm delete</span>
+          </button>
+        </template>
+      </Modal>
 
-    <!-- ═══ Receive modal ═══ -->
-    <Modal v-model="receiveOpen" title="Receive order" :subtitle="order?.accession_number" class="w-[460px] max-w-xl">
-      <div class="flex items-start gap-3">
-        <div class="w-11 h-11 rounded-full bg-primary-fixed flex items-center justify-center shrink-0">
-          <font-awesome-icon :icon="['fas', 'inbox']" class="text-primary" />
+      <!-- ═══ Complete report modal ═══ -->
+      <Modal v-model="reportOpen" title="Complete order report" :subtitle="order?.accession_number" class="w-[640px] max-w-[95vw]">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="w-11 h-11 rounded-full bg-ribbon-teal/15 flex items-center justify-center shrink-0">
+            <font-awesome-icon :icon="['fas', 'file-signature']" class="text-ribbon-teal" />
+          </div>
+          <p class="text-sm text-on-surface">
+            Finalise and lock the report for <span class="font-semibold">{{ order?.accession_number }}</span>. Add any final comments below.
+          </p>
         </div>
-        <p class="text-sm text-on-surface">
-          Mark <span class="font-semibold">{{ order?.accession_number }}</span> as received at the laboratory? This
-          stamps
-          the reception step.
-        </p>
-      </div>
-      <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
-      <template #footer>
-        <button type="button" class="btn-secondary" @click="receiveOpen = false">Cancel</button>
-        <button type="button" class="btn-primary" :disabled="saving" @click="submitReceive">
-          <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
-          <span>Confirm receive</span>
-        </button>
-      </template>
-    </Modal>
-
-    <!-- ═══ Void (delete) modal ═══ -->
-    <Modal v-model="voidOpen" title="Delete order" :subtitle="order?.accession_number" class="w-[640px] max-w-[95vw]">
-      <div class="flex items-start gap-3 mb-4">
-        <div class="w-11 h-11 rounded-full bg-error-container flex items-center justify-center shrink-0">
-          <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-error" />
+        <div>
+          <label class="input-label">Comments</label>
+          <ConsultNoteEditor v-model="rForm.comments"
+            placeholder="Overall report comment, synopsis, or clinical correlation…" />
         </div>
-        <p class="text-sm text-on-surface">
-          Void <span class="font-semibold">{{ order?.accession_number }}</span>? This cancels the order and preserves
-          the
-          audit trail — it cannot be undone.
-        </p>
-      </div>
+        <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
+        <template #footer>
+          <button type="button" class="btn-secondary" @click="reportOpen = false">Cancel</button>
+          <button type="button" class="btn-primary" :disabled="saving" @click="submitReport">
+            <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
+            <span>Complete report</span>
+          </button>
+        </template>
+      </Modal>
 
-      <div>
-        <label class="input-label">Reason for voiding <span class="text-error">*</span></label>
-        <ConsultNoteEditor v-model="vForm.voided_reason"
-          placeholder="Explain why this order is being voided (mis-accession, duplicate, wrong patient, sample rejected…)" />
-        <p class="text-xs text-on-surface-variant mt-1">
-          Sent as <code>voided_reason</code>. Required.
-        </p>
-      </div>
-
-      <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
-
-      <template #footer>
-        <button type="button" class="btn-secondary" @click="voidOpen = false">Cancel</button>
-        <button type="button" class="btn-danger" :disabled="saving || !hasVoidReason" @click="submitVoid">
-          <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
-          <span>Confirm delete</span>
-        </button>
-      </template>
-    </Modal>
-
-    <!-- Toast -->
-    <Teleport to="body">
-      <Transition name="toast">
-        <div v-if="toast.show"
-          class="fixed bottom-5 right-5 z-[60] px-4 py-3 rounded-xl shadow-island text-sm font-semibold flex items-center gap-2"
-          :class="toast.ok ? 'bg-secondary-fixed text-secondary-on-fixed' : 'bg-error-container text-error-on-container'">
-          <font-awesome-icon :icon="['fas', toast.ok ? 'check' : 'triangle-exclamation']" />
-          <span>{{ toast.msg }}</span>
+      <!-- ═══ Release report modal ═══ -->
+      <Modal v-model="releaseOpen" title="Release order report" :subtitle="order?.accession_number" class="w-[640px] max-w-[95vw]">
+        <div class="flex items-start gap-3 mb-4">
+          <div class="w-11 h-11 rounded-full bg-ribbon-purple/15 flex items-center justify-center shrink-0">
+            <font-awesome-icon :icon="['fas', 'paper-plane']" class="text-ribbon-purple" />
+          </div>
+          <p class="text-sm text-on-surface">
+            Release the finalised report for <span class="font-semibold">{{ order?.accession_number }}</span> to the requesting clinician.
+          </p>
         </div>
-      </Transition>
-    </Teleport>
+        <div class="grid grid-cols-1 gap-4">
+          <div>
+            <label class="input-label">Released to <span class="text-error">*</span></label>
+            <input v-model="lForm.released_to" type="text" class="input-field" placeholder="e.g. Dr Chisomo Phiri" />
+          </div>
+          <div>
+            <label class="input-label">Comments</label>
+            <ConsultNoteEditor v-model="lForm.comments"
+              placeholder="Release note, delivery instructions, follow-up recommendations…" />
+          </div>
+        </div>
+        <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
+        <template #footer>
+          <button type="button" class="btn-secondary" @click="releaseOpen = false">Cancel</button>
+          <button type="button" class="btn-primary" :disabled="saving || !lForm.released_to.trim()" @click="submitRelease">
+            <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
+            <span>Release report</span>
+          </button>
+        </template>
+      </Modal>
+
+      <!-- Toast -->
+      <Teleport to="body">
+        <Transition name="toast">
+          <div v-if="toast.show"
+            class="fixed bottom-5 right-5 z-[60] px-4 py-3 rounded-xl shadow-island text-sm font-semibold flex items-center gap-2"
+            :class="toast.ok ? 'bg-ribbon-teal/15 text-ribbon-teal' : 'bg-error/10 text-error'">
+            <font-awesome-icon :icon="['fas', toast.ok ? 'check' : 'triangle-exclamation']" />
+            <span>{{ toast.msg }}</span>
+          </div>
+        </Transition>
+      </Teleport>
+    </div>
   </div>
 </template>
 
@@ -361,18 +465,12 @@ import { useLaboratorySettings } from '~/composables/useLaboratorySettings'
 
 const route = useRoute()
 const router = useRouter()
-const { showOrder, updateOrder, collectOrder, receiveOrder, voidOrder } = useLaboratory()
+const { showOrder, updateOrder, collectOrder, receiveOrder, voidOrder, reportOrder, releaseOrder } = useLaboratory()
 
-// Preloaded settings — specimen sites for the searchable combobox
 const { specimenSites, loaded: settingsLoaded, preload: preloadSettings } = useLaboratorySettings()
-// Belt-and-braces: if the client plugin didn't run yet, kick a load now.
 onMounted(() => { if (!settingsLoaded.value) preloadSettings() })
 
-// ── Specimen-site combobox state ─────────────────────────────────────────
-
 const activeSites = computed(() => specimenSites.value.filter(s => s.active))
-
-// Options for SearchSelect: [{ label: "Breast — Breast", value: "<uuid>" }, …]
 const siteOptions = computed(() =>
   activeSites.value.map(s => ({
     label: s.body_system ? `${s.name} — ${s.body_system}` : s.name,
@@ -386,7 +484,6 @@ const order = ref<LabOrderDetail | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 
-// active body tab + header dropdown
 const tab = ref<'general' | 'tests'>('general')
 const advOpen = ref(false)
 
@@ -405,11 +502,23 @@ const load = async () => {
 }
 onMounted(load)
 
+// KPI tallies across tests and encounters
+const counts = computed(() => {
+  const acc = { blocks: 0, slides: 0, breached: 0 }
+  for (const t of order.value?.tests ?? []) {
+    acc.blocks += t.blocks?.length ?? 0
+    acc.slides += t.slides?.length ?? 0
+  }
+  for (const e of order.value?.encounters ?? []) {
+    if ((e.tat_status || '').toLowerCase() === 'breached') acc.breached++
+  }
+  return acc
+})
+
 // ── options ──────────────────────────────────────────────────────────────────
 const URGENCY_OPTS = ['Low', 'Medium', 'High', 'STAT']
-const DISPOSITION_OPTS = ['Dispose', 'Return', 'Retain'] // adjust to backend enum
+const DISPOSITION_OPTS = ['Dispose', 'Return', 'Retain']
 
-// ── clinical details (object → chip entries) ─────────────────────────────────
 const clinicalEntries = computed(() =>
   Object.entries(order.value?.clinical_details ?? {}).filter(([, v]) => v != null && v !== ''),
 )
@@ -427,22 +536,34 @@ const toIso = (local: string) => (local ? new Date(local).toISOString() : undefi
 const updateOpen = ref(false)
 const collectOpen = ref(false)
 const receiveOpen = ref(false)
+const reportOpen = ref(false)
+const releaseOpen = ref(false)
 const saving = ref(false)
 const formError = ref<string | null>(null)
 
 const voidOpen = ref(false)
 const vForm = reactive<{ voided_reason: string }>({ voided_reason: '' })
 
-// The ConsultNoteEditor outputs HTML — strip tags to check there's actual content
-// (an empty CKEditor emits "<p>&nbsp;</p>" or "<p></p>").
 const hasVoidReason = computed(() => {
   const text = (vForm.voided_reason || '').replace(/<[^>]*>/g, '').replace(/&nbsp;/g, '').trim()
   return text.length > 0
 })
 
-const openVoid = () => {
-  vForm.voided_reason = ''
-  voidOpen.value = true
+const openVoid = () => { vForm.voided_reason = ''; voidOpen.value = true }
+
+const rForm = reactive<{ comments: string }>({ comments: '' })
+const lForm = reactive<{ released_to: string; comments: string }>({ released_to: 'Dr Chisomo Phiri', comments: '' })
+
+const openReport = () => {
+  formError.value = null
+  rForm.comments = ''
+  reportOpen.value = true
+}
+const openRelease = () => {
+  formError.value = null
+  lForm.released_to = ''
+  lForm.comments = ''
+  releaseOpen.value = true
 }
 
 const uForm = reactive<Record<string, any>>({
@@ -500,9 +621,7 @@ const submitUpdate = () => run(() => updateOrder(uuid.value, {
   referring_facility_type: uForm.referring_facility_type || undefined,
   urgency: uForm.urgency || undefined,
   disposition: uForm.disposition || undefined,
-  clinical_details: uForm.clinical_details
-    ? { notes: uForm.clinical_details }
-    : undefined,
+  clinical_details: uForm.clinical_details ? { notes: uForm.clinical_details } : undefined,
 }), 'Order updated.', () => (updateOpen.value = false))
 
 const submitCollect = () => run(() => collectOrder(uuid.value, {
@@ -511,6 +630,21 @@ const submitCollect = () => run(() => collectOrder(uuid.value, {
 }), 'Specimen collected.', () => (collectOpen.value = false))
 
 const submitReceive = () => run(() => receiveOrder(uuid.value), 'Order received.', () => (receiveOpen.value = false))
+
+const submitReport = () => run(
+  () => reportOrder(uuid.value, rForm.comments),
+  'Report completed.',
+  () => (reportOpen.value = false),
+)
+
+const submitRelease = () => {
+  if (!lForm.released_to.trim()) { formError.value = 'Released to is required.'; return }
+  return run(
+    () => releaseOrder(uuid.value, lForm.released_to.trim(), lForm.comments),
+    'Report released.',
+    () => (releaseOpen.value = false),
+  )
+}
 
 const submitVoid = () => {
   if (!hasVoidReason.value) { formError.value = 'A reason is required to void an order.'; return }
@@ -536,32 +670,34 @@ const fmtDate = (s: string | null | undefined) =>
 const titleCase = (s: string | null | undefined) =>
   (s || '—').replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
 
-const statusClass = (s: string) => {
+// pill classes (ribbon palette) — covers reported / imaged / received / verified / planned
+const statusPillClass = (s: string) => {
   const k = (s || '').toLowerCase()
-  if (k.includes('cancel') || k.includes('no show') || k.includes('no_show')) return 'ribbon-chip-red'
-  if (k.includes('complete') || k.includes('received') || k.includes('verified')) return 'ribbon-chip-teal'
-  if (k.includes('progress') || k.includes('collected')) return 'ribbon-chip-amber'
-  return 'ribbon-chip-blue'
+  if (k.includes('cancel') || k.includes('no show') || k.includes('no_show') || k.includes('void')) return 'bg-error/10 text-error'
+  if (k.includes('reported') || k.includes('complete') || k.includes('verified') || k.includes('final')) return 'bg-ribbon-teal/15 text-ribbon-teal'
+  if (k.includes('progress') || k.includes('collected') || k.includes('received') || k.includes('imaged') || k.includes('stained')) return 'bg-ribbon-amber/15 text-ribbon-amber'
+  if (k.includes('planned') || k.includes('scheduled') || k.includes('submitted')) return 'bg-ribbon-purple/15 text-ribbon-purple'
+  return 'bg-ribbon-blue/15 text-ribbon-blue'
 }
 const urgencyClass = (u: string) => {
   const k = (u || '').toLowerCase()
-  if (k === 'stat' || k === 'high') return 'ribbon-chip-red'
-  if (k === 'medium') return 'ribbon-chip-amber'
-  return 'ribbon-chip-teal'
+  if (k === 'stat' || k === 'high') return 'bg-error/10 text-error'
+  if (k === 'medium') return 'bg-ribbon-amber/15 text-ribbon-amber'
+  return 'bg-ribbon-teal/15 text-ribbon-teal'
 }
-// ribbon left-accent for table rows, keyed by status
 const rowAccent = (s: string) => {
   const k = (s || '').toLowerCase()
-  if (k.includes('cancel') || k.includes('no show') || k.includes('no_show')) return 'border-ribbon-red'
-  if (k.includes('complete') || k.includes('received') || k.includes('verified')) return 'border-ribbon-teal'
-  if (k.includes('progress') || k.includes('collected')) return 'border-ribbon-amber'
+  if (k.includes('cancel') || k.includes('no show') || k.includes('no_show') || k.includes('void')) return 'border-ribbon-red'
+  if (k.includes('reported') || k.includes('complete') || k.includes('verified') || k.includes('final')) return 'border-ribbon-teal'
+  if (k.includes('progress') || k.includes('collected') || k.includes('received') || k.includes('imaged') || k.includes('stained')) return 'border-ribbon-amber'
+  if (k.includes('planned') || k.includes('scheduled') || k.includes('submitted')) return 'border-ribbon-purple'
   return 'border-ribbon-blue'
 }
 const tatChip = (t: string | null) => {
   const k = (t || '').toLowerCase()
-  if (k === 'breached') return 'ribbon-chip-red'
-  if (k === 'at_risk') return 'ribbon-chip-amber'
-  return 'ribbon-chip-teal'
+  if (k === 'breached') return 'bg-error/10 text-error'
+  if (k === 'at_risk') return 'bg-ribbon-amber/15 text-ribbon-amber'
+  return 'bg-ribbon-teal/15 text-ribbon-teal'
 }
 const tatAccent = (t: string | null) => {
   const k = (t || '').toLowerCase()
@@ -570,43 +706,53 @@ const tatAccent = (t: string | null) => {
   return 'border-ribbon-teal'
 }
 
-// ── tiny inline detail renderer (label + value) ──────────────────────────────
+// ── tiny inline detail renderer ──────────────────────────────────────────────
 const Detail = (props: { label: string; value: string | number | null | undefined }) =>
   h('div', [
-    h('dt', { class: 'text-xs font-semibold uppercase tracking-wide text-on-surface-variant' }, props.label),
-    h('dd', { class: 'text-sm text-on-surface mt-0.5 break-words' },
+    h('dt', { class: 'text-[10px] font-bold uppercase tracking-wider text-ribbon-blue mb-1' }, props.label),
+    h('dd', { class: 'text-sm text-on-surface break-words font-medium' },
       props.value === null || props.value === undefined || props.value === '' ? '—' : String(props.value)),
   ])
 </script>
 
 <style scoped>
-.sub-label {
-  @apply text-xs font-semibold uppercase tracking-wide text-on-surface-variant mb-2;
+@reference "~/assets/css/main.css";
+
+.g-card {
+  position: relative; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+  border-radius: 1.5rem; box-shadow: 0 10px 30px rgba(61, 127, 191, 0.05); border: 1px solid rgba(255, 255, 255, 0.4);
+  animation: island-in 0.5s ease-out backwards;
 }
 
-.empty-line {
-  @apply text-sm text-on-surface-variant py-6 text-center;
-}
+/* header advanced button (matches ribbon palette) */
+.adv-toggle { @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-ribbon-blue bg-ribbon-blue/10 hover:bg-ribbon-blue/20 transition-colors; }
+.adv-item { @apply w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors; }
 
-/* translucent header action button on the gradient card */
-.hdr-btn {
-  @apply inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold text-white bg-white/15 hover:bg-white/25 transition-colors;
-}
+/* pill tabs */
+.tab-pill { @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-on-surface-variant hover:bg-ribbon-blue/10 hover:text-ribbon-blue transition-colors; }
+.tab-pill-active { @apply text-white bg-primary-gradient shadow-md shadow-primary/20; }
+.tab-count { @apply ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-white/25; }
+.tab-pill:not(.tab-pill-active) .tab-count { @apply bg-ribbon-blue/15 text-ribbon-blue; }
 
-/* advanced-options dropdown items (white menu) */
-.adv-item {
-  @apply w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors;
-}
+/* alive table — ribbon blue header + hover, matches department.vue */
+.alive-tbl tbody tr { transition: background 0.15s ease; }
+.alive-tbl tbody tr:nth-child(even) { background: rgba(25, 28, 30, 0.018); }
+.tbl-blue thead tr { background: linear-gradient(90deg, rgba(61,127,191,0.14), rgba(61,127,191,0.04)); }
+.tbl-blue thead th { border-bottom: 2px solid rgba(61,127,191,0.40); }
+.tbl-blue tbody tr:hover { background: rgba(61,127,191,0.09); }
+
+/* scroll area (workflow list) */
+.scroll-area::-webkit-scrollbar { width: 6px; height: 6px; }
+.scroll-area::-webkit-scrollbar-thumb { background: rgba(61,127,191,0.2); border-radius: 10px; }
+.scroll-area { scrollbar-width: thin; scrollbar-color: rgba(61,127,191,0.2) transparent; }
+
+.pager-btn { width: 2.25rem; height: 2.25rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 0.75rem; background: rgba(255, 255, 255, 0.7); border: 1px solid var(--color-outline-variant, #c2c6d8); color: #3d7fbf; transition: background 0.15s ease; }
+.pager-btn:hover:not(:disabled) { background: #fff; }
+.pager-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
 /* toast transition */
-.toast-enter-active,
-.toast-leave-active {
-  transition: all 0.25s ease;
-}
+.toast-enter-active, .toast-leave-active { transition: all 0.25s ease; }
+.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(10px); }
 
-.toast-enter-from,
-.toast-leave-to {
-  opacity: 0;
-  transform: translateY(10px);
-}
+@keyframes island-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
 </style>

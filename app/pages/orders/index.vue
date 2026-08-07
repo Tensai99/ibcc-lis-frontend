@@ -20,6 +20,7 @@
           <button type="button" class="filter-toggle" @click="filtersOpen = !filtersOpen">
             <font-awesome-icon :icon="['fas','sliders']" />
             <span>{{ filtersOpen ? 'Hide filters' : 'Filters' }}</span>
+            <span v-if="activeFilterCount" class="filter-badge">{{ activeFilterCount }}</span>
           </button>
           <button type="button" class="pager-btn" :disabled="loading" @click="load()">
             <font-awesome-icon :icon="['fas','rotate-right']" :class="loading ? 'animate-spin' : ''" />
@@ -27,8 +28,103 @@
         </div>
       </header>
 
-      <!-- Filters -->
-      <LabOrdersFilterBar v-model="filters" :open="filtersOpen" @apply="load()" />
+      <!-- ── Filters (inline, chip-driven) ─────────────────────────────────── -->
+      <div v-show="filtersOpen" class="g-card p-5 sm:p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-10 h-10 rounded-full bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue">
+            <font-awesome-icon :icon="['fas', 'sliders']" />
+          </div>
+          <div>
+            <h3 class="text-base sm:text-lg font-semibold sm:font-bold">Filters</h3>
+            <p class="text-[11px] text-outline">Refine the orders list</p>
+          </div>
+          <span v-if="activeFilterCount" class="ml-auto text-[11px] font-bold text-ribbon-blue bg-ribbon-blue/10 px-2.5 py-1 rounded-full">
+            {{ activeFilterCount }} active
+          </span>
+        </div>
+
+        <div class="flex flex-col gap-5">
+          <!-- Search (full width) -->
+          <div>
+            <label class="filter-label">Search</label>
+            <div class="relative">
+              <font-awesome-icon :icon="['fas','magnifying-glass']" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-outline/50 text-sm pointer-events-none z-10" />
+              <input v-model="filters.q" type="text" class="cust-input has-icon"
+                placeholder="Search accession number, patient, specimen…" @keyup.enter="apply" />
+            </div>
+          </div>
+
+          <!-- Quick range presets -->
+          <div>
+            <p class="text-[10px] text-ribbon-blue font-bold uppercase tracking-wider mb-2">Quick range</p>
+            <div class="flex flex-wrap gap-2">
+              <button v-for="p in PRESETS" :key="p.key" type="button"
+                class="preset-chip" :class="{ 'preset-chip-active': activePreset === p.key }"
+                @click="applyPreset(p.key)">
+                <font-awesome-icon :icon="['fas', p.icon]" class="text-[10px]" />
+                <span>{{ p.label }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- From / To / Status / Urgency -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <label class="filter-label">From</label>
+              <div class="relative">
+                <font-awesome-icon :icon="['fas','calendar-day']" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-outline/50 text-sm pointer-events-none z-10" />
+                <input v-model="filters.from" type="date" class="cust-input has-icon" @change="activePreset = 'custom'" />
+              </div>
+            </div>
+            <div>
+              <label class="filter-label">To</label>
+              <div class="relative">
+                <font-awesome-icon :icon="['fas','calendar-check']" class="absolute left-3.5 top-1/2 -translate-y-1/2 text-outline/50 text-sm pointer-events-none z-10" />
+                <input v-model="filters.to" type="date" class="cust-input has-icon" @change="activePreset = 'custom'" />
+              </div>
+            </div>
+            <div>
+              <label class="filter-label">Status</label>
+              <SearchSelect v-model="filters.status" :options="STATUS_OPTS" option-value="value" option-label="label"
+                icon="circle-dot" placeholder="Any status" search-placeholder="Search status…" clearable />
+            </div>
+            <div>
+              <label class="filter-label">Urgency</label>
+              <SearchSelect v-model="filters.urgency" :options="URGENCY_OPTS" option-value="value" option-label="label"
+                icon="bolt" placeholder="Any urgency" search-placeholder="Search urgency…" clearable />
+            </div>
+          </div>
+
+          <!-- Department / Sub-department cascade -->
+          <div>
+            <label class="filter-label">Department scope</label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <SearchSelect v-model="filters.department_id" :options="departments" option-value="id" option-label="name"
+                icon="building" placeholder="All departments" search-placeholder="Search departments…" clearable />
+              <SearchSelect v-model="filters.sub_department_id" :options="subDepartments"
+                :disabled="!filters.department_id" option-value="id" option-label="name" icon="sitemap"
+                :placeholder="filters.department_id ? 'All sub-departments' : 'Pick a department first'"
+                search-placeholder="Search sub-departments…" clearable />
+            </div>
+            <p class="text-[11px] text-outline mt-1.5">
+              <font-awesome-icon :icon="['fas','circle-info']" class="mr-1 opacity-70" />
+              Leave sub-department blank to include the whole department.
+            </p>
+          </div>
+
+          <!-- Actions -->
+          <div class="flex flex-wrap items-center justify-end gap-2 pt-1">
+            <button type="button" class="btn-reset" @click="clearAll">
+              <font-awesome-icon :icon="['fas','rotate-left']" />
+              <span>Reset</span>
+            </button>
+            <button type="button" class="btn-apply" @click="apply">
+              <font-awesome-icon :icon="['fas','magnifying-glass']" />
+              <span>Apply filters</span>
+            </button>
+          </div>
+        </div>
+      </div>
 
       <!-- Error -->
       <div v-if="error" class="alert-error">
@@ -36,7 +132,7 @@
         <span class="break-words">{{ error }}</span>
       </div>
 
-      <!-- KPI cards (ribbon accents) -->
+      <!-- KPI cards -->
       <div v-if="!loading || rows.length" class="grid grid-cols-2 lg:grid-cols-4 gap-5">
         <div class="g-card p-5 sm:p-6 border-l-4 border-ribbon-blue">
           <p class="text-[10px] text-ribbon-blue font-bold uppercase tracking-wider mb-2">Total orders</p>
@@ -67,9 +163,7 @@
         <div class="g-card p-6 sm:p-8">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
             <h3 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold">Orders</h3>
-            <div class="text-xs sm:text-sm text-on-surface-variant">
-              Click a row to open the order
-            </div>
+            <div class="text-xs sm:text-sm text-on-surface-variant">Click a row to open the order</div>
           </div>
 
           <div class="overflow-x-auto">
@@ -165,9 +259,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 
 const { listOrders } = useLaboratory()
+const { request } = useApi()
 
 const filters = reactive<Record<string, any>>({
   from: '', to: '', q: '',
@@ -182,6 +277,93 @@ const meta    = ref<any>(null)
 const loading = ref(true)
 const error   = ref<string | null>(null)
 
+// ── filter option maps ───────────────────────────────────────────────────────
+const STATUS_OPTS = [
+  { value: 'scheduled',   label: 'Scheduled' },
+  { value: 'in_progress', label: 'In progress' },
+  { value: 'collected',   label: 'Collected' },
+  { value: 'received',    label: 'Received' },
+  { value: 'reported',    label: 'Reported' },
+  { value: 'completed',   label: 'Completed' },
+  { value: 'cancelled',   label: 'Cancelled' },
+  { value: 'no_show',     label: 'No show' },
+]
+const URGENCY_OPTS = [
+  { value: 'Low',    label: 'Low' },
+  { value: 'Medium', label: 'Medium' },
+  { value: 'High',   label: 'High' },
+  { value: 'STAT',   label: 'STAT' },
+]
+
+// ── quick range presets ──────────────────────────────────────────────────────
+const PRESETS = [
+  { key: 'today',   label: 'Today',        icon: 'calendar-day' },
+  { key: '7d',      label: 'Last 7 days',  icon: 'calendar-week' },
+  { key: '30d',     label: 'Last 30 days', icon: 'calendar' },
+  { key: 'month',   label: 'This month',   icon: 'calendar-days' },
+  { key: 'all',     label: 'All time',     icon: 'infinity' },
+] as const
+type PresetKey = typeof PRESETS[number]['key'] | 'custom'
+const activePreset = ref<PresetKey>('all')
+
+const isoDate = (d: Date) => {
+  const p = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
+}
+const applyPreset = (key: PresetKey) => {
+  activePreset.value = key
+  const now = new Date()
+  if (key === 'today') {
+    filters.from = isoDate(now); filters.to = isoDate(now)
+  } else if (key === '7d') {
+    const from = new Date(now); from.setDate(from.getDate() - 6)
+    filters.from = isoDate(from); filters.to = isoDate(now)
+  } else if (key === '30d') {
+    const from = new Date(now); from.setDate(from.getDate() - 29)
+    filters.from = isoDate(from); filters.to = isoDate(now)
+  } else if (key === 'month') {
+    filters.from = isoDate(new Date(now.getFullYear(), now.getMonth(), 1))
+    filters.to   = isoDate(now)
+  } else if (key === 'all') {
+    filters.from = ''; filters.to = ''
+  }
+}
+
+// ── department cascade ───────────────────────────────────────────────────────
+const departments    = ref<any[]>([])
+const subDepartments = ref<any[]>([])
+
+const loadDepartments = async () => {
+  try { departments.value = (await request<any[]>('/departments')) ?? [] } catch { departments.value = [] }
+}
+const loadSubDepartments = async (uuid: string) => {
+  try {
+    const res = await request<any>(`/department/show?uuid=${uuid}`)
+    subDepartments.value = res?.sub_departments ?? []
+  } catch { subDepartments.value = [] }
+}
+
+watch(() => filters.department_id, (id) => {
+  filters.sub_department_id = undefined
+  subDepartments.value = []
+  const dept = departments.value.find((d: any) => d.id === id)
+  if (dept?.uuid) loadSubDepartments(dept.uuid)
+})
+
+// ── active-filter count (for badges) ─────────────────────────────────────────
+const activeFilterCount = computed(() => {
+  let c = 0
+  if (filters.q) c++
+  if (filters.from) c++
+  if (filters.to) c++
+  if (filters.status) c++
+  if (filters.urgency) c++
+  if (filters.department_id) c++
+  if (filters.sub_department_id) c++
+  return c
+})
+
+// ── load / actions ───────────────────────────────────────────────────────────
 const load = async () => {
   loading.value = true
   error.value = null
@@ -195,8 +377,25 @@ const load = async () => {
     loading.value = false
   }
 }
+const apply = () => { filters.page = 1; load() }
+const clearAll = () => {
+  filters.from = ''
+  filters.to = ''
+  filters.q = ''
+  filters.status = undefined
+  filters.urgency = undefined
+  filters.department_id = undefined
+  filters.sub_department_id = undefined
+  filters.page = 1
+  activePreset.value = 'all'
+  load()
+}
 const goPage = (p: number) => { filters.page = p; load() }
-onMounted(load)
+
+onMounted(() => {
+  loadDepartments()
+  load()
+})
 
 // KPI tallies over the current page
 const kpi = computed(() => {
@@ -249,7 +448,6 @@ const urgencyClass = (u: string) => {
   if (k === 'medium') return 'bg-ribbon-amber/15 text-ribbon-amber'
   return 'bg-ribbon-teal/15 text-ribbon-teal'
 }
-// ribbon left-accent for the accession cell, keyed by status
 const rowAccent = (s: string) => {
   const k = (s || '').toLowerCase()
   if (k.includes('cancel') || k.includes('no show') || k.includes('no_show')) return 'border-ribbon-red'
@@ -268,7 +466,22 @@ const rowAccent = (s: string) => {
   animation: island-in 0.5s ease-out backwards;
 }
 
-.filter-toggle { @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors; }
+.cust-input { width: 100%; background: var(--color-surface-low, #f2f4f6); border: none; border-radius: 0.75rem; padding: 0.65rem 1rem; font-size: 0.85rem; font-weight: 600; color: var(--color-on-surface, #191c1e); transition: all 0.2s ease; box-shadow: inset 0 0 0 1.5px transparent; }
+.cust-input::placeholder { color: rgba(114, 118, 135, 0.6); }
+.cust-input:focus { outline: none; box-shadow: inset 0 0 0 1.5px #3d7fbf; background: #f7f9fb; }
+.cust-input.has-icon { padding-left: 2.5rem; }
+
+/* filter chrome */
+.filter-toggle { @apply relative inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-ribbon-blue bg-ribbon-blue/10 hover:bg-ribbon-blue/20 transition-colors; }
+.filter-badge  { @apply inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 rounded-full text-[10px] font-bold text-white bg-primary-gradient; }
+.filter-label  { @apply block text-[10px] font-bold uppercase tracking-wider text-ribbon-blue mb-1.5 ml-0.5; }
+
+.preset-chip        { @apply inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-on-surface-variant bg-white/60 border border-white/60 hover:bg-ribbon-blue/10 hover:text-ribbon-blue transition-colors; }
+.preset-chip-active { @apply text-white border-transparent bg-primary-gradient shadow-md shadow-primary/20; }
+
+.btn-apply { @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-primary-gradient shadow-md shadow-primary/20 hover:brightness-105 transition; }
+.btn-reset { @apply inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-on-surface-variant bg-white/60 border border-white/60 hover:bg-white transition; }
+
 .ellipsis-btn { @apply w-8 h-8 inline-flex items-center justify-center rounded-lg text-on-surface-variant hover:bg-ribbon-blue/10 hover:text-ribbon-blue transition-colors; }
 .menu-item { @apply w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors; }
 

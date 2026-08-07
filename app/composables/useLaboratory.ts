@@ -60,7 +60,7 @@ export interface LabOrderTest {
   blocks: any[]; slides: any[]; results: any[]; notes: any[]
 }
 export interface LabOrderEncounter {
-  id: number; type: string; status: string; test_id: number | null
+  uuid: string; type: string; status: string; test_uuid: string | null
   started_at: string | null; ended_at: string | null; due_at: string | null
   tat_status: string | null; instrument: string | null; workstation: string | null
   performed_by: string | null; verified_by: string | null; turnaround_hours: number | null
@@ -132,6 +132,20 @@ export const useLaboratory = () => {
     request<LabOrderDetail>('/laboratory/order/void', {
       method: 'PATCH',
       body: toForm({ uuid, voided_reason }),
+    })
+
+  // POST report — uuid + comments (flat keys)
+  const reportOrder = (uuid: string, comments: string) =>
+    request<LabOrderDetail>('/laboratory/order/report', {
+      method: 'POST',
+      body: toForm({ uuid, comments }),
+    })
+
+  // PATCH release — uuid + released_to + comments (flat keys)
+  const releaseOrder = (uuid: string, released_to: string, comments: string) =>
+    request<LabOrderDetail>('/laboratory/order/release', {
+      method: 'PATCH',
+      body: toForm({ uuid, released_to, comments }),
     })
 
   // POST gross — uuid + test_uuid + blocks[] (each block: laboratory_order_test_container_type_uuid,
@@ -222,7 +236,7 @@ export const useLaboratory = () => {
 
   return {
     listOrders, showOrder, showTest, updateOrder, collectOrder, receiveOrder,
-    voidOrder, grossTest, sectionBlocks, stainSlides, imageSlides,
+    voidOrder, reportOrder, releaseOrder, grossTest, sectionBlocks, stainSlides, imageSlides,
     createResults, validateResult,
   }
 }
