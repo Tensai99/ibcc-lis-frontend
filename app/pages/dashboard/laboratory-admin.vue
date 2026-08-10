@@ -376,7 +376,7 @@ const filters = reactive<Record<string, any>>({
   to:   '2026-06-11',
   sub_department_id: undefined,
 })
-const filtersOpen = ref(true)
+const filtersOpen = ref(false)
 
 const windowLabel = computed(() => `${filters.from || '—'} → ${filters.to || '—'}`)
 

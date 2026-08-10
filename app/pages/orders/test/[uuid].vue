@@ -2023,7 +2023,7 @@
         </Modal>
 
         <!-- ── Add Slide Images modal (paste image URL per slide) ────────────────── -->
-        <Modal v-model="imageModalOpen" title="Add Slide Images" :subtitle="test?.accession_number" size="lg">
+        <Modal v-model="imageModalOpen" title="Add Slide Images" :subtitle="test?.accession_number" size="lg" class="max-w-[70%]">
             <div class="space-y-4">
                 <p class="text-xs sm:text-sm text-on-surface-variant">
                     Paste an image URL (http/https) for each selected slide. The URL should point directly to a

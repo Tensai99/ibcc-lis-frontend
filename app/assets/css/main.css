@@ -206,11 +206,11 @@ html, body {
   @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full
          text-xs sm:text-sm font-semibold border;
 }
-.ribbon-chip-blue   { @apply ribbon-chip bg-primary-fixed text-primary-on-fixed border-primary/20; }
-.ribbon-chip-red    { @apply ribbon-chip bg-error-container text-error-on-container border-error/20; }
-.ribbon-chip-amber  { @apply ribbon-chip bg-accent-fixed text-accent-on-container border-accent/30; }
-.ribbon-chip-teal   { @apply ribbon-chip bg-secondary-fixed text-secondary-on-fixed border-secondary/20; }
-.ribbon-chip-purple { @apply ribbon-chip bg-tertiary-fixed text-tertiary-on-fixed border-tertiary/20; }
+.ribbon-chip-blue   { @apply ribbon-chip bg-primary-fixed text-blue-500 border-primary/20; }
+.ribbon-chip-red    { @apply ribbon-chip bg-error-container text-red-500 border-error/20; }
+.ribbon-chip-amber  { @apply ribbon-chip bg-accent-fixed text-orange-500 border-accent/30; }
+.ribbon-chip-teal   { @apply ribbon-chip bg-secondary-fixed text-teal-500 border-secondary/20; }
+.ribbon-chip-purple { @apply ribbon-chip bg-tertiary-fixed text-purple-500 border-tertiary/20; }
 
 /* ─── Sidebar nav item ───────────────────────────────────────────────────── */
 .nav-item {
