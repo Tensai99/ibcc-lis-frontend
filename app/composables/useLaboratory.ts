@@ -65,6 +65,29 @@ export interface LabOrderEncounter {
   tat_status: string | null; instrument: string | null; workstation: string | null
   performed_by: string | null; verified_by: string | null; turnaround_hours: number | null
 }
+
+// ADD — after LabOrderEncounter
+export interface LabOrderTimelineStation {
+  uuid: string
+  station: string
+  code: string            // 'RECEPTION' | 'GROSSING' | 'MICROTOMY' | 'STAINING' | 'IMAGING' | 'REPORTING' | 'RELEASE' | ...
+  sequence: number
+  status: string          // 'planned' | 'in_progress' | 'completed' | 'verified' | ...
+  test_uuid: string | null
+  started_at: string | null
+  ended_at: string | null
+  due_at: string | null
+  tat_status: string | null
+  turnaround_hours: number | null
+  performed_by: string | null
+  verified_by: string | null
+}
+export interface LabOrderTimeline {
+  accession_number: string
+  status: string
+  timeline: LabOrderTimelineStation[]
+}
+
 export interface LabOrderDetail extends LabOrderRow {
   requested_by: string | null
   requested_by_occupation: string | null
@@ -101,6 +124,10 @@ export const useLaboratory = () => {
   // GET single order (full detail: tests, encounters, notes)
   const showOrder = (uuid: string) =>
     request<LabOrderDetail>(`/laboratory/order/show?uuid=${uuid}`)
+
+  // GET order timeline — station-by-station status/TAT
+  const getOrderTimeline = (uuid: string) =>
+    request<LabOrderTimeline>(`/laboratory/order/timeline?uuid=${uuid}`)
 
   // GET single test (order context + full test payload)
   const showTest = (uuid: string, testUuid: string) =>
@@ -238,5 +265,6 @@ export const useLaboratory = () => {
     listOrders, showOrder, showTest, updateOrder, collectOrder, receiveOrder,
     voidOrder, reportOrder, releaseOrder, grossTest, sectionBlocks, stainSlides, imageSlides,
     createResults, validateResult,
+    getOrderTimeline,
   }
 }

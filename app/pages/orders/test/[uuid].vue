@@ -41,8 +41,9 @@
                     <div v-if="advancedMenuOpen"
                         class="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-island-active border border-outline-variant/20 py-1.5 z-30">
                         <button type="button"
-                            class="w-full flex items-center gap-2 px-3 py-2 text-sm sm:text-base text-on-surface hover:bg-surface-low transition-colors"
-                            @click="openGrossModal(); advancedMenuOpen = false">
+                            class="w-full flex items-center gap-2 px-3 py-2 text-sm sm:text-base text-on-surface hover:bg-surface-low transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                            :disabled="!canGross" :title="canGross ? '' : 'Grossing station is not planned'"
+                            @click="canGross && (openGrossModal(), advancedMenuOpen = false)">
                             <font-awesome-icon :icon="['fas', 'flask']" class="text-ribbon-purple shrink-0" />
                             <span>Gross</span>
                         </button>
@@ -145,7 +146,7 @@
                                 </h1>
                                 <p class="text-sm sm:text-base md:text-lg text-on-surface-variant mt-1 break-words">
                                     {{ test.accession_number }}<span v-if="test.sample_name"> · {{ test.sample_name
-                                    }}</span>
+                                        }}</span>
                                 </p>
                             </div>
                         </div>
@@ -481,8 +482,10 @@
                                     <div v-if="slidesBulkMenuOpen"
                                         class="absolute right-0 top-full mt-2 w-52 bg-white rounded-xl shadow-island-active border border-outline-variant/20 py-1.5 z-30">
                                         <button type="button"
-                                            class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors"
-                                            @click="runStainSelected">
+                                            class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                            :disabled="!canStain || staining"
+                                            :title="canStain ? '' : 'Staining station is not planned'"
+                                            @click="canStain && runStainSelected()">
                                             <span
                                                 class="w-7 h-7 rounded-lg bg-ribbon-purple/15 flex items-center justify-center text-ribbon-purple shrink-0">
                                                 <font-awesome-icon :icon="['fas', 'droplet']" class="text-xs" />
@@ -498,7 +501,9 @@
 
                                         <button type="button"
                                             class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                                            :disabled="imaging" @click="runImageSelected">
+                                            :disabled="!canImage || imaging"
+                                            :title="canImage ? '' : 'Imaging station is not planned'"
+                                            @click="canImage && openImageModal()">
                                             <span
                                                 class="w-7 h-7 rounded-lg bg-ribbon-teal/15 flex items-center justify-center text-ribbon-teal shrink-0">
                                                 <font-awesome-icon v-if="imaging" :icon="['fas', 'circle-notch']"
@@ -508,7 +513,7 @@
                                             <div class="min-w-0 text-left">
                                                 <p class="font-semibold leading-tight">{{ imaging ? 'Uploading…' : 'Add slide images' }}</p>
                                                 <p class="text-[11px] text-on-surface-variant leading-tight">
-                                                    Attach each block's cassette label as the slide image
+                                                    Paste an image URL for each selected slide
                                                 </p>
                                             </div>
                                         </button>
@@ -725,8 +730,10 @@
                                     <div v-if="resultsBulkMenuOpen"
                                         class="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-island-active border border-outline-variant/20 py-1.5 z-30">
                                         <button type="button"
-                                            class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors"
-                                            @click="openValidationModal">
+                                            class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                            :disabled="!canValidate"
+                                            :title="canValidate ? '' : 'Reporting station is not planned'"
+                                            @click="canValidate && openValidationModal()">
                                             <span
                                                 class="w-7 h-7 rounded-lg bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue shrink-0">
                                                 <font-awesome-icon :icon="['fas', 'user-check']" class="text-xs" />
@@ -815,7 +822,7 @@
                                         class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold">
                                         <font-awesome-icon :icon="['fas', 'flag']" class="text-[9px]" />
                                         {{(FLAG_OPTIONS.find(f => f.value === r.flag)?.label) || titleCase(r.flag ||
-                                        'normal') }}
+                                            'normal')}}
                                     </span>
                                 </div>
 
@@ -964,7 +971,7 @@
                                         <p class="text-sm sm:text-base text-on-surface truncate">{{ ct.name }}</p>
                                         <p class="text-xs text-on-surface-variant truncate">{{ ct.code }} · {{
                                             ct.category
-                                        }}</p>
+                                            }}</p>
                                     </button>
                                     <div v-if="!filteredContainerTypes(block.containerSearch).length"
                                         class="px-3 py-4 text-center text-xs text-on-surface-variant">
@@ -1808,7 +1815,7 @@
                             <p class="text-xs sm:text-sm text-accent-on/90 break-words mb-2">
                                 We'll process <strong>{{ validationLevel === 'technical' ? 'technical sign-off' :
                                     'clinical release'
-                                }}</strong> first
+                                    }}</strong> first
                                 ({{validationRows.filter(r => nextLevelForRow(r) === validationLevel).length}} row{{
                                     validationRows.filter(r => nextLevelForRow(r) === validationLevel).length === 1 ? '' :
                                         's'}}).
@@ -2014,6 +2021,59 @@
                 </button>
             </template>
         </Modal>
+
+        <!-- ── Add Slide Images modal (paste image URL per slide) ────────────────── -->
+        <Modal v-model="imageModalOpen" title="Add Slide Images" :subtitle="test?.accession_number" size="lg">
+            <div class="space-y-4">
+                <p class="text-xs sm:text-sm text-on-surface-variant">
+                    Paste an image URL (http/https) for each selected slide. The URL should point directly to a
+                    renderable image (PNG/JPG).
+                </p>
+
+                <div v-if="imageError"
+                    class="flex items-start gap-2 p-3 rounded-xl bg-error-container/40 border border-error/20">
+                    <font-awesome-icon :icon="['fas', 'triangle-exclamation']"
+                        class="text-error text-sm mt-0.5 shrink-0" />
+                    <p class="text-xs sm:text-sm text-error break-words">{{ imageError }}</p>
+                </div>
+
+                <div class="space-y-3 max-h-[55vh] overflow-y-auto pr-1">
+                    <div v-for="s in selectedSlidesList" :key="s.uuid"
+                        class="p-3 rounded-xl border border-outline-variant/40 bg-surface-low/40">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span
+                                class="inline-flex items-center justify-center px-2.5 h-7 rounded-lg bg-gradient-to-br from-ribbon-teal to-ribbon-blue text-white text-xs font-bold shadow-sm shrink-0 tracking-wide">
+                                {{ s.label }}
+                            </span>
+                            <span class="text-[11px] text-on-surface-variant truncate">
+                                {{ s.stain || '—' }} · block {{ blockByUuid[s.block_uuid]?.label || '—' }}
+                            </span>
+                        </div>
+                        <label class="input-label sr-only">Image URL for slide {{ s.label }}</label>
+                        <input type="url" class="u-input w-full" placeholder="https://example.com/slide-image.png"
+                            v-model="imageUrlInputs[s.uuid]" />
+                        <div v-if="!!imageUrlInputs[s.uuid] && isValidHttpUrl(imageUrlInputs[s.uuid] || '')"
+                            class="mt-2 flex items-center gap-2">
+                            <img :src="imageUrlInputs[s.uuid]" alt="preview"
+                                class="w-16 h-16 rounded-lg object-cover border border-outline-variant/40"
+                                @error="($event.target as HTMLImageElement).style.display = 'none'" />
+                            <span class="text-[11px] text-on-surface-variant">Preview</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <template #footer>
+                <button type="button" class="btn-secondary" :disabled="imaging" @click="imageModalOpen = false">
+                    Cancel
+                </button>
+                <button type="button" class="btn-primary" :disabled="imaging" @click="submitImageUrls">
+                    <font-awesome-icon v-if="imaging" :icon="['fas', 'circle-notch']" class="animate-spin" />
+                    <font-awesome-icon v-else :icon="['fas', 'camera']" />
+                    <span>{{ imaging ? 'Uploading…' : 'Attach images' }}</span>
+                </button>
+            </template>
+        </Modal>
     </div>
 
     <!-- ═══════════ Floating Actions (bottom-right, when toolbar off-screen) ═════════ -->
@@ -2060,12 +2120,12 @@
 
 <script setup lang="ts">
 import { ref, computed, h, onMounted } from 'vue'
-import type { LabOrderDetail, LabOrderTest } from '~/composables/useLaboratory'
+import type { LabOrderDetail, LabOrderTest, LabOrderTimeline } from '~/composables/useLaboratory'
 import type { ContainerType } from '~/composables/useLaboratorySettings'
 
 const route = useRoute()
 const { showTest, grossTest, sectionBlocks, stainSlides, imageSlides,
-    createResults, validateResult } = useLaboratory()
+    createResults, validateResult, getOrderTimeline } = useLaboratory()
 const { getContainerTypes } = useLaboratorySettings()
 
 // Route is /orders/test/[uuid].vue — [uuid] is the TEST uuid.
@@ -2075,6 +2135,30 @@ const orderUuid = computed(() => (route.query.order as string) || '')
 
 const order = ref<LabOrderDetail | null>(null)
 const test = ref<LabOrderTest | null>(null)
+
+// ── Order timeline (station gates for Gross / Stain / Image / Validate) ─────
+const timeline = ref<LabOrderTimeline | null>(null)
+
+const stationByCode = computed<Record<string, LabOrderTimeline['timeline'][number]>>(() => {
+    const map: Record<string, any> = {}
+    for (const s of timeline.value?.timeline || []) map[s.code] = s
+    return map
+})
+
+const isPlanned = (code: string) => stationByCode.value[code]?.status === 'planned'
+
+// Buttons enable ONLY when the corresponding station is 'planned'
+const canGross = computed(() => isPlanned('GROSSING'))
+const canStain = computed(() => isPlanned('STAINING'))
+const canImage = computed(() => isPlanned('IMAGING'))
+const canValidate = computed(() => isPlanned('REPORTING'))
+
+const loadTimeline = async () => {
+    if (!orderUuid.value) return
+    try { timeline.value = await getOrderTimeline(orderUuid.value) }
+    catch { /* non-fatal — buttons stay disabled */ }
+}
+
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -2179,45 +2263,49 @@ const runStainSelected = async () => {
 }
 
 // Bulk "add slide images" — image each selected slide with its parent block's cassette_label URL
+// ── Bulk "add slide images" — user pastes a URL per selected slide ──────────
 const imaging = ref(false)
 const imageError = ref<string | null>(null)
 
-const runImageSelected = async () => {
+const imageModalOpen = ref(false)
+const imageUrlInputs = ref<Record<string, string>>({})   // slide.uuid → url
+
+const selectedSlidesList = computed(() =>
+    (test.value?.slides || []).filter((s: any) => selectedSlideUuids.value.has(s.uuid)),
+)
+
+const openImageModal = () => {
     if (!selectedSlideUuids.value.size) return
     imageError.value = null
+    // seed empty inputs for each selected slide
+    const seed: Record<string, string> = {}
+    for (const s of selectedSlidesList.value) seed[s.uuid] = ''
+    imageUrlInputs.value = seed
     slidesBulkMenuOpen.value = false
+    imageModalOpen.value = true
+}
 
-    // Build payload: one entry per selected slide, image_url pulled from its parent block's cassette_label
-    const selectedSlides = (test.value?.slides || []).filter((s: any) =>
-        selectedSlideUuids.value.has(s.uuid),
-    )
+const isValidHttpUrl = (v: string) => /^https?:\/\/\S+/i.test(v.trim())
+
+const submitImageUrls = async () => {
+    imageError.value = null
     const payload: { uuid: string; image_url: string }[] = []
     const missing: string[] = []
 
-    for (const s of selectedSlides) {
-        // preview_url = renderable PNG; url = .nlbl zip download (browsers can't display it)
-        const cassette = blockByUuid.value[s.block_uuid]?.cassette_label
-        const previewUrl = cassette?.preview_url || cassette?.url
-        if (!previewUrl) {
-            missing.push(s.label)
-            continue
-        }
-        payload.push({ uuid: s.uuid, image_url: previewUrl })
+    for (const s of selectedSlidesList.value) {
+        const url = (imageUrlInputs.value[s.uuid] || '').trim()
+        if (!url) { missing.push(s.label); continue }
+        if (!isValidHttpUrl(url)) { imageError.value = `Slide ${s.label}: URL must start with http(s)://`; return }
+        payload.push({ uuid: s.uuid, image_url: url })
     }
-
-    if (missing.length) {
-        imageError.value = `No cassette label available for slide(s): ${missing.join(', ')}.`
-        return
-    }
-    if (!payload.length) {
-        imageError.value = 'Nothing to image.'
-        return
-    }
+    if (missing.length) { imageError.value = `Paste a URL for slide(s): ${missing.join(', ')}.`; return }
+    if (!payload.length) { imageError.value = 'Nothing to image.'; return }
 
     imaging.value = true
     try {
         await imageSlides(orderUuid.value, testUuid.value, payload)
         selectedSlideUuids.value = new Set()
+        imageModalOpen.value = false
         await load()
     } catch (e: any) {
         imageError.value = e?.message || 'Failed to add slide images.'
@@ -2926,7 +3014,10 @@ const load = async () => {
     loading.value = true
     error.value = null
     try {
-        const res = await showTest(orderUuid.value, testUuid.value)
+        const [res] = await Promise.all([
+            showTest(orderUuid.value, testUuid.value),
+            loadTimeline(),                    // ← add
+        ])
         order.value = res?.order ?? null
         test.value = res?.test ?? null
         if (!test.value) error.value = 'Test not found.'
@@ -2936,6 +3027,7 @@ const load = async () => {
         loading.value = false
     }
 }
+
 onMounted(load)
 
 // ── clinical details (order.clinical_details is a free-form object) ──────────
