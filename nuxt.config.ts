@@ -80,7 +80,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
-      title: 'IBCC — Hospital Information System',
+      title: 'IBCC — Laboratory Information System',
       meta: [
         { charset: 'utf-8' },
         { name: 'viewport', content: 'width=device-width, initial-scale=1' },

@@ -78,27 +78,79 @@
               </button>
               <div v-if="advOpen" class="fixed inset-0 z-40" @click="advOpen = false" />
               <div v-if="advOpen"
-                class="absolute right-0 top-full mt-2 w-56 rounded-xl bg-surface-lowest shadow-island border border-outline-variant/40 py-1 z-50">
-                <button type="button" class="adv-item" @click="openUpdate(); advOpen = false">
-                  <font-awesome-icon :icon="['fas', 'pen-to-square']" class="text-ribbon-blue" /><span>Update order</span>
-                </button>
-                <button type="button" class="adv-item" @click="openCollect(); advOpen = false">
-                  <font-awesome-icon :icon="['fas', 'droplet']" class="text-ribbon-teal" /><span>Collect specimen</span>
-                </button>
-                <button type="button" class="adv-item" @click="receiveOpen = true; advOpen = false">
-                  <font-awesome-icon :icon="['fas', 'inbox']" class="text-ribbon-amber" /><span>Receive order</span>
-                </button>
-                <button type="button" class="adv-item" @click="openReport(); advOpen = false">
-                  <font-awesome-icon :icon="['fas', 'file-signature']" class="text-ribbon-teal" /><span>Complete report</span>
-                </button>
-                <button type="button" class="adv-item" @click="openRelease(); advOpen = false">
-                  <font-awesome-icon :icon="['fas', 'paper-plane']" class="text-ribbon-purple" /><span>Release report</span>
-                </button>
-                <div class="my-1 h-px bg-outline-variant/40" />
-                <button type="button" class="adv-item" @click="openVoid(); advOpen = false">
-                  <font-awesome-icon :icon="['fas', 'trash-can']" class="text-ribbon-red" /><span>Delete order</span>
-                </button>
-              </div>
+  class="absolute right-0 top-full mt-2 w-64 rounded-xl bg-surface-lowest shadow-island border border-outline-variant/40 py-1 z-50">
+
+  <!-- 1. Update — always available -->
+  <button type="button" class="adv-item" @click="openUpdate(); advOpen = false">
+    <font-awesome-icon :icon="['fas', 'pen-to-square']" class="text-ribbon-blue" />
+    <span>Update order</span>
+  </button>
+
+  <div class="my-1 h-px bg-outline-variant/40" />
+  <p class="px-3 pt-1 pb-0.5 text-[9px] font-bold text-outline uppercase tracking-wider">Pre-analytic</p>
+
+  <!-- 2. Receive — only while RECEPTION is pending -->
+  <button type="button" class="adv-item"
+    :disabled="!canReceive"
+    :title="gateReason('RECEPTION', ['pending'])"
+    :class="{ 'opacity-40 cursor-not-allowed': !canReceive }"
+    @click="canReceive && (receiveOpen = true, advOpen = false)">
+    <font-awesome-icon :icon="['fas', 'inbox']" class="text-ribbon-amber" />
+    <span>Receive order</span>
+    <span v-if="stationStatus('RECEPTION') === 'completed'"
+      class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
+    <span v-else-if="canReceive" class="ml-auto text-[9px] font-bold text-ribbon-amber">PENDING</span>
+  </button>
+
+  <!-- 3. Collect — only after RECEPTION completed -->
+  <button type="button" class="adv-item"
+    :disabled="!canCollect"
+    :title="canCollect ? '' : (stationStatus('RECEPTION') === 'pending' ? 'Receive the order first' : gateReason('RECEPTION', ['completed']))"
+    :class="{ 'opacity-40 cursor-not-allowed': !canCollect }"
+    @click="canCollect && (openCollect(), advOpen = false)">
+    <font-awesome-icon :icon="['fas', 'droplet']" class="text-ribbon-teal" />
+    <span>Collect specimen</span>
+    <span v-if="stationStatus('GROSSING') === 'completed'"
+      class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
+  </button>
+
+  <div class="my-1 h-px bg-outline-variant/40" />
+  <p class="px-3 pt-1 pb-0.5 text-[9px] font-bold text-outline uppercase tracking-wider">Sign-out</p>
+
+  <!-- 4. Complete report — while REPORTING is pending/in_progress -->
+  <button type="button" class="adv-item"
+    :disabled="!canCompleteReport"
+    :title="gateReason('REPORTING', ['pending', 'in_progress'])"
+    :class="{ 'opacity-40 cursor-not-allowed': !canCompleteReport }"
+    @click="canCompleteReport && (openReport(), advOpen = false)">
+    <font-awesome-icon :icon="['fas', 'file-signature']" class="text-ribbon-teal" />
+    <span>Complete report</span>
+    <span v-if="stationStatus('REPORTING') === 'completed'"
+      class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
+    <span v-else-if="canCompleteReport" class="ml-auto text-[9px] font-bold text-ribbon-amber">PENDING</span>
+  </button>
+
+  <!-- 5. Release — while RELEASE is pending/planned -->
+  <button type="button" class="adv-item"
+    :disabled="!canReleaseReport"
+    :title="gateReason('RELEASE', ['pending', 'planned', 'in_progress'])"
+    :class="{ 'opacity-40 cursor-not-allowed': !canReleaseReport }"
+    @click="canReleaseReport && (openRelease(), advOpen = false)">
+    <font-awesome-icon :icon="['fas', 'paper-plane']" class="text-ribbon-purple" />
+    <span>Release report</span>
+    <span v-if="stationStatus('RELEASE') === 'completed'"
+      class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
+    <span v-else-if="canReleaseReport" class="ml-auto text-[9px] font-bold text-ribbon-purple">READY</span>
+  </button>
+
+  <div class="my-1 h-px bg-outline-variant/40" />
+
+  <!-- 6. Delete — always available (guarded by its own confirm modal) -->
+  <button type="button" class="adv-item" @click="openVoid(); advOpen = false">
+    <font-awesome-icon :icon="['fas', 'trash-can']" class="text-ribbon-red" />
+    <span>Delete order</span>
+  </button>
+</div>
             </div>
           </div>
         </header>
@@ -170,32 +222,63 @@
 
             <!-- Workflow -->
             <div class="g-card p-6">
-              <div class="flex items-center gap-3 mb-4">
-                <div class="w-10 h-10 rounded-full bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue">
-                  <font-awesome-icon :icon="['fas', 'timeline']" />
-                </div>
-                <h3 class="text-base sm:text-lg font-semibold sm:font-bold">Workflow</h3>
-                <span class="ml-auto text-[11px] font-bold text-ribbon-blue bg-ribbon-blue/10 px-2.5 py-1 rounded-full">
-                  {{ order.encounters?.length ?? 0 }}
-                </span>
-              </div>
-              <div v-if="order.encounters?.length" class="space-y-2 max-h-[420px] overflow-y-auto scroll-area pr-1">
-                <div v-for="e in order.encounters" :key="e.uuid"
-                  class="p-3 rounded-xl border-l-4 bg-white/50" :class="tatAccent(e.tat_status)">
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="font-bold text-xs text-on-surface">{{ titleCase(e.type) }}</span>
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
-                      :class="tatChip(e.tat_status)">{{ titleCase(e.tat_status || e.status) }}</span>
-                  </div>
-                  <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
-                    <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
-                    <span>Due {{ fmtDate(e.due_at) }}</span>
-                  </p>
-                  <p v-if="e.performed_by" class="text-[11px] text-outline">By {{ e.performed_by }}</p>
-                </div>
-              </div>
-              <p v-else class="text-sm text-on-surface-variant py-6 text-center">No workflow stations yet.</p>
-            </div>
+  <div class="flex items-center gap-3 mb-4">
+    <div class="w-10 h-10 rounded-full bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue">
+      <font-awesome-icon :icon="['fas', 'timeline']" />
+    </div>
+    <h3 class="text-base sm:text-lg font-semibold sm:font-bold">Workflow</h3>
+    <span class="ml-auto text-[11px] font-bold text-ribbon-blue bg-ribbon-blue/10 px-2.5 py-1 rounded-full">
+      {{ timeline?.timeline?.length ?? order.encounters?.length ?? 0 }}
+    </span>
+  </div>
+
+  <div v-if="timeline?.timeline?.length" class="space-y-2 max-h-[420px] overflow-y-auto scroll-area pr-1">
+    <div v-for="s in timeline.timeline" :key="s.uuid"
+      class="p-3 rounded-xl border-l-4 bg-white/50" :class="tatAccent(s.tat_status)">
+      <div class="flex items-center justify-between gap-2">
+        <div class="min-w-0">
+          <p class="font-bold text-xs text-on-surface truncate">{{ s.station }}</p>
+          <p class="text-[10px] text-outline font-mono">{{ s.code }} · seq {{ s.sequence }}</p>
+        </div>
+        <div class="flex flex-col items-end gap-1 shrink-0">
+          <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
+            :class="statusPillClass(s.status)">{{ titleCase(s.status) }}</span>
+          <span v-if="s.tat_status"
+            class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
+            :class="tatChip(s.tat_status)">{{ titleCase(s.tat_status) }}</span>
+        </div>
+      </div>
+      <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
+        <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
+        <span>Due {{ fmtDate(s.due_at) }}</span>
+      </p>
+      <p v-if="s.performed_by" class="text-[11px] text-outline">By {{ s.performed_by }}</p>
+      <p v-if="s.ended_at" class="text-[11px] text-outline">
+        Completed {{ fmtDate(s.ended_at) }}
+        <span v-if="s.turnaround_hours != null"> · {{ s.turnaround_hours }}h</span>
+      </p>
+    </div>
+  </div>
+
+  <!-- Fallback: legacy encounter list if timeline hasn't returned -->
+  <div v-else-if="order.encounters?.length" class="space-y-2 max-h-[420px] overflow-y-auto scroll-area pr-1">
+    <div v-for="e in order.encounters" :key="e.uuid"
+      class="p-3 rounded-xl border-l-4 bg-white/50" :class="tatAccent(e.tat_status)">
+      <div class="flex items-center justify-between gap-2">
+        <span class="font-bold text-xs text-on-surface">{{ titleCase(e.type) }}</span>
+        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
+          :class="tatChip(e.tat_status)">{{ titleCase(e.tat_status || e.status) }}</span>
+      </div>
+      <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
+        <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
+        <span>Due {{ fmtDate(e.due_at) }}</span>
+      </p>
+      <p v-if="e.performed_by" class="text-[11px] text-outline">By {{ e.performed_by }}</p>
+    </div>
+  </div>
+
+  <p v-else class="text-sm text-on-surface-variant py-6 text-center">No workflow stations yet.</p>
+</div>
           </div>
 
           <!-- Notes -->
@@ -465,7 +548,7 @@ import { useLaboratorySettings } from '~/composables/useLaboratorySettings'
 
 const route = useRoute()
 const router = useRouter()
-const { showOrder, updateOrder, collectOrder, receiveOrder, voidOrder, reportOrder, releaseOrder } = useLaboratory()
+const { showOrder, updateOrder, collectOrder, receiveOrder, voidOrder, reportOrder, releaseOrder, getOrderTimeline } = useLaboratory()
 
 const { specimenSites, loaded: settingsLoaded, preload: preloadSettings } = useLaboratorySettings()
 onMounted(() => { if (!settingsLoaded.value) preloadSettings() })
@@ -481,6 +564,30 @@ const siteOptions = computed(() =>
 const uuid = computed(() => (route.params.uuid as string) || '')
 
 const order = ref<LabOrderDetail | null>(null)
+
+interface TimelineStation {
+  uuid: string
+  station: string
+  code: string
+  sequence: number
+  status: 'pending' | 'planned' | 'in_progress' | 'completed' | 'skipped' | string
+  test_uuid: string | null
+  started_at: string | null
+  ended_at: string | null
+  due_at: string | null
+  tat_status: 'on_time' | 'at_risk' | 'breached' | string | null
+  turnaround_hours: number | null
+  performed_by: string | null
+  verified_by: string | null
+}
+interface OrderTimeline {
+  accession_number: string
+  status: string
+  timeline: TimelineStation[]
+}
+
+const timeline = ref<OrderTimeline | null>(null)
+
 const loading = ref(true)
 const error = ref<string | null>(null)
 
@@ -492,7 +599,12 @@ const load = async () => {
   loading.value = true
   error.value = null
   try {
-    order.value = await showOrder(uuid.value)
+    const [orderRes, timelineRes] = await Promise.all([
+      showOrder(uuid.value),
+      getOrderTimeline(uuid.value).catch(() => null),  // timeline is non-fatal
+    ])
+    order.value = orderRes
+    timeline.value = timelineRes
     if (!order.value) error.value = 'Order not found.'
   } catch (e: any) {
     error.value = e?.message ?? 'Failed to load the order. Please try again.'
@@ -514,6 +626,36 @@ const counts = computed(() => {
   }
   return acc
 })
+
+// ── Timeline-driven action gates ────────────────────────────────────────────
+const stationByCode = computed<Record<string, TimelineStation | undefined>>(() => {
+  const out: Record<string, TimelineStation | undefined> = {}
+  for (const s of timeline.value?.timeline ?? []) out[s.code] = s
+  return out
+})
+
+const stationStatus = (code: string) => stationByCode.value[code]?.status ?? null
+
+// Business rules:
+//  - Reception must be completed BEFORE the user can collect the specimen.
+//  - Receive stays available only while RECEPTION is pending.
+//  - Complete report is offered while REPORTING is pending.
+//  - Release is offered while RELEASE is pending OR planned (after reporting).
+const canReceive = computed(() => stationStatus('RECEPTION') === 'pending')
+const canCollect = computed(() => stationStatus('RECEPTION') === 'completed'
+                                && stationStatus('GROSSING') !== 'completed')
+const canCompleteReport = computed(() => stationStatus('REPORTING') === 'pending'
+                                       || stationStatus('REPORTING') === 'in_progress')
+const canReleaseReport = computed(() => ['pending', 'planned', 'in_progress']
+                                          .includes(stationStatus('RELEASE') ?? ''))
+
+// Reason shown as a tooltip on a disabled item
+const gateReason = (code: string, wanted: string[]) => {
+  const s = stationStatus(code)
+  if (!s) return `Waiting for ${code.toLowerCase()} station to be scheduled`
+  if (wanted.includes(s)) return ''
+  return `${titleCase(code)} is ${titleCase(s)} — action not available yet`
+}
 
 // ── options ──────────────────────────────────────────────────────────────────
 const URGENCY_OPTS = ['Low', 'Medium', 'High', 'STAT']
@@ -603,6 +745,7 @@ const run = async (fn: () => Promise<any>, ok: string, close: () => void) => {
   formError.value = null
   try {
     order.value = await fn()
+    await load()
     close()
     flash(true, ok)
   } catch (e: any) {

@@ -128,106 +128,208 @@
             <!-- ── Overview tab ─────────────────────────────────────────────── -->
             <div v-if="tab === 'overview'" class="flex flex-col gap-4 sm:gap-5 min-w-0">
 
-                <!-- Hero: test identity (now part of Overview) -->
-                <div class="g-card p-4 sm:p-6 md:p-8 border-l-4 border-ribbon-purple min-w-0">
-                    <div class="flex flex-wrap items-start justify-between gap-4">
+                <!-- Hero: identity + status flag on a gradient rail -->
+                <div class="relative overflow-hidden g-card p-0 min-w-0">
+                    <div class="h-2 bg-frame-gradient"></div>
+                    <div class="p-4 sm:p-6 md:p-8 flex flex-wrap items-start justify-between gap-4">
                         <div class="min-w-0 flex items-start gap-3 sm:gap-4 flex-1">
                             <div
-                                class="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-ribbon-purple/15 flex items-center justify-center text-ribbon-purple shrink-0">
-                                <font-awesome-icon :icon="['fas', 'microscope']" class="text-base sm:text-xl" />
+                                class="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-primary-gradient flex items-center justify-center text-white shadow-lg shadow-primary/25 shrink-0">
+                                <font-awesome-icon :icon="['fas', 'microscope']" class="text-lg sm:text-xl" />
                             </div>
                             <div class="min-w-0 flex-1">
-                                <p
-                                    class="text-xs sm:text-sm text-ribbon-purple font-bold uppercase tracking-wide truncate">
-                                    {{ test.test_code }}</p>
+                                <div class="flex flex-wrap items-center gap-1.5 mb-1">
+                                    <span
+                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-ribbon-purple/15 text-ribbon-purple font-mono">{{
+                                        test.test_code }}</span>
+                                    <span :class="statusClass(test.status)" class="!py-0.5 !px-2 !text-[10px]">{{
+                                        titleCase(test.status) }}</span>
+                                </div>
                                 <h1
-                                    class="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-semibold sm:font-bold leading-snug text-on-surface break-words">
+                                    class="text-lg sm:text-2xl md:text-3xl lg:text-4xl font-bold leading-snug text-on-surface break-words">
                                     {{ test.test_name }}
                                 </h1>
-                                <p class="text-sm sm:text-base md:text-lg text-on-surface-variant mt-1 break-words">
-                                    {{ test.accession_number }}<span v-if="test.sample_name"> · {{ test.sample_name
+                                <p class="text-sm sm:text-base text-on-surface-variant mt-1 break-words">
+                                    <span class="font-mono font-semibold text-ribbon-blue">{{ test.accession_number
                                         }}</span>
+                                    <span v-if="test.sample_name" class="text-outline"> · {{ test.sample_name }}</span>
                                 </p>
                             </div>
                         </div>
-                        <div class="flex flex-wrap items-center gap-2 shrink-0">
-                            <span :class="statusClass(test.status)" class="truncate max-w-[140px] sm:max-w-none">{{
-                                titleCase(test.status) }}</span>
+                    </div>
+                </div>
+
+                <!-- Patient / clinician / turnaround strip -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+
+                    <!-- Requested by -->
+                    <div class="g-card p-4 sm:p-5 min-w-0 border-l-4 border-ribbon-teal">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div
+                                class="w-9 h-9 rounded-xl bg-ribbon-teal/15 text-ribbon-teal flex items-center justify-center shrink-0">
+                                <font-awesome-icon :icon="['fas', 'user-doctor']" />
+                            </div>
+                            <p class="text-[10px] font-bold text-ribbon-teal uppercase tracking-wider">Requested by</p>
                         </div>
+                        <p class="text-base font-bold text-on-surface break-words leading-tight">{{ order.requested_by
+                            || '—' }}</p>
+                        <p class="text-[11px] text-on-surface-variant mt-1 break-words">{{ order.referring_facility ||
+                            '—' }}</p>
+                    </div>
+
+                    <!-- Urgency + disposition -->
+                    <div class="g-card p-4 sm:p-5 min-w-0 border-l-4 border-ribbon-amber">
+                        <div class="flex items-center gap-2 mb-3">
+                            <div
+                                class="w-9 h-9 rounded-xl bg-ribbon-amber/15 text-ribbon-amber flex items-center justify-center shrink-0">
+                                <font-awesome-icon :icon="['fas', 'bolt']" />
+                            </div>
+                            <p class="text-[10px] font-bold text-ribbon-amber uppercase tracking-wider">Handling</p>
+                        </div>
+                        <div class="flex flex-wrap gap-1.5">
+                            <span
+                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold bg-ribbon-amber/15 text-ribbon-amber">
+                                {{ order.urgency || '—' }}
+                            </span>
+                            <span v-if="order.disposition"
+                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-ribbon-purple/10 text-ribbon-purple">
+                                {{ order.disposition }}
+                            </span>
+                        </div>
+                        <p class="text-[11px] text-on-surface-variant mt-2">
+                            Scheduled {{ fmtDate(order.scheduled_for) }}
+                        </p>
                     </div>
                 </div>
 
-                <!-- KPI grid (ribbon accents) -->
-                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
-                    <div class="g-card p-3 sm:p-5 md:p-6 border-l-4 border-ribbon-blue min-w-0">
-                        <p
-                            class="text-xs sm:text-sm text-ribbon-blue font-bold uppercase tracking-wider mb-1.5 sm:mb-2 truncate">
-                            Cassettes submitted</p>
-                        <p class="text-lg sm:text-2xl md:text-3xl font-bold sm:font-extrabold text-on-surface truncate">
-                            {{ test.total_submitted_cassettes ?? 0 }}</p>
+                <!-- Coloured KPI ribbon -->
+                <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                    <div
+                        class="g-card p-4 sm:p-5 min-w-0 bg-gradient-to-br from-ribbon-blue/10 to-transparent border-l-4 border-ribbon-blue">
+                        <div class="flex items-center gap-2 mb-2">
+                            <font-awesome-icon :icon="['fas', 'cube']" class="text-ribbon-blue text-sm" />
+                            <p
+                                class="text-[10px] sm:text-xs font-bold text-ribbon-blue uppercase tracking-wider truncate">
+                                Cassettes</p>
+                        </div>
+                        <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ test.total_submitted_cassettes
+                            ?? 0 }}</p>
+                        <p class="text-[11px] text-on-surface-variant mt-0.5">submitted</p>
                     </div>
-                    <div class="g-card p-3 sm:p-5 md:p-6 border-l-4 border-ribbon-teal min-w-0">
-                        <p
-                            class="text-xs sm:text-sm text-ribbon-teal font-bold uppercase tracking-wider mb-1.5 sm:mb-2 truncate">
-                            Slides submitted</p>
-                        <p class="text-lg sm:text-2xl md:text-3xl font-bold sm:font-extrabold text-on-surface truncate">
-                            {{ test.total_submitted_slides ?? 0 }}</p>
+                    <div
+                        class="g-card p-4 sm:p-5 min-w-0 bg-gradient-to-br from-ribbon-teal/10 to-transparent border-l-4 border-ribbon-teal">
+                        <div class="flex items-center gap-2 mb-2">
+                            <font-awesome-icon :icon="['fas', 'layer-group']" class="text-ribbon-teal text-sm" />
+                            <p
+                                class="text-[10px] sm:text-xs font-bold text-ribbon-teal uppercase tracking-wider truncate">
+                                Slides</p>
+                        </div>
+                        <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ test.total_submitted_slides ??
+                            0 }}</p>
+                        <p class="text-[11px] text-on-surface-variant mt-0.5">submitted</p>
                     </div>
-                    <div class="g-card p-3 sm:p-5 md:p-6 border-l-4 border-ribbon-amber min-w-0">
-                        <p
-                            class="text-xs sm:text-sm text-ribbon-amber font-bold uppercase tracking-wider mb-1.5 sm:mb-2 truncate">
-                            Smears prepared</p>
-                        <p class="text-lg sm:text-2xl md:text-3xl font-bold sm:font-extrabold text-on-surface truncate">
-                            {{ test.prepared_smears ?? '—' }}</p>
+                    <div
+                        class="g-card p-4 sm:p-5 min-w-0 bg-gradient-to-br from-ribbon-amber/10 to-transparent border-l-4 border-ribbon-amber">
+                        <div class="flex items-center gap-2 mb-2">
+                            <font-awesome-icon :icon="['fas', 'droplet']" class="text-ribbon-amber text-sm" />
+                            <p
+                                class="text-[10px] sm:text-xs font-bold text-ribbon-amber uppercase tracking-wider truncate">
+                                Smears</p>
+                        </div>
+                        <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ test.prepared_smears ?? '—' }}
+                        </p>
+                        <p class="text-[11px] text-on-surface-variant mt-0.5">prepared</p>
                     </div>
-                    <div class="g-card p-3 sm:p-5 md:p-6 border-l-4 border-ribbon-red min-w-0">
-                        <p
-                            class="text-xs sm:text-sm text-ribbon-red font-bold uppercase tracking-wider mb-1.5 sm:mb-2 truncate">
-                            Cellblocks prepared</p>
-                        <p class="text-lg sm:text-2xl md:text-3xl font-bold sm:font-extrabold text-on-surface truncate">
-                            {{ test.prepared_cellblocks ?? '—' }}</p>
+                    <div
+                        class="g-card p-4 sm:p-5 min-w-0 bg-gradient-to-br from-ribbon-red/10 to-transparent border-l-4 border-ribbon-red">
+                        <div class="flex items-center gap-2 mb-2">
+                            <font-awesome-icon :icon="['fas', 'vial']" class="text-ribbon-red text-sm" />
+                            <p
+                                class="text-[10px] sm:text-xs font-bold text-ribbon-red uppercase tracking-wider truncate">
+                                Cellblocks</p>
+                        </div>
+                        <p class="text-2xl sm:text-3xl font-extrabold text-on-surface">{{ test.prepared_cellblocks ??
+                            '—' }}</p>
+                        <p class="text-[11px] text-on-surface-variant mt-0.5">prepared</p>
                     </div>
                 </div>
 
-                <!-- Sample & processing details / Order snapshot -->
+                <!-- Sample & processing + specimen journey -->
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-5">
-                    <div class="g-card p-4 sm:p-6 md:p-8 lg:col-span-2 min-w-0">
-                        <h3
-                            class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-on-surface mb-3 sm:mb-4 break-words">
-                            Sample &amp; processing</h3>
+                    <div class="g-card p-4 sm:p-6 lg:col-span-2 min-w-0">
+                        <div class="flex items-center gap-2.5 mb-4">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-ribbon-purple/15 text-ribbon-purple flex items-center justify-center shrink-0">
+                                <font-awesome-icon :icon="['fas', 'flask']" />
+                            </div>
+                            <div>
+                                <h3 class="text-base sm:text-lg font-bold text-on-surface">Sample &amp; processing</h3>
+                                <p class="text-[11px] text-on-surface-variant">How the specimen was received and
+                                    prepared</p>
+                            </div>
+                        </div>
                         <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                             <Detail label="Sample name" :value="test.sample_name" />
                             <Detail label="Container" :value="test.container" />
                             <Detail label="Sample measurement" :value="test.sample_measurement" />
                             <Detail label="Volume received" :value="test.sample_volume_received" />
                             <Detail label="Verified by" :value="test.verified_by" />
-                            <Detail label="Referring facility" :value="order.referring_facility" />
+                            <Detail label="Received by" :value="order.received_by" />
                         </dl>
                     </div>
 
-                    <!-- Order snapshot -->
-                    <div class="g-card p-4 sm:p-6 md:p-8 min-w-0">
-                        <h3
-                            class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-on-surface mb-3 sm:mb-4 break-words">
-                            Order snapshot</h3>
-                        <dl class="grid grid-cols-1 gap-y-3">
-                            <Detail label="Specimen" :value="order.specimen" />
-                            <Detail label="Site" :value="order.site" />
-                            <Detail label="Scheduled for" :value="fmtDate(order.scheduled_for)" />
-                            <Detail label="Requested by" :value="order.requested_by" />
-                        </dl>
+                    <!-- Specimen journey timeline -->
+                    <div class="g-card p-4 sm:p-6 min-w-0">
+                        <div class="flex items-center gap-2.5 mb-4">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-ribbon-teal/15 text-ribbon-teal flex items-center justify-center shrink-0">
+                                <font-awesome-icon :icon="['fas', 'route']" />
+                            </div>
+                            <h3 class="text-base sm:text-lg font-bold text-on-surface">Specimen journey</h3>
+                        </div>
+                        <ol class="relative border-l-2 border-outline-variant/40 ml-3 space-y-4">
+                            <li class="pl-4">
+                                <span
+                                    class="absolute -left-[9px] w-4 h-4 rounded-full bg-ribbon-teal ring-4 ring-white"></span>
+                                <p class="text-[10px] font-bold text-ribbon-teal uppercase tracking-wider">Collected</p>
+                                <p class="text-sm text-on-surface font-semibold">{{ fmtDate(order.collection_time) }}
+                                </p>
+                            </li>
+                            <li class="pl-4">
+                                <span
+                                    class="absolute -left-[9px] w-4 h-4 rounded-full bg-ribbon-blue ring-4 ring-white"></span>
+                                <p class="text-[10px] font-bold text-ribbon-blue uppercase tracking-wider">Received</p>
+                                <p class="text-sm text-on-surface font-semibold">{{ fmtDate(order.reception_time) }}</p>
+                                <p v-if="order.received_by" class="text-[11px] text-on-surface-variant">by {{
+                                    order.received_by }}</p>
+                            </li>
+                            <li class="pl-4">
+                                <span
+                                    class="absolute -left-[9px] w-4 h-4 rounded-full bg-ribbon-purple ring-4 ring-white"></span>
+                                <p class="text-[10px] font-bold text-ribbon-purple uppercase tracking-wider">Scheduled
+                                </p>
+                                <p class="text-sm text-on-surface font-semibold">{{ fmtDate(order.scheduled_for) }}</p>
+                            </li>
+                        </ol>
                     </div>
                 </div>
 
                 <!-- Clinical details (only when present) -->
-                <div v-if="hasClinicalDetails" class="g-card p-4 sm:p-6 md:p-8 min-w-0">
-                    <h3
-                        class="text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-on-surface mb-3 sm:mb-4 break-words">
-                        Clinical details</h3>
-                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
-                        <Detail v-for="[k, v] in clinicalDetailsEntries" :key="k" :label="titleCase(k)"
-                            :value="v as any" />
-                    </dl>
+                <div v-if="hasClinicalDetails" class="g-card p-4 sm:p-6 min-w-0 border-l-4 border-ribbon-amber">
+                    <div class="flex items-center gap-2.5 mb-3">
+                        <div
+                            class="w-9 h-9 rounded-xl bg-ribbon-amber/15 text-ribbon-amber flex items-center justify-center shrink-0">
+                            <font-awesome-icon :icon="['fas', 'notes-medical']" />
+                        </div>
+                        <h3 class="text-base sm:text-lg font-bold text-on-surface">Clinical details</h3>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <span v-for="[k, v] in clinicalDetailsEntries" :key="k"
+                            class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-ribbon-amber/10 text-on-surface text-xs sm:text-sm">
+                            <span class="font-bold text-ribbon-amber">{{ titleCase(k) }}:</span>
+                            <span class="break-words">{{ v }}</span>
+                        </span>
+                    </div>
                 </div>
             </div>
 
@@ -250,26 +352,37 @@
 
                     <template v-else>
                         <!-- Sticky selection toolbar -->
-                        <div class="flex items-center justify-between gap-3 mb-4 sm:mb-5 min-w-0">
-                            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-                                <!-- Master checkbox -->
-                                <button type="button" class="checkbox-btn" :class="{
-                                    'checkbox-btn--checked': allBlocksSelected,
-                                    'checkbox-btn--indeterminate': someBlocksSelected,
-                                }" :aria-label="allBlocksSelected ? 'Deselect all' : 'Select all'"
-                                    @click="toggleSelectAllBlocks">
-                                    <font-awesome-icon v-if="allBlocksSelected" :icon="['fas', 'check']"
-                                        class="text-[10px] text-white" />
-                                    <font-awesome-icon v-else-if="someBlocksSelected" :icon="['fas', 'minus']"
-                                        class="text-[10px] text-white" />
+                        <div
+                            class="sticky top-0 z-20 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-3 mb-4 sm:mb-5 bg-white/95 backdrop-blur border-b border-outline-variant/40 rounded-t-2xl flex items-center justify-between gap-3 flex-wrap min-w-0">
+                            <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-wrap">
+                                <button type="button" @click="toggleSelectAllBlocks"
+                                    class="inline-flex items-center gap-2 pl-2 pr-3 py-2 rounded-xl border font-semibold text-xs sm:text-sm transition-all"
+                                    :class="allBlocksSelected
+                                        ? 'bg-ribbon-blue text-white border-ribbon-blue shadow-sm'
+                                        : (someBlocksSelected
+                                            ? 'bg-ribbon-blue/10 text-ribbon-blue border-ribbon-blue/40'
+                                            : 'bg-white text-on-surface-variant border-outline-variant hover:border-ribbon-blue/40 hover:text-ribbon-blue')">
+                                    <span
+                                        class="w-5 h-5 rounded-md flex items-center justify-center border transition-colors"
+                                        :class="allBlocksSelected
+                                            ? 'bg-white border-white text-ribbon-blue'
+                                            : (someBlocksSelected
+                                                ? 'bg-ribbon-blue border-ribbon-blue text-white'
+                                                : 'border-outline-variant text-transparent')">
+                                        <font-awesome-icon v-if="allBlocksSelected" :icon="['fas', 'check']"
+                                            class="text-[10px]" />
+                                        <font-awesome-icon v-else-if="someBlocksSelected" :icon="['fas', 'minus']"
+                                            class="text-[10px]" />
+                                    </span>
+                                    <span>{{ allBlocksSelected ? 'Deselect all' : 'Select all' }}</span>
                                 </button>
 
                                 <div class="flex items-baseline gap-2 min-w-0">
                                     <span class="text-sm font-semibold text-on-surface">
-                                        {{ selectedBlockUuids.size ? `${selectedBlockUuids.size} selected` : 'Select blocks' }}
+                                        {{ selectedBlockUuids.size ? `${selectedBlockUuids.size} selected` : '' }}
                                     </span>
-                                    <span class="text-[11px] text-on-surface-variant hidden sm:inline">
-                                        of {{ test.blocks.length }} total
+                                    <span class="text-[11px] text-on-surface-variant">
+                                        {{ test.blocks.length }} total
                                     </span>
                                 </div>
                             </div>
@@ -444,25 +557,37 @@
 
                     <template v-else>
                         <!-- Toolbar -->
-                        <div class="flex items-center justify-between gap-3 mb-4 sm:mb-5 min-w-0">
-                            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-                                <button type="button" class="checkbox-btn" :class="{
-                                    'checkbox-btn--checked': allSlidesSelected,
-                                    'checkbox-btn--indeterminate': someSlidesSelected,
-                                }" :aria-label="allSlidesSelected ? 'Deselect all slides' : 'Select all slides'"
-                                    @click="toggleSelectAllSlides">
-                                    <font-awesome-icon v-if="allSlidesSelected" :icon="['fas', 'check']"
-                                        class="text-[10px] text-white" />
-                                    <font-awesome-icon v-else-if="someSlidesSelected" :icon="['fas', 'minus']"
-                                        class="text-[10px] text-white" />
+                        <div
+                            class="sticky top-0 z-20 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-3 mb-4 sm:mb-5 bg-white/95 backdrop-blur border-b border-outline-variant/40 rounded-t-2xl flex items-center justify-between gap-3 flex-wrap min-w-0">
+                            <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-wrap">
+                                <button type="button" @click="toggleSelectAllSlides"
+                                    class="inline-flex items-center gap-2 pl-2 pr-3 py-2 rounded-xl border font-semibold text-xs sm:text-sm transition-all"
+                                    :class="allSlidesSelected
+                                        ? 'bg-ribbon-blue text-white border-ribbon-blue shadow-sm'
+                                        : (someSlidesSelected
+                                            ? 'bg-ribbon-blue/10 text-ribbon-blue border-ribbon-blue/40'
+                                            : 'bg-white text-on-surface-variant border-outline-variant hover:border-ribbon-blue/40 hover:text-ribbon-blue')">
+                                    <span
+                                        class="w-5 h-5 rounded-md flex items-center justify-center border transition-colors"
+                                        :class="allSlidesSelected
+                                            ? 'bg-white border-white text-ribbon-blue'
+                                            : (someSlidesSelected
+                                                ? 'bg-ribbon-blue border-ribbon-blue text-white'
+                                                : 'border-outline-variant text-transparent')">
+                                        <font-awesome-icon v-if="allSlidesSelected" :icon="['fas', 'check']"
+                                            class="text-[10px]" />
+                                        <font-awesome-icon v-else-if="someSlidesSelected" :icon="['fas', 'minus']"
+                                            class="text-[10px]" />
+                                    </span>
+                                    <span>{{ allSlidesSelected ? 'Deselect all' : 'Select all' }}</span>
                                 </button>
 
                                 <div class="flex items-baseline gap-2 min-w-0">
                                     <span class="text-sm font-semibold text-on-surface">
-                                        {{ selectedSlideUuids.size ? `${selectedSlideUuids.size} selected` : 'Select slides' }}
+                                        {{ selectedSlideUuids.size ? `${selectedSlideUuids.size} selected` : '' }}
                                     </span>
-                                    <span class="text-[11px] text-on-surface-variant hidden sm:inline">
-                                        of {{ test.slides.length }} total
+                                    <span class="text-[11px] text-on-surface-variant">
+                                        {{ test.slides.length }} total
                                     </span>
                                 </div>
                             </div>
@@ -677,25 +802,37 @@
 
                     <template v-else>
                         <!-- Toolbar (unchanged) -->
-                        <div class="flex items-center justify-between gap-3 mb-4 sm:mb-5 min-w-0 flex-wrap">
-                            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-                                <button type="button" class="checkbox-btn" :class="{
-                                    'checkbox-btn--checked': allResultsSelected,
-                                    'checkbox-btn--indeterminate': someResultsSelected,
-                                }" :aria-label="allResultsSelected ? 'Deselect all results' : 'Select all results'"
-                                    @click="toggleSelectAllResults">
-                                    <font-awesome-icon v-if="allResultsSelected" :icon="['fas', 'check']"
-                                        class="text-[10px] text-white" />
-                                    <font-awesome-icon v-else-if="someResultsSelected" :icon="['fas', 'minus']"
-                                        class="text-[10px] text-white" />
+                        <div
+                            class="sticky top-0 z-20 -mx-4 sm:-mx-6 md:-mx-8 px-4 sm:px-6 md:px-8 py-3 mb-4 sm:mb-5 bg-white/95 backdrop-blur border-b border-outline-variant/40 rounded-t-2xl flex items-center justify-between gap-3 flex-wrap min-w-0">
+                            <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-wrap">
+                                <button type="button" @click="toggleSelectAllResults"
+                                    class="inline-flex items-center gap-2 pl-2 pr-3 py-2 rounded-xl border font-semibold text-xs sm:text-sm transition-all"
+                                    :class="allResultsSelected
+                                        ? 'bg-ribbon-blue text-white border-ribbon-blue shadow-sm'
+                                        : (someResultsSelected
+                                            ? 'bg-ribbon-blue/10 text-ribbon-blue border-ribbon-blue/40'
+                                            : 'bg-white text-on-surface-variant border-outline-variant hover:border-ribbon-blue/40 hover:text-ribbon-blue')">
+                                    <span
+                                        class="w-5 h-5 rounded-md flex items-center justify-center border transition-colors"
+                                        :class="allResultsSelected
+                                            ? 'bg-white border-white text-ribbon-blue'
+                                            : (someResultsSelected
+                                                ? 'bg-ribbon-blue border-ribbon-blue text-white'
+                                                : 'border-outline-variant text-transparent')">
+                                        <font-awesome-icon v-if="allResultsSelected" :icon="['fas', 'check']"
+                                            class="text-[10px]" />
+                                        <font-awesome-icon v-else-if="someResultsSelected" :icon="['fas', 'minus']"
+                                            class="text-[10px]" />
+                                    </span>
+                                    <span>{{ allResultsSelected ? 'Deselect all' : 'Select all' }}</span>
                                 </button>
 
                                 <div class="flex items-baseline gap-2 min-w-0">
                                     <span class="text-sm font-semibold text-on-surface">
-                                        {{ selectedResultUuids.size ? `${selectedResultUuids.size} selected` : 'Select results' }}
+                                        {{ selectedResultUuids.size ? `${selectedResultUuids.size} selected` : '' }}
                                     </span>
-                                    <span class="text-[11px] text-on-surface-variant hidden sm:inline">
-                                        of {{ test.results.length }} total
+                                    <span class="text-[11px] text-on-surface-variant">
+                                        {{ test.results.length }} total
                                     </span>
                                 </div>
                             </div>
@@ -716,6 +853,28 @@
                                     <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-[10px]" />
                                     {{ criticalResultsCount }} critical
                                 </span>
+                            </div>
+
+                            <!-- Report actions — always visible on Results tab -->
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button type="button"
+                                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-outline-variant/50 text-xs sm:text-sm font-semibold text-on-surface hover:border-ribbon-blue/50 hover:text-ribbon-blue transition-colors disabled:opacity-50"
+                                    :disabled="!!reportGenerating || !test.results?.length"
+                                    @click.stop="printResultsReport">
+                                    <font-awesome-icon
+                                        :icon="['fas', reportGenerating === 'print' ? 'circle-notch' : 'print']"
+                                        :class="{ 'animate-spin': reportGenerating === 'print' }" class="text-xs" />
+                                    <span class="hidden sm:inline">Print</span>
+                                </button>
+                                <button type="button"
+                                    class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-ribbon-red/10 border border-ribbon-red/30 text-xs sm:text-sm font-semibold text-ribbon-red hover:bg-ribbon-red/15 transition-colors disabled:opacity-50"
+                                    :disabled="!!reportGenerating || !test.results?.length"
+                                    @click.stop="downloadResultsPdf">
+                                    <font-awesome-icon
+                                        :icon="['fas', reportGenerating === 'pdf' ? 'circle-notch' : 'file-pdf']"
+                                        :class="{ 'animate-spin': reportGenerating === 'pdf' }" class="text-xs" />
+                                    <span class="hidden sm:inline">PDF</span>
+                                </button>
                             </div>
 
                             <div v-if="selectedResultUuids.size" ref="resultsBulkMenuRef" class="relative shrink-0">
@@ -774,11 +933,20 @@
                                             {{ titleCase(r.status || 'preliminary') }}
                                         </span>
                                     </div>
-                                    <span v-if="r.is_critical"
-                                        class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-error text-white shrink-0">
-                                        <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-[9px]" />
-                                        Critical
-                                    </span>
+                                    <div class="flex items-center gap-1.5 shrink-0">
+                                        <span v-if="r.is_critical"
+                                            class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-error text-white">
+                                            <font-awesome-icon :icon="['fas', 'triangle-exclamation']"
+                                                class="text-[9px]" />
+                                            Critical
+                                        </span>
+                                        <button type="button"
+                                            class="w-7 h-7 rounded-lg bg-ribbon-blue/10 text-ribbon-blue hover:bg-ribbon-blue/20 inline-flex items-center justify-center transition-colors"
+                                            title="View full details" @click.stop="openResultDetail(r)">
+                                            <font-awesome-icon :icon="['fas', 'up-right-and-down-left-from-center']"
+                                                class="text-[10px]" />
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <!-- Analyte (title) -->
@@ -1156,9 +1324,9 @@
         </Modal>
 
         <!-- ── Result-entry wizard ───────────────────────────────────────────── -->
-        <Modal v-model="resultWizardOpen" title="Record results"
+        <Modal v-model="resultWizardOpen" title="Record Results"
             :subtitle="`${test?.test_name || ''} - ${test?.sample_name || ''} · ${resultRows.length} row${resultRows.length === 1 ? '' : 's'}`"
-            class="w-[960px] max-w-[92%]">
+            class="w-[960px] max-w-[70%]">
             <div class="flex flex-col gap-4 sm:gap-5 min-w-0">
 
                 <!-- Context header -->
@@ -1226,8 +1394,12 @@
                             <p class="text-sm sm:text-base md:text-lg font-semibold text-on-surface break-words">
                                 <template v-if="isSetupStep">Getting started</template>
                                 <template v-else-if="isReviewStep">Review &amp; submit</template>
-                                <template v-else>{{ resultRows[currentRowIdx]?.analyte_name || `Row ${currentRowIdx +
-                                    1}` }}</template>
+                                <template v-else>
+                                    {{ resultRows[currentRowIdx]?.analyte_name || `Section ${currentRowIdx + 1}` }}
+                                    <span class="text-xs sm:text-sm font-normal text-on-surface-variant">
+                                        · {{ subStep === SUB_DONE ? 'Section complete' : guideAt(subStep).title }}
+                                    </span>
+                                </template>
                             </p>
                         </div>
                         <span
@@ -1360,30 +1532,22 @@
                     </div>
                 </div>
 
-                <!-- Rows — only the active step is visible (v-show keeps state) -->
-                <div v-show="!isSetupStep && !isReviewStep" class="flex flex-col gap-3 sm:gap-4">
+                <!-- ── Row body: 4 guided sub-steps + section-done mini-review ─────────── -->
+                <div v-show="isRowStep" class="flex flex-col gap-3 sm:gap-4">
                     <div v-for="(r, i) in resultRows" :key="r._uid" v-show="currentRowIdx === i"
-                        class="relative rounded-2xl border border-outline-variant/30 bg-white/80 p-3 sm:p-4 md:p-5 flex flex-col gap-3 min-w-0"
+                        class="relative rounded-2xl border border-outline-variant/30 bg-white/80 p-3 sm:p-4 md:p-5 flex flex-col gap-4 min-w-0"
                         :class="{ 'ring-2 ring-error/25 bg-error-container/20': r.is_critical || r.flag === 'critical_high' || r.flag === 'critical_low' }">
 
-                        <!-- Row header -->
-                        <div class="flex items-start justify-between gap-2 min-w-0">
-                            <div class="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
+                        <!-- Row identity strip: section number + reorder/remove -->
+                        <div class="flex items-center justify-between gap-2 min-w-0">
+                            <div class="flex items-center gap-2 min-w-0">
                                 <span
                                     class="inline-flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-ribbon-blue to-ribbon-teal text-white text-xs font-bold shadow-sm shrink-0">
                                     {{ i + 1 }}
                                 </span>
-                                <div class="min-w-0 flex-1">
-                                    <input v-model="r.analyte_name" type="text"
-                                        class="input-field !text-sm sm:!text-base md:!text-lg !font-semibold min-w-0 w-full"
-                                        placeholder="Analyte / section name" />
-                                    <p v-if="sectionHint(r)"
-                                        class="text-[11px] sm:text-xs text-on-surface-variant mt-1 flex items-start gap-1 break-words">
-                                        <font-awesome-icon :icon="['fas', 'lightbulb']"
-                                            class="text-accent text-[9px] mt-0.5 shrink-0" />
-                                        <span>{{ sectionHint(r) }}</span>
-                                    </p>
-                                </div>
+                                <p class="text-sm sm:text-base font-semibold text-on-surface truncate min-w-0">
+                                    {{ r.analyte_name || `Section ${i + 1}` }}
+                                </p>
                             </div>
                             <div class="flex items-center gap-1 shrink-0">
                                 <button type="button" class="btn-icon" title="Move up" :disabled="i === 0"
@@ -1394,217 +1558,377 @@
                                     :disabled="i === resultRows.length - 1" @click="moveResultRow(i, 1)">
                                     <font-awesome-icon :icon="['fas', 'arrow-down']" class="text-xs" />
                                 </button>
-                                <button type="button" class="btn-icon btn-icon--danger" title="Remove row"
+                                <button type="button" class="btn-icon btn-icon--danger" title="Remove section"
                                     :disabled="resultRows.length === 1" @click="removeResultRow(i)">
                                     <font-awesome-icon :icon="['fas', 'trash']" class="text-xs" />
                                 </button>
                             </div>
                         </div>
 
-                        <!-- Value type picker with hint -->
-                        <div class="min-w-0">
-                            <div
-                                class="flex flex-wrap items-center gap-1 p-1 rounded-lg bg-surface-low border border-outline-variant/30 self-start">
-                                <button v-for="t in (['narrative', 'text', 'numeric', 'coded'] as ResultValueType[])"
-                                    :key="t" type="button"
-                                    class="px-2.5 sm:px-3 py-1 rounded-md text-xs sm:text-sm font-semibold transition-colors"
-                                    :class="r.value_type === t
-                                        ? 'bg-white text-primary shadow-sm'
-                                        : 'text-on-surface-variant hover:text-on-surface'" @click="r.value_type = t">
-                                    {{ titleCase(t) }}
-                                </button>
+                        <!-- Sub-step guide banner (hidden on section-done) -->
+                        <div v-if="subStep <= SUB_LAST_INPUT"
+                            class="rounded-xl bg-primary-fixed/40 border border-primary/20 p-3 sm:p-4 min-w-0">
+                            <div class="flex items-start gap-3 min-w-0">
+                                <div
+                                    class="w-9 h-9 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                                    <font-awesome-icon :icon="['fas', guideAt(subStep).icon]" />
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p class="text-[10px] sm:text-xs font-bold text-primary uppercase tracking-wider">
+                                        Step {{ subStep + 1 }} of 4
+                                    </p>
+                                    <p class="text-sm sm:text-base font-semibold text-on-surface">
+                                        {{ guideAt(subStep).title }}
+                                    </p>
+                                    <p class="text-xs sm:text-sm text-on-surface-variant break-words">
+                                        {{ guideAt(subStep).blurb }}
+                                    </p>
+                                    <ul class="mt-1.5 space-y-0.5">
+                                        <li v-for="t in guideAt(subStep).tips" :key="t"
+                                            class="text-[11px] sm:text-xs text-on-surface-variant flex items-start gap-1.5">
+                                            <font-awesome-icon :icon="['fas', 'lightbulb']"
+                                                class="text-accent text-[9px] mt-0.5 shrink-0" />
+                                            <span class="break-words">{{ t }}</span>
+                                        </li>
+                                    </ul>
+                                </div>
                             </div>
-                            <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1.5 break-words">
-                                {{ VALUE_TYPE_HINT[r.value_type] }}
+                        </div>
+
+                        <!-- ─── SUB 0 · Name the section ─────────────────────────────── -->
+                        <div v-show="subStep === 0" class="min-w-0">
+                            <label class="input-label">Section name <span class="text-error">*</span></label>
+                            <input v-model="r.analyte_name" type="text"
+                                class="input-field !text-sm sm:!text-base md:!text-lg !font-semibold"
+                                placeholder="e.g. Microscopic Description" />
+                            <p v-if="sectionHint(r)"
+                                class="text-[11px] sm:text-xs text-on-surface-variant mt-1.5 flex items-start gap-1 break-words">
+                                <font-awesome-icon :icon="['fas', 'lightbulb']"
+                                    class="text-accent text-[9px] mt-0.5 shrink-0" />
+                                <span>{{ sectionHint(r) }}</span>
                             </p>
-                        </div>
 
-                        <!-- (a) NARRATIVE -->
-                        <div v-if="r.value_type === 'narrative'" class="min-w-0">
-                            <label class="input-label">Narrative <span class="text-error">*</span></label>
-                            <div class="rich-editor-wrap">
-                                <ConsultNoteEditor v-model="r.value_text"
-                                    :placeholder="`Enter ${r.analyte_name || 'section'} narrative…`" />
-                            </div>
-                        </div>
-
-                        <!-- (b) TEXT — plain textarea -->
-                        <div v-else-if="r.value_type === 'text'" class="min-w-0">
-                            <label class="input-label">Text value <span class="text-error">*</span></label>
-                            <textarea v-model="r.value_text" rows="2"
-                                class="input-field !text-sm sm:!text-base resize-y break-words"
-                                placeholder="Short free-text value…"></textarea>
-                        </div>
-
-                        <!-- (c) NUMERIC -->
-                        <div v-else-if="r.value_type === 'numeric'"
-                            class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 min-w-0">
-                            <div class="min-w-0">
-                                <label class="input-label">Value <span class="text-error">*</span></label>
-                                <input v-model.number="r.value_numeric" type="number" step="any" class="input-field"
-                                    placeholder="e.g. 5.2" @input="autoFlagNumeric(r)" />
-                            </div>
-                            <div class="min-w-0">
-                                <label class="input-label">Unit</label>
-                                <input v-model="r.unit" type="text" class="input-field" placeholder="e.g. mmol/L" />
-                            </div>
-                            <div class="min-w-0">
-                                <label class="input-label">Ref. low</label>
-                                <input v-model.number="r.reference_low" type="number" step="any" class="input-field"
-                                    placeholder="—" @input="autoFlagNumeric(r)" />
-                            </div>
-                            <div class="min-w-0">
-                                <label class="input-label">Ref. high</label>
-                                <input v-model.number="r.reference_high" type="number" step="any" class="input-field"
-                                    placeholder="—" @input="autoFlagNumeric(r)" />
-                            </div>
                             <p
-                                class="sm:col-span-2 lg:col-span-4 text-[11px] sm:text-xs text-on-surface-variant break-words">
-                                <font-awesome-icon :icon="['fas', 'lightbulb']" class="text-accent text-[9px] mr-1" />
-                                Fill reference low and high — the flag auto-derives to normal / high / low as you type.
+                                class="text-[11px] sm:text-xs font-semibold text-on-surface-variant uppercase tracking-wider mt-4 mb-1.5">
+                                Or pick a standard section
                             </p>
-                        </div>
-
-                        <!-- (d) CODED -->
-                        <div v-else class="min-w-0">
-                            <label class="input-label">Coded value <span class="text-error">*</span></label>
-                            <div class="flex flex-wrap gap-1.5 mb-2">
-                                <button v-for="opt in CODED_PRESETS" :key="opt" type="button"
+                            <div class="flex flex-wrap gap-1.5">
+                                <button v-for="name in AP_SECTION_NAMES" :key="name" type="button"
                                     class="px-2.5 py-1 rounded-full text-xs sm:text-sm font-semibold border transition-colors"
-                                    :class="r.value_coded === opt
+                                    :class="r.analyte_name === name
                                         ? 'bg-primary text-white border-primary'
                                         : 'bg-white text-on-surface-variant border-outline-variant hover:border-primary/40'"
-                                    @click="r.value_coded = opt">
-                                    {{ opt }}
+                                    @click="r.analyte_name = name">
+                                    {{ name }}
                                 </button>
                             </div>
-                            <input v-model="r.value_coded" type="text" class="input-field"
-                                placeholder="Or type a custom coded value…" />
-                            <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1.5 break-words">
-                                <font-awesome-icon :icon="['fas', 'lightbulb']" class="text-accent text-[9px] mr-1" />
-                                Tap a preset or type a custom term.
-                            </p>
                         </div>
 
-                        <!-- Flag / status / critical row -->
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 min-w-0">
-                            <div class="min-w-0">
-                                <label class="input-label">Flag</label>
-                                <div class="flex items-center gap-2 min-w-0">
-                                    <select v-model="r.flag" class="input-field flex-1 min-w-0">
-                                        <option v-for="f in FLAG_OPTIONS" :key="f.value" :value="f.value">{{ f.label }}
-                                        </option>
-                                    </select>
-                                    <span :class="flagChipClass(r.flag)"
-                                        class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-semibold shrink-0 truncate">
-                                        <font-awesome-icon :icon="['fas', 'flag']" class="text-[9px]" />
-                                        {{(FLAG_OPTIONS.find(f => f.value === r.flag)?.label) || r.flag}}
-                                    </span>
+                        <!-- ─── SUB 1 · Pick a value type ─────────────────────────────── -->
+                        <div v-show="subStep === 1" class="min-w-0 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3">
+                            <button v-for="t in (['narrative', 'text', 'numeric', 'coded'] as ResultValueType[])"
+                                :key="t" type="button"
+                                class="text-left p-3 sm:p-4 rounded-xl border-2 transition-colors min-w-0" :class="r.value_type === t
+                                    ? 'bg-primary/5 border-primary'
+                                    : 'bg-white border-outline-variant/40 hover:border-primary/40'"
+                                @click="r.value_type = t">
+                                <div class="flex items-center gap-2 mb-1 min-w-0">
+                                    <font-awesome-icon :icon="['fas', VALUE_TYPE_GUIDANCE[t].icon]"
+                                        :class="r.value_type === t ? 'text-primary' : 'text-on-surface-variant'" />
+                                    <p class="text-sm sm:text-base font-semibold text-on-surface truncate">{{
+                                        titleCase(t) }}
+                                    </p>
+                                    <font-awesome-icon v-if="r.value_type === t" :icon="['fas', 'circle-check']"
+                                        class="text-primary text-xs ml-auto shrink-0" />
                                 </div>
-                                <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1">
-                                    Numeric flags auto-derive; you can still override.
+                                <p class="text-[11px] sm:text-xs text-on-surface-variant break-words">
+                                    {{ VALUE_TYPE_GUIDANCE[t].what }}
+                                </p>
+                                <p class="text-[11px] sm:text-xs text-on-surface-variant/80 italic mt-1 break-words">
+                                    {{ VALUE_TYPE_GUIDANCE[t].tips[0] }}
+                                </p>
+                            </button>
+                        </div>
+
+                        <!-- ─── SUB 2 · Enter the value (respective input) ────────────── -->
+                        <div v-show="subStep === 2" class="min-w-0">
+                            <!-- (a) NARRATIVE -->
+                            <div v-if="r.value_type === 'narrative'" class="min-w-0">
+                                <label class="input-label">Narrative <span class="text-error">*</span></label>
+                                <div class="rich-editor-wrap">
+                                    <ConsultNoteEditor v-model="r.value_text"
+                                        :placeholder="`Enter ${r.analyte_name || 'section'} narrative…`" />
+                                </div>
+                                <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1.5 break-words">
+                                    <font-awesome-icon :icon="['fas', 'lightbulb']"
+                                        class="text-accent text-[9px] mr-1" />
+                                    Use paragraphs, bold and lists — formatting is preserved on the report.
                                 </p>
                             </div>
-                            <div class="min-w-0">
-                                <label class="input-label">Status</label>
-                                <div
-                                    class="flex items-center gap-1 p-1 rounded-lg bg-surface-low border border-outline-variant/30">
-                                    <button v-for="s in (['preliminary', 'final'] as ResultStatus[])" :key="s"
-                                        type="button"
-                                        class="flex-1 py-1 rounded-md text-xs sm:text-sm font-semibold transition-colors truncate"
-                                        :class="r.status === s
-                                            ? 'bg-white text-primary shadow-sm'
-                                            : 'text-on-surface-variant hover:text-on-surface'" @click="r.status = s">
-                                        {{ titleCase(s) }}
+
+                            <!-- (b) TEXT -->
+                            <div v-else-if="r.value_type === 'text'" class="min-w-0">
+                                <label class="input-label">Text value <span class="text-error">*</span></label>
+                                <textarea v-model="r.value_text" rows="3"
+                                    class="input-field !text-sm sm:!text-base resize-y break-words"
+                                    placeholder="Short free-text value…"></textarea>
+                                <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1.5 break-words">
+                                    <font-awesome-icon :icon="['fas', 'lightbulb']"
+                                        class="text-accent text-[9px] mr-1" />
+                                    Keep it short — for long-form use Narrative instead.
+                                </p>
+                            </div>
+
+                            <!-- (c) NUMERIC -->
+                            <div v-else-if="r.value_type === 'numeric'"
+                                class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 min-w-0">
+                                <div class="min-w-0">
+                                    <label class="input-label">Value <span class="text-error">*</span></label>
+                                    <input v-model.number="r.value_numeric" type="number" step="any" class="input-field"
+                                        placeholder="e.g. 5.2" @input="autoFlagNumeric(r)" />
+                                </div>
+                                <div class="min-w-0">
+                                    <label class="input-label">Unit</label>
+                                    <input v-model="r.unit" type="text" class="input-field" placeholder="e.g. mmol/L" />
+                                </div>
+                                <div class="min-w-0">
+                                    <label class="input-label">Ref. low</label>
+                                    <input v-model.number="r.reference_low" type="number" step="any" class="input-field"
+                                        placeholder="—" @input="autoFlagNumeric(r)" />
+                                </div>
+                                <div class="min-w-0">
+                                    <label class="input-label">Ref. high</label>
+                                    <input v-model.number="r.reference_high" type="number" step="any"
+                                        class="input-field" placeholder="—" @input="autoFlagNumeric(r)" />
+                                </div>
+                                <p
+                                    class="sm:col-span-2 lg:col-span-4 text-[11px] sm:text-xs text-on-surface-variant break-words">
+                                    <font-awesome-icon :icon="['fas', 'lightbulb']"
+                                        class="text-accent text-[9px] mr-1" />
+                                    Fill low and high — the flag auto-derives to normal / high / low as you type.
+                                </p>
+                            </div>
+
+                            <!-- (d) CODED -->
+                            <div v-else class="min-w-0">
+                                <label class="input-label">Coded value <span class="text-error">*</span></label>
+                                <div class="flex flex-wrap gap-1.5 mb-2">
+                                    <button v-for="opt in CODED_PRESETS" :key="opt" type="button"
+                                        class="px-2.5 py-1 rounded-full text-xs sm:text-sm font-semibold border transition-colors"
+                                        :class="r.value_coded === opt
+                                            ? 'bg-primary text-white border-primary'
+                                            : 'bg-white text-on-surface-variant border-outline-variant hover:border-primary/40'"
+                                        @click="r.value_coded = opt">
+                                        {{ opt }}
                                     </button>
                                 </div>
-                                <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1">
-                                    Preliminary = draft; Final = signed off.
+                                <input v-model="r.value_coded" type="text" class="input-field"
+                                    placeholder="Or type a custom coded value…" />
+                                <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1.5 break-words">
+                                    <font-awesome-icon :icon="['fas', 'lightbulb']"
+                                        class="text-accent text-[9px] mr-1" />
+                                    Tap a preset or type a custom term.
                                 </p>
                             </div>
+                        </div>
+
+                        <!-- ─── SUB 3 · Flag / Status / Critical + Advanced (always visible) ─── -->
+                        <div v-show="subStep === 3" class="flex flex-col gap-3 sm:gap-4 min-w-0">
+                            <!-- Flag / Status / Critical -->
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 min-w-0">
+                                <div class="min-w-0">
+                                    <label class="input-label">Flag</label>
+                                    <div class="flex items-center gap-2 min-w-0">
+                                        <select v-model="r.flag" class="input-field flex-1 min-w-0">
+                                            <option v-for="f in FLAG_OPTIONS" :key="f.value" :value="f.value">{{ f.label
+                                            }}
+                                            </option>
+                                        </select>
+                                        <span :class="flagChipClass(r.flag)"
+                                            class="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] sm:text-xs font-semibold shrink-0 truncate">
+                                            <font-awesome-icon :icon="['fas', 'flag']" class="text-[9px]" />
+                                            {{(FLAG_OPTIONS.find(f => f.value === r.flag)?.label) || r.flag}}
+                                        </span>
+                                    </div>
+                                    <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1">
+                                        Numeric flags auto-derive; you can still override.
+                                    </p>
+                                </div>
+                                <div class="min-w-0">
+                                    <label class="input-label">Status</label>
+                                    <div
+                                        class="flex items-center gap-1 p-1 rounded-lg bg-surface-low border border-outline-variant/30">
+                                        <button v-for="s in (['preliminary', 'final'] as ResultStatus[])" :key="s"
+                                            type="button"
+                                            class="flex-1 py-1 rounded-md text-xs sm:text-sm font-semibold transition-colors truncate"
+                                            :class="r.status === s
+                                                ? 'bg-white text-primary shadow-sm'
+                                                : 'text-on-surface-variant hover:text-on-surface'"
+                                            @click="r.status = s">
+                                            {{ titleCase(s) }}
+                                        </button>
+                                    </div>
+                                    <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1">
+                                        Preliminary = draft; Final = signed off.
+                                    </p>
+                                </div>
+                                <div class="min-w-0">
+                                    <label class="input-label">Critical</label>
+                                    <button type="button"
+                                        class="w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-md border transition-colors"
+                                        :class="r.is_critical
+                                            ? 'bg-error-container/50 border-error/30 text-error'
+                                            : 'bg-white border-outline-variant text-on-surface-variant hover:border-primary/40'"
+                                        @click="r.is_critical = !r.is_critical">
+                                        <span class="text-xs sm:text-sm font-semibold truncate">
+                                            {{ r.is_critical ? 'Marked critical' : 'Mark as critical' }}
+                                        </span>
+                                        <font-awesome-icon
+                                            :icon="['fas', r.is_critical ? 'triangle-exclamation' : 'circle']"
+                                            class="text-xs shrink-0" />
+                                    </button>
+                                    <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1">
+                                        Toggle if the result changes management.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Critical notification capture -->
+                            <div v-if="r.is_critical || r.flag === 'critical_high' || r.flag === 'critical_low'"
+                                class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl bg-error-container/30 border border-error/25 min-w-0">
+                                <div class="min-w-0">
+                                    <label class="input-label">Notified to <span class="text-error">*</span></label>
+                                    <input v-model="r.critical_notified_to" type="text" class="input-field"
+                                        placeholder="e.g. Dr. Chisomo Phiri" />
+                                </div>
+                                <div class="min-w-0">
+                                    <label class="input-label">Notified at <span class="text-error">*</span></label>
+                                    <input v-model="r.critical_notified_at" type="datetime-local" class="input-field" />
+                                </div>
+                            </div>
+
+                            <!-- Comment -->
                             <div class="min-w-0">
-                                <label class="input-label">Critical</label>
+                                <label class="input-label">
+                                    Comment <span
+                                        class="text-[10px] font-normal text-on-surface-variant">(optional)</span>
+                                </label>
+                                <input v-model="r.comment" type="text" class="input-field"
+                                    placeholder="Optional note about this row…" />
+                            </div>
+
+                            <!-- Advanced (always visible, guided) -->
+                            <div
+                                class="rounded-xl border border-outline-variant/30 bg-surface-low/60 p-3 sm:p-4 min-w-0">
+                                <div class="flex items-start gap-2 mb-2 min-w-0">
+                                    <font-awesome-icon :icon="['fas', 'sliders']"
+                                        class="text-primary mt-0.5 shrink-0" />
+                                    <div class="min-w-0">
+                                        <p class="text-xs sm:text-sm font-semibold text-on-surface">Advanced — codes,
+                                            references, instrument, method</p>
+                                        <p class="text-[11px] sm:text-xs text-on-surface-variant break-words">
+                                            Optional but recommended. LOINC/analyte codes improve interoperability;
+                                            instrument &amp; method are captured for quality audit.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 min-w-0">
+                                    <div class="min-w-0">
+                                        <label class="input-label">Analyte code</label>
+                                        <input v-model="r.analyte_code" type="text" class="input-field"
+                                            placeholder="e.g. CLIN_HX" />
+                                    </div>
+                                    <div class="min-w-0">
+                                        <label class="input-label">LOINC code</label>
+                                        <input v-model="r.loinc_code" type="text" class="input-field"
+                                            placeholder="e.g. 22634-0" />
+                                    </div>
+                                    <div v-if="r.value_type === 'numeric'" class="min-w-0 sm:col-span-2">
+                                        <label class="input-label">Reference text (fallback)</label>
+                                        <input v-model="r.reference_text" type="text" class="input-field"
+                                            placeholder="e.g. Adults 3.5–5.1 mmol/L" />
+                                    </div>
+                                    <div class="min-w-0">
+                                        <label class="input-label">Instrument</label>
+                                        <input v-model="r.instrument" type="text" class="input-field"
+                                            placeholder="e.g. Leica BOND-III" />
+                                    </div>
+                                    <div class="min-w-0">
+                                        <label class="input-label">Method</label>
+                                        <input v-model="r.method" type="text" class="input-field"
+                                            placeholder="e.g. Immunohistochemistry" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ─── SUB 4 · Section done — mini review + branch actions ──── -->
+                        <div v-show="subStep === SUB_DONE" class="flex flex-col gap-3 sm:gap-4 min-w-0">
+                            <div
+                                class="rounded-xl border border-ribbon-teal/30 bg-ribbon-teal/10 p-3 sm:p-4 flex items-start gap-3 min-w-0">
+                                <div
+                                    class="w-9 h-9 rounded-lg bg-ribbon-teal/20 text-ribbon-teal flex items-center justify-center shrink-0">
+                                    <font-awesome-icon :icon="['fas', 'circle-check']" />
+                                </div>
+                                <div class="min-w-0 flex-1">
+                                    <p
+                                        class="text-xs sm:text-sm font-semibold uppercase tracking-wide text-ribbon-teal">
+                                        Section {{ i + 1 }} of {{ resultRows.length }} captured
+                                    </p>
+                                    <p class="text-sm sm:text-base font-semibold text-on-surface break-words">
+                                        {{ r.analyte_name || `Section ${i + 1}` }}
+                                    </p>
+                                    <p class="text-xs sm:text-sm text-on-surface-variant break-words line-clamp-3 mt-1">
+                                        {{ rowValuePreview(r) || 'No value entered yet' }}
+                                    </p>
+                                </div>
                                 <button type="button"
-                                    class="w-full inline-flex items-center justify-between gap-2 px-3 py-2 rounded-md border transition-colors"
-                                    :class="r.is_critical
-                                        ? 'bg-error-container/50 border-error/30 text-error'
-                                        : 'bg-white border-outline-variant text-on-surface-variant hover:border-primary/40'"
-                                    @click="r.is_critical = !r.is_critical">
-                                    <span class="text-xs sm:text-sm font-semibold truncate">
-                                        {{ r.is_critical ? 'Marked critical' : 'Mark as critical' }}
-                                    </span>
-                                    <font-awesome-icon
-                                        :icon="['fas', r.is_critical ? 'triangle-exclamation' : 'circle']"
-                                        class="text-xs shrink-0" />
+                                    class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors shrink-0"
+                                    @click="subStep = 0">
+                                    <font-awesome-icon :icon="['fas', 'pen-to-square']" class="text-[10px]" />
+                                    <span>Edit</span>
                                 </button>
-                                <p class="text-[11px] sm:text-xs text-on-surface-variant mt-1">
-                                    Toggle if the result changes management.
+                            </div>
+
+                            <p class="text-xs sm:text-sm font-semibold text-on-surface-variant">What next?</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
+                                <button type="button"
+                                    class="text-left p-3 rounded-xl border-2 border-outline-variant/40 hover:border-primary/50 transition-colors"
+                                    @click="addBlankSection">
+                                    <font-awesome-icon :icon="['fas', 'plus']" class="text-primary mb-1" />
+                                    <p class="text-sm font-semibold text-on-surface">Add another section</p>
+                                    <p class="text-[11px] text-on-surface-variant">Start a fresh blank section.</p>
+                                </button>
+                                <button type="button" :disabled="!availableSectionTemplates.length"
+                                    class="text-left p-3 rounded-xl border-2 border-outline-variant/40 hover:border-primary/50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                    @click="availableSectionTemplates[0] && addSectionFromTemplate(availableSectionTemplates[0])">
+                                    <font-awesome-icon :icon="['fas', 'layer-group']" class="text-primary mb-1" />
+                                    <p class="text-sm font-semibold text-on-surface">Use standard section</p>
+                                    <p class="text-[11px] text-on-surface-variant">
+                                        {{ availableSectionTemplates[0] ?? 'All standard sections added' }}
+                                    </p>
+                                </button>
+                                <button type="button"
+                                    class="text-left p-3 rounded-xl border-2 border-primary bg-primary/5 hover:bg-primary/10 transition-colors"
+                                    @click="jumpToStep(resultRows.length + 1)">
+                                    <font-awesome-icon :icon="['fas', 'clipboard-list']" class="text-primary mb-1" />
+                                    <p class="text-sm font-semibold text-primary">Review &amp; submit</p>
+                                    <p class="text-[11px] text-on-surface-variant">Go to final review.</p>
+                                </button>
+                            </div>
+
+                            <!-- Full template picker if more than one available -->
+                            <div v-if="availableSectionTemplates.length > 1" class="min-w-0">
+                                <p
+                                    class="text-[11px] sm:text-xs font-semibold text-on-surface-variant uppercase tracking-wider mb-1.5">
+                                    Other standard sections
                                 </p>
-                            </div>
-                        </div>
-
-                        <!-- Critical notification capture -->
-                        <div v-if="r.is_critical || r.flag === 'critical_high' || r.flag === 'critical_low'"
-                            class="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 p-2.5 sm:p-3 rounded-xl bg-error-container/30 border border-error/25 min-w-0">
-                            <div class="min-w-0">
-                                <label class="input-label">Notified to <span class="text-error">*</span></label>
-                                <input v-model="r.critical_notified_to" type="text" class="input-field"
-                                    placeholder="e.g. Dr. Chisomo Phiri" />
-                            </div>
-                            <div class="min-w-0">
-                                <label class="input-label">Notified at <span class="text-error">*</span></label>
-                                <input v-model="r.critical_notified_at" type="datetime-local" class="input-field" />
-                            </div>
-                        </div>
-
-                        <!-- Comment -->
-                        <div class="min-w-0">
-                            <label class="input-label">
-                                Comment
-                                <span class="text-[10px] font-normal text-on-surface-variant">(optional)</span>
-                            </label>
-                            <input v-model="r.comment" type="text" class="input-field"
-                                placeholder="Optional note about this row…" />
-                        </div>
-
-                        <!-- Advanced disclosure -->
-                        <div class="min-w-0">
-                            <button type="button"
-                                class="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-on-surface-variant hover:text-primary transition-colors"
-                                @click="r._advancedOpen = !r._advancedOpen">
-                                <font-awesome-icon :icon="['fas', r._advancedOpen ? 'chevron-down' : 'chevron-right']"
-                                    class="text-[10px]" />
-                                Advanced options
-                                <span class="text-[10px] font-normal text-on-surface-variant/70">
-                                    (codes, references, instrument, method)
-                                </span>
-                            </button>
-                            <div v-show="r._advancedOpen"
-                                class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 min-w-0">
-                                <div class="min-w-0">
-                                    <label class="input-label">Analyte code</label>
-                                    <input v-model="r.analyte_code" type="text" class="input-field"
-                                        placeholder="e.g. CLIN_HX" />
-                                </div>
-                                <div class="min-w-0">
-                                    <label class="input-label">LOINC code</label>
-                                    <input v-model="r.loinc_code" type="text" class="input-field"
-                                        placeholder="e.g. 22634-0" />
-                                </div>
-                                <div v-if="r.value_type === 'numeric'" class="min-w-0 sm:col-span-2">
-                                    <label class="input-label">Reference text (fallback)</label>
-                                    <input v-model="r.reference_text" type="text" class="input-field"
-                                        placeholder="e.g. Adults 3.5–5.1 mmol/L" />
-                                </div>
-                                <div class="min-w-0">
-                                    <label class="input-label">Instrument</label>
-                                    <input v-model="r.instrument" type="text" class="input-field"
-                                        placeholder="e.g. Leica BOND-III" />
-                                </div>
-                                <div class="min-w-0">
-                                    <label class="input-label">Method</label>
-                                    <input v-model="r.method" type="text" class="input-field"
-                                        placeholder="e.g. Immunohistochemistry" />
+                                <div class="flex flex-wrap gap-1.5">
+                                    <button v-for="name in availableSectionTemplates.slice(1)" :key="name" type="button"
+                                        class="px-2.5 py-1 rounded-full text-xs font-semibold border bg-white text-on-surface-variant border-outline-variant hover:border-primary/40 transition-colors"
+                                        @click="addSectionFromTemplate(name)">
+                                        + {{ name }}
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -1669,6 +1993,14 @@
                                     <p class="text-sm sm:text-base font-semibold text-on-surface break-words">
                                         {{ r.analyte_name || `Row ${i + 1}` }}
                                     </p>
+                                    <div class="flex flex-wrap gap-1 mt-1.5">
+                                        <button v-for="(g, s) in SUB_STEP_GUIDES" :key="s" type="button"
+                                            class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-semibold text-on-surface-variant bg-surface-low hover:bg-primary/10 hover:text-primary transition-colors"
+                                            @click="jumpToRow(i, s)">
+                                            <font-awesome-icon :icon="['fas', 'pen']" class="text-[8px]" />
+                                            {{ g.title }}
+                                        </button>
+                                    </div>
                                     <span :class="flagChipClass(r.flag)"
                                         class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-semibold shrink-0">
                                         <font-awesome-icon :icon="['fas', 'flag']" class="text-[8px]" />
@@ -1691,7 +2023,7 @@
                             </div>
                             <button type="button"
                                 class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-primary bg-primary/10 hover:bg-primary/20 transition-colors shrink-0"
-                                @click="jumpToRow(i)">
+                                @click="jumpToRow(i, 0)">
                                 <font-awesome-icon :icon="['fas', 'pen-to-square']" class="text-[10px]" />
                                 <span class="hidden sm:inline">Edit</span>
                             </button>
@@ -1711,7 +2043,14 @@
             <template #footer>
                 <div class="flex items-center gap-2 text-xs sm:text-sm text-on-surface-variant mr-auto min-w-0">
                     <font-awesome-icon :icon="['fas', 'list-check']" />
-                    <span class="truncate">Step {{ wizardStep + 1 }} / {{ totalSteps }}</span>
+                    <span class="truncate">
+                        <template v-if="isSetupStep">Setup</template>
+                        <template v-else-if="isReviewStep">Review</template>
+                        <template v-else>
+                            Section {{ currentRowIdx + 1 }}/{{ resultRows.length }} ·
+                            {{ subStep === SUB_DONE ? 'Done' : `Step ${subStep + 1}/4` }}
+                        </template>
+                    </span>
                 </div>
 
                 <button type="button" class="btn-secondary text-sm sm:text-base" v-if="isSetupStep"
@@ -1724,7 +2063,13 @@
                 </button>
 
                 <button v-if="!isReviewStep" type="button" class="btn-primary text-sm sm:text-base" @click="goNext">
-                    <span>{{ isSetupStep ? 'Get started' : 'Next' }}</span>
+                    <span>
+                        <template v-if="isSetupStep">Get started</template>
+                        <template v-else-if="subStep < SUB_LAST_INPUT">Next: {{ guideAt(subStep + 1).title }}</template>
+                        <template v-else-if="subStep === SUB_LAST_INPUT">Finish section</template>
+                        <template v-else>
+                            {{ currentRowIdx < resultRows.length - 1 ? 'Next section' : 'Go to review' }} </template>
+                    </span>
                     <font-awesome-icon :icon="['fas', 'arrow-right']" />
                 </button>
                 <button v-else type="button" class="btn-primary text-sm sm:text-base" :disabled="resultSubmitting"
@@ -2023,7 +2368,8 @@
         </Modal>
 
         <!-- ── Add Slide Images modal (paste image URL per slide) ────────────────── -->
-        <Modal v-model="imageModalOpen" title="Add Slide Images" :subtitle="test?.accession_number" size="lg" class="max-w-[70%]">
+        <Modal v-model="imageModalOpen" title="Add Slide Images" :subtitle="test?.accession_number" size="lg"
+            class="max-w-[70%]">
             <div class="space-y-4">
                 <p class="text-xs sm:text-sm text-on-surface-variant">
                     Paste an image URL (http/https) for each selected slide. The URL should point directly to a
@@ -2074,47 +2420,144 @@
                 </button>
             </template>
         </Modal>
+
+        <!-- ── Result detail modal ──────────────────────────────────────── -->
+        <Modal v-model="resultDetailOpen" title="Result details" :subtitle="resultDetailRow?.analyte || ''"
+            class="w-[860px] max-w-[92%]">
+            <div v-if="resultDetailRow" class="flex flex-col gap-4 min-w-0">
+
+                <!-- Section header strip -->
+                <div
+                    class="rounded-2xl border border-ribbon-purple/25 bg-gradient-to-br from-ribbon-purple/10 to-ribbon-blue/5 p-4 sm:p-5 min-w-0">
+                    <div class="flex flex-wrap items-start justify-between gap-3 min-w-0">
+                        <div class="min-w-0 flex items-start gap-3">
+                            <div
+                                class="w-10 h-10 rounded-xl bg-ribbon-purple/15 flex items-center justify-center text-ribbon-purple shrink-0">
+                                <font-awesome-icon :icon="['fas', 'clipboard-check']" />
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-[10px] sm:text-xs font-bold text-ribbon-purple uppercase tracking-wider">
+                                    Section
+                                </p>
+                                <p class="text-base sm:text-lg font-bold text-on-surface break-words">
+                                    {{ resultDetailRow.analyte || '—' }}
+                                </p>
+                                <p v-if="resultDetailRow.code"
+                                    class="text-[11px] text-on-surface-variant font-mono break-all">
+                                    {{ resultDetailRow.code }}
+                                    <span v-if="resultCodeHint(resultDetailRow.code)"
+                                        class="font-sans text-on-surface-variant/80"> · {{
+                                        resultCodeHint(resultDetailRow.code)
+                                        }}</span>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-1.5 shrink-0">
+                            <span :class="resultStatusClass(resultDetailRow.status)" class="!py-1 !px-2.5 !text-[11px]">
+                                {{ titleCase(resultDetailRow.status || 'preliminary') }}
+                            </span>
+                            <span :class="flagChipClass(resultDetailRow.flag)"
+                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold">
+                                <font-awesome-icon :icon="['fas', 'flag']" class="text-[9px]" />
+                                {{(FLAG_OPTIONS.find(f => f.value === resultDetailRow.flag)?.label) ||
+                                    titleCase(resultDetailRow.flag || 'normal')}}
+                            </span>
+                            <span v-if="resultDetailRow.is_critical"
+                                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-error text-white">
+                                <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-[9px]" />
+                                Critical
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Full value (no clamp) -->
+                <div class="rounded-2xl border border-outline-variant/40 bg-white/80 p-4 sm:p-5 min-w-0">
+                    <p class="text-[10px] sm:text-xs font-bold text-ribbon-blue uppercase tracking-wider mb-2">Value</p>
+                    <div v-if="isHtmlValue(resultDetailRow.value)"
+                        class="result-rich text-sm sm:text-base text-on-surface leading-relaxed break-words"
+                        v-html="resultDetailRow.value"></div>
+                    <p v-else class="text-sm sm:text-base text-on-surface break-words">
+                        <span class="font-semibold">{{ resultDetailRow.value ?? '—' }}</span>
+                        <span v-if="resultDetailRow.unit" class="text-on-surface-variant"> {{ resultDetailRow.unit
+                            }}</span>
+                    </p>
+
+                    <dl v-if="resultDetailRow.unit || resultDetailRow.reference || resultDetailRow.instrument"
+                        class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4 pt-4 border-t border-outline-variant/40">
+                        <div v-if="resultDetailRow.unit" class="min-w-0">
+                            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Unit</p>
+                            <p class="text-sm text-on-surface font-mono">{{ resultDetailRow.unit }}</p>
+                        </div>
+                        <div v-if="resultDetailRow.reference" class="min-w-0">
+                            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Reference
+                            </p>
+                            <p class="text-sm text-on-surface">{{ resultDetailRow.reference }}</p>
+                        </div>
+                        <div v-if="resultDetailRow.instrument" class="min-w-0">
+                            <p class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Instrument
+                            </p>
+                            <p class="text-sm text-on-surface">{{ resultDetailRow.instrument }}</p>
+                        </div>
+                    </dl>
+                </div>
+
+                <!-- Validation chain -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 min-w-0">
+                    <div class="rounded-2xl p-4 border min-w-0" :class="resultDetailRow.technically_validated_by
+                        ? 'bg-ribbon-teal/8 border-ribbon-teal/30'
+                        : 'bg-surface-low border-outline-variant/40'">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                                :class="resultDetailRow.technically_validated_by ? 'bg-ribbon-teal/15 text-ribbon-teal' : 'bg-surface-container text-outline'">
+                                <font-awesome-icon :icon="['fas', 'user-check']" class="text-xs" />
+                            </div>
+                            <p class="text-[10px] font-bold uppercase tracking-wider"
+                                :class="resultDetailRow.technically_validated_by ? 'text-ribbon-teal' : 'text-on-surface-variant'">
+                                Technical validation
+                            </p>
+                        </div>
+                        <p class="text-sm font-semibold text-on-surface break-words">
+                            {{ resultDetailRow.technically_validated_by || 'Pending' }}
+                        </p>
+                    </div>
+                    <div class="rounded-2xl p-4 border min-w-0" :class="resultDetailRow.clinically_validated_by
+                        ? 'bg-ribbon-blue/8 border-ribbon-blue/30'
+                        : 'bg-surface-low border-outline-variant/40'">
+                        <div class="flex items-center gap-2 mb-2">
+                            <div class="w-8 h-8 rounded-lg flex items-center justify-center"
+                                :class="resultDetailRow.clinically_validated_by ? 'bg-ribbon-blue/15 text-ribbon-blue' : 'bg-surface-container text-outline'">
+                                <font-awesome-icon :icon="['fas', 'stamp']" class="text-xs" />
+                            </div>
+                            <p class="text-[10px] font-bold uppercase tracking-wider"
+                                :class="resultDetailRow.clinically_validated_by ? 'text-ribbon-blue' : 'text-on-surface-variant'">
+                                Clinical validation
+                            </p>
+                        </div>
+                        <p class="text-sm font-semibold text-on-surface break-words">
+                            {{ resultDetailRow.clinically_validated_by || 'Pending' }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Meta strip -->
+                <div class="text-xs text-on-surface-variant flex flex-wrap items-center gap-x-4 gap-y-1 px-1">
+                    <span v-if="resultDetailRow.analysed_at" class="inline-flex items-center gap-1.5">
+                        <font-awesome-icon :icon="['fas', 'clock']" class="text-[10px]" />
+                        Analysed {{ fmtDate(resultDetailRow.analysed_at) }}
+                    </span>
+                    <span class="inline-flex items-center gap-1.5">
+                        <font-awesome-icon :icon="['fas', 'hashtag']" class="text-[10px]" />
+                        <span class="font-mono">{{ resultDetailRow.uuid }}</span>
+                    </span>
+                </div>
+            </div>
+
+            <template #footer>
+                <button type="button" class="btn-secondary" @click="resultDetailOpen = false">Close</button>
+            </template>
+        </Modal>
     </div>
-
-    <!-- ═══════════ Floating Actions (bottom-right, when toolbar off-screen) ═════════ -->
-    <Teleport to="body">
-        <!-- Blocks -->
-        <Transition name="fab-pop">
-            <button v-if="tab === 'blocks' && selectedBlockUuids.size && !blocksToolbarInView" type="button"
-                class="fab-actions" @click="bulkMenuOpen = !bulkMenuOpen; scrollToolbarIntoView('blocks')">
-                <font-awesome-icon :icon="['fas', 'ellipsis-vertical']" class="text-sm" />
-                <span class="fab-actions__label">
-                    {{ selectedBlockUuids.size }} · Actions
-                </span>
-            </button>
-        </Transition>
-
-        <!-- Slides -->
-        <Transition name="fab-pop">
-            <button v-if="tab === 'slides' && selectedSlideUuids.size && !slidesToolbarInView" type="button"
-                class="fab-actions" :disabled="staining || imaging"
-                @click="slidesBulkMenuOpen = !slidesBulkMenuOpen; scrollToolbarIntoView('slides')">
-                <font-awesome-icon v-if="staining || imaging" :icon="['fas', 'circle-notch']"
-                    class="animate-spin text-sm" />
-                <font-awesome-icon v-else :icon="['fas', 'ellipsis-vertical']" class="text-sm" />
-                <span class="fab-actions__label">
-                    {{ selectedSlideUuids.size }} · Actions
-                </span>
-            </button>
-        </Transition>
-
-        <!-- Results -->
-        <Transition name="fab-pop">
-            <button v-if="tab === 'results' && selectedResultUuids.size && !resultsToolbarInView" type="button"
-                class="fab-actions"
-                @click="resultsBulkMenuOpen = !resultsBulkMenuOpen; scrollToolbarIntoView('results')">
-                <font-awesome-icon :icon="['fas', 'ellipsis-vertical']" class="text-sm" />
-                <span class="fab-actions__label">
-                    {{ selectedResultUuids.size }} · Actions
-                </span>
-            </button>
-        </Transition>
-    </Teleport>
 
 </template>
 
@@ -2145,7 +2588,10 @@ const stationByCode = computed<Record<string, LabOrderTimeline['timeline'][numbe
     return map
 })
 
-const isPlanned = (code: string) => stationByCode.value[code]?.status === 'planned'
+const isPlanned = (code: string) => {
+    const status = stationByCode.value[code]?.status
+    return !!status && ['planned', 'pending', 'completed', 'verified'].includes(status)
+}
 
 // Buttons enable ONLY when the corresponding station is 'planned'
 const canGross = computed(() => isPlanned('GROSSING'))
@@ -2168,7 +2614,7 @@ type TabKey = 'overview' | 'blocks' | 'slides' | 'results' | 'notes'
 
 const tabs = computed<{ key: TabKey; label: string; icon: string; count: number | null }[]>(() => [
     { key: 'overview', label: 'Overview', icon: 'chart-simple', count: null },
-    { key: 'blocks', label: 'Blocks', icon: 'cube', count: test.value?.blocks?.length || 0 },
+    { key: 'blocks', label: 'Blocks (Cassettes)', icon: 'cube', count: test.value?.blocks?.length || 0 },
     { key: 'slides', label: 'Slides', icon: 'layer-group', count: test.value?.slides?.length || 0 },
     { key: 'results', label: 'Results', icon: 'clipboard-check', count: test.value?.results?.length || 0 },
     { key: 'notes', label: 'Notes', icon: 'notes-medical', count: test.value?.notes?.length || 0 },
@@ -2177,7 +2623,7 @@ const tabs = computed<{ key: TabKey; label: string; icon: string; count: number 
 // ── Blocks tab: per-block ellipsis menu + cassette label download ───────────
 const blockMenuOpen = ref<string | null>(null)
 
-// Close any open block menu when clicking outside
+// Close any open block menu when clicking outside  
 onMounted(() => {
     document.addEventListener('click', (e) => {
         const t = e.target as Node
@@ -2481,6 +2927,48 @@ const VALUE_TYPE_GUIDANCE: Record<ResultValueType, StepGuidance> = {
     },
 }
 
+const SUB_STEP_GUIDES: { title: string; icon: string; blurb: string; tips: string[] }[] = [
+    {
+        title: 'Name this section',
+        icon: 'tag',
+        blurb: 'Give the section a clear label — the clinician will read this as a heading.',
+        tips: [
+            'Use standard AP headings where possible (e.g. "Microscopic Description").',
+            'You can edit a pre-seeded name — it stays part of the report.',
+        ],
+    },
+    {
+        title: 'Pick a value type',
+        icon: 'shapes',
+        blurb: 'This changes how you enter the result on the next step.',
+        tips: [
+            'Narrative — long-form rich text for AP report bodies.',
+            'Numeric — measured value + unit + reference range.',
+            'Coded — controlled term (Positive, Reactive…).',
+        ],
+    },
+    {
+        title: 'Enter the value',
+        icon: 'pen-nib',
+        blurb: 'Fill the value in the format matching the type you picked.',
+        tips: ['Rich text formatting is preserved for narrative sections.'],
+    },
+    {
+        title: 'Flag, status & advanced',
+        icon: 'sliders',
+        blurb: 'Set the flag, mark status, and — if the result changes management — mark it critical. Then fill the advanced fields (codes, references, instrument, method).',
+        tips: [
+            'Numeric flags auto-derive when a reference range is present.',
+            'Advanced fields are optional but help downstream reporting.',
+        ],
+    },
+]
+
+// Safe accessor — subStep is bounded 0..SUB_DONE, but noUncheckedIndexedAccess
+// still widens the return to `| undefined`. Fallback keeps TS + runtime happy.
+const EMPTY_GUIDE = { title: '', icon: 'circle', blurb: '', tips: [] as string[] }
+const guideAt = (i: number) => SUB_STEP_GUIDES[i] ?? EMPTY_GUIDE
+
 // Standard AP (anatomic pathology) report sections, seeded when a test
 // is routed down the histo/cyto path. Order mirrors AP_SECTION_GUIDANCE.
 const AP_TEMPLATE: Partial<ResultRow>[] = Object.keys(AP_SECTION_GUIDANCE).map(name => ({
@@ -2519,26 +3007,77 @@ const resultError = ref<string | null>(null)
 const resultRows = ref<ResultRow[]>([])
 
 // ── Wizard step spine ───────────────────────────────────────────────────────
-// Step 0 = Setup, steps 1..N = one row each, last step = Review
+// wizardStep: 0 = Setup, 1..N = per-section, N+1 = Review
+// subStep (only meaningful for 1..N): 0 name · 1 type · 2 value · 3 flags+advanced · 4 section-done
 const wizardStep = ref(0)
+const subStep = ref(0)
+const SUB_LAST_INPUT = 3   // last data-entry sub-step (0-based)
+const SUB_DONE = 4         // section-done mini-review
+
 const totalSteps = computed(() => 2 + resultRows.value.length)
 const isSetupStep = computed(() => wizardStep.value === 0)
 const isReviewStep = computed(() => wizardStep.value === resultRows.value.length + 1)
-const currentRowIdx = computed(() => wizardStep.value - 1)  // -1 on setup, N on review
-const progressPct = computed(() =>
-    Math.round(((wizardStep.value + 1) / totalSteps.value) * 100),
-)
+const isRowStep = computed(() => !isSetupStep.value && !isReviewStep.value)
+const currentRowIdx = computed(() => wizardStep.value - 1)
+
+// Overall progress counts each substep as its own tick so the bar advances smoothly
+const progressPct = computed(() => {
+    const stepsPerRow = SUB_DONE + 1                                 // 5 ticks per row
+    const total = 1 + resultRows.value.length * stepsPerRow + 1      // setup + rows*5 + review
+    let done = 0
+    if (isSetupStep.value) done = 0
+    else if (isReviewStep.value) done = total - 1
+    else done = 1 + currentRowIdx.value * stepsPerRow + subStep.value
+    return Math.max(1, Math.round(((done + 1) / total) * 100))
+})
 
 const goNext = () => {
-    if (wizardStep.value < totalSteps.value - 1) wizardStep.value++
+    if (isSetupStep.value) { wizardStep.value = 1; subStep.value = 0; return }
+    if (isReviewStep.value) return
+    if (subStep.value < SUB_DONE) { subStep.value++; return }
+    // Already on section-done: advance to next row or Review
+    if (wizardStep.value < totalSteps.value - 1) { wizardStep.value++; subStep.value = 0 }
 }
+
 const goPrev = () => {
-    if (wizardStep.value > 0) wizardStep.value--
+    if (isSetupStep.value) return
+    if (isReviewStep.value) {
+        wizardStep.value = resultRows.value.length
+        subStep.value = SUB_DONE
+        return
+    }
+    if (subStep.value > 0) { subStep.value--; return }
+    if (wizardStep.value > 1) { wizardStep.value--; subStep.value = SUB_DONE }
+    else { wizardStep.value = 0 }
 }
+
 const jumpToStep = (i: number) => {
-    if (i >= 0 && i < totalSteps.value) wizardStep.value = i
+    if (i >= 0 && i < totalSteps.value) { wizardStep.value = i; subStep.value = 0 }
 }
-const jumpToRow = (i: number) => jumpToStep(i + 1)
+const jumpToRow = (i: number, sub = 0) => {
+    jumpToStep(i + 1)
+    subStep.value = sub
+}
+
+// Preset AP section names user can add from Setup or the section-done panel
+const AP_SECTION_NAMES = Object.keys(AP_SECTION_GUIDANCE)
+const usedSectionNames = computed(() =>
+    new Set(resultRows.value.map(r => r.analyte_name).filter(Boolean)),
+)
+const availableSectionTemplates = computed(() =>
+    AP_SECTION_NAMES.filter(n => !usedSectionNames.value.has(n)),
+)
+
+const addSectionFromTemplate = (name: string) => {
+    resultRows.value.push(makeRow({ analyte_name: name, value_type: 'narrative' }))
+    wizardStep.value = resultRows.value.length
+    subStep.value = 0
+}
+const addBlankSection = () => {
+    resultRows.value.push(makeRow({ value_type: 'text' }))
+    wizardStep.value = resultRows.value.length
+    subStep.value = 0
+}
 
 // Short label for the step chip (first word of analyte name, or fallback)
 const stepShortLabel = (r: ResultRow, i: number) =>
@@ -2581,9 +3120,10 @@ const saveDraft = () => {
     if (!import.meta.client || !resultRows.value.length) return
     try {
         const payload = {
-            version: 2,
+            version: 3,
             savedAt: new Date().toISOString(),
             step: wizardStep.value,
+            subStep: subStep.value,
             rows: resultRows.value,
         }
         localStorage.setItem(draftKey(), JSON.stringify(payload))
@@ -2600,6 +3140,7 @@ const loadDraft = (): boolean => {
         if (!Array.isArray(parsed?.rows) || !parsed.rows.length) return false
         resultRows.value = parsed.rows.map((r: any) => ({ ...r, _uid: ++resultRowSeq }))
         wizardStep.value = Math.max(0, Math.min(Number(parsed.step) || 0, resultRows.value.length + 1))
+        subStep.value = Math.max(0, Math.min(Number(parsed.subStep) || 0, SUB_DONE))
         autosaveStamp.value = parsed.savedAt || null
         draftRestored.value = true
         return true
@@ -2623,7 +3164,7 @@ const discardDraftAndReset = () => {
 
 // Auto-save whenever rows or step change while the wizard is open
 watch(
-    [resultRows, wizardStep],
+    [resultRows, wizardStep, subStep],
     () => { if (resultWizardOpen.value) saveDraft() },
     { deep: true },
 )
@@ -2633,6 +3174,419 @@ const isAnatomicPath = computed(() => {
     const section = String(order.value?.department?.section || '').toLowerCase()
     return code.startsWith('11') || section.includes('histo') || section.includes('cyto')
 })
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Print / PDF: modern CAP-style synoptic pathology report
+// Both paths write the same HTML string into an iframe — html2pdf renders the
+// full document body (not a fragment) so the PDF matches print pixel-for-pixel.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const reportGenerating = ref<null | 'print' | 'pdf'>(null)
+
+// Fetch the logo once as a data URI — used by both paths for identical output
+const loadLogoDataUri = async (): Promise<string> => {
+    try {
+        const res = await fetch('/images/ibcc_logo.png', { credentials: 'omit' })
+        if (!res.ok) return ''
+        const blob = await res.blob()
+        return await new Promise<string>((resolve, reject) => {
+            const fr = new FileReader()
+            fr.onload = () => resolve(fr.result as string)
+            fr.onerror = reject
+            fr.readAsDataURL(blob)
+        })
+    } catch { return '' }
+}
+
+// Escape user-supplied HTML except for known-rich fields we already sanitise upstream
+const esc = (s: any): string => String(s ?? '').replace(/[&<>"']/g, m =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]!))
+
+// One canonical HTML document — used by BOTH print and PDF
+const buildReportDocument = (logoUri: string): string => {
+    const o = order.value!
+    const t = test.value!
+    const generatedAt = new Date().toLocaleString(undefined, {
+        dateStyle: 'medium', timeStyle: 'short',
+    })
+    const results = t.results ?? []
+    const criticalCount = results.filter((r: any) => r.is_critical).length
+
+    // Flag → colour on the section left rail + chip
+    const flagPalette: Record<string, { rail: string; chipBg: string; chipFg: string }> = {
+        normal:        { rail: '#3dae8c', chipBg: '#d3efe5', chipFg: '#1f6750' },
+        abnormal:      { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
+        high:          { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
+        low:           { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
+        positive:      { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
+        reactive:      { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
+        indeterminate: { rail: '#b05fa8', chipBg: '#f3dcef', chipFg: '#7a4073' },
+    }
+    const railFor = (r: any) => r.is_critical ? '#c0395a'
+        : (flagPalette[r.flag]?.rail ?? '#3dae8c')
+
+    const sections = results.map((r: any, i: number) => {
+        const flagLabel = (FLAG_OPTIONS.find((f: any) => f.value === r.flag)?.label)
+                       || titleCase(r.flag || 'normal')
+        const pal = flagPalette[r.flag] ?? flagPalette.normal!
+        const showFlagChip = r.flag && r.flag !== 'normal'
+        const valueHtml = isHtmlValue(r.value)
+            ? r.value
+            : `<p style="margin:4px 0">${esc(r.value ?? '—')}${
+                r.unit ? ' ' + esc(r.unit) : ''}${
+                r.reference ? ` <span style="color:#727687;font-size:9pt">(ref ${esc(r.reference)})</span>` : ''}</p>`
+
+        return `
+        <table class="rpt-section" cellpadding="0" cellspacing="0" style="border-left:4px solid ${railFor(r)}">
+            <tr>
+                <td class="rpt-section-body-cell">
+                    <!-- Header row -->
+                    <table class="rpt-section-hd" cellpadding="0" cellspacing="0"><tr>
+                        <td class="hd-left">
+                            <span class="rpt-num" style="background:${railFor(r)}">${i + 1}</span>
+                            <span class="rpt-code">${esc(r.code ?? '')}</span>
+                            <span class="rpt-name">${esc(r.analyte ?? '—')}</span>
+                        </td>
+                        <td class="hd-right">
+                            ${r.is_critical ? `<span class="chip chip-crit">CRITICAL</span>` : ''}
+                            ${showFlagChip ? `<span class="chip" style="background:${pal.chipBg};color:${pal.chipFg}">${esc(flagLabel)}</span>` : ''}
+                            ${r.status === 'final' ? `<span class="chip chip-final">Final</span>` : `<span class="chip chip-prelim">${esc(titleCase(r.status || 'preliminary'))}</span>`}
+                        </td>
+                    </tr></table>
+
+                    <!-- Body -->
+                    <div class="rpt-section-body">${valueHtml}</div>
+
+                    <!-- Footer: attribution row -->
+                    <table class="rpt-section-ft" cellpadding="0" cellspacing="0"><tr>
+                        <td class="ft-cell">
+                            <div class="ft-lbl">Technical</div>
+                            <div class="ft-val ${r.technically_validated_by ? '' : 'pending'}">${esc(r.technically_validated_by || 'Pending')}</div>
+                        </td>
+                        <td class="ft-cell">
+                            <div class="ft-lbl">Clinical</div>
+                            <div class="ft-val ${r.clinically_validated_by ? '' : 'pending'}">${esc(r.clinically_validated_by || 'Pending')}</div>
+                        </td>
+                        ${r.instrument ? `<td class="ft-cell">
+                            <div class="ft-lbl">Instrument</div>
+                            <div class="ft-val">${esc(r.instrument)}</div>
+                        </td>` : ''}
+                        <td class="ft-cell">
+                            <div class="ft-lbl">Analysed</div>
+                            <div class="ft-val">${r.analysed_at ? esc(new Date(r.analysed_at).toLocaleString()) : '—'}</div>
+                        </td>
+                    </tr></table>
+                </td>
+            </tr>
+        </table>`
+    }).join('')
+
+    return `<!doctype html><html><head><meta charset="utf-8">
+<title>${esc(t.accession_number)} — ${esc(o.patient_name)}</title>
+<style>
+    /* Force colour print by default */
+    * { -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
+        box-sizing: border-box; }
+
+    @page { size: A4; margin: 12mm 12mm 16mm 12mm; }
+
+    html, body { margin: 0; padding: 0; background: #fff; }
+    body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+           color: #191c1e; font-size: 10.5pt; line-height: 1.45; }
+    img { max-width: 100%; }
+
+    .rpt { width: 100%; }
+
+    /* ── Top ribbon rail ─────────────────────────────────────────── */
+    .rpt-rail { height: 6px; border-radius: 3px; margin-bottom: 14px;
+                background: linear-gradient(90deg,#3d7fbf 0%,#3dae8c 25%,#e8a33d 50%,#b05fa8 75%,#c0395a 100%); }
+
+    /* ── Masthead (table for html2canvas parity) ─────────────────── */
+    .rpt-mast { width: 100%; padding: 0 0 12px; border-bottom: 1px solid #e0e3e5; margin-bottom: 14px; }
+    .rpt-mast .brand-cell { vertical-align: middle; width: 65%; }
+    .rpt-mast .meta-cell  { vertical-align: middle; text-align: right; width: 35%; }
+    .rpt-logo { width: 56px; height: 56px; object-fit: contain; display: inline-block; vertical-align: middle; margin-right: 12px; }
+    .rpt-lab-block { display: inline-block; vertical-align: middle; }
+    .rpt-lab-block h1 { margin: 0; font-size: 15pt; color: #1f578c; letter-spacing: -.2px; line-height: 1.2; }
+    .rpt-lab-block .dept { margin: 2px 0 4px; color: #424656; font-size: 9pt; }
+    .rpt-status { display: inline-block; padding: 2px 10px; border-radius: 999px;
+                  background: #3dae8c; color: #fff; font-size: 8pt; font-weight: 700;
+                  text-transform: uppercase; letter-spacing: .6px; }
+
+    .acc-badge { display: inline-block; font-family: 'Consolas', ui-monospace, monospace;
+                 font-weight: 700; padding: 3px 10px; border-radius: 6px; font-size: 11pt;
+                 background: #d6e8fa; color: #1f578c; }
+    .acc-badge-sub { display: inline-block; font-family: 'Consolas', ui-monospace, monospace;
+                     font-weight: 700; padding: 2px 10px; border-radius: 6px; font-size: 10pt;
+                     background: #f3dcef; color: #7a4073; margin-top: 5px; }
+    .gen-time { color: #727687; font-size: 8.5pt; margin-top: 6px; }
+
+    /* ── Critical banner (only when present) ─────────────────────── */
+    .crit-banner { background: #c0395a; color: #fff; padding: 8px 14px;
+                   border-radius: 6px; font-size: 10pt; margin-bottom: 14px;
+                   font-weight: 700; letter-spacing: .3px; }
+    .crit-banner .icon { display: inline-block; margin-right: 8px; font-size: 12pt; }
+
+    /* ── Info cards — table layout ────────────────────────────────── */
+    .rpt-info { width: 100%; margin-bottom: 16px; border-collapse: separate; border-spacing: 10px 0; }
+    .rpt-info > tbody > tr > td { vertical-align: top; width: 50%; padding: 0; }
+    .info-card { border: 1px solid #e0e3e5; border-top: 3px solid #3d7fbf;
+                 border-radius: 6px; padding: 10px 14px; background: #fff; }
+    .info-card.teal { border-top-color: #3dae8c; }
+    .info-card h4 { margin: 0 0 8px; font-size: 8pt; font-weight: 800;
+                    color: #1f578c; text-transform: uppercase; letter-spacing: .8px; }
+    .info-card.teal h4 { color: #1f6750; }
+    .info-card table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+    .info-card td { padding: 2px 0; vertical-align: top; }
+    .info-card td.k { color: #727687; width: 40%; padding-right: 8px; font-weight: 500; }
+    .info-card td.v { color: #191c1e; font-weight: 600; }
+    .info-card .muted { color: #727687; font-weight: 400; }
+
+    /* ── Results header ──────────────────────────────────────────── */
+    .rpt-results-hd { width: 100%; margin: 6px 0 10px; }
+    .rpt-results-hd td { vertical-align: middle; }
+    .rpt-results-hd .title { font-size: 13pt; font-weight: 700; color: #191c1e; padding-right: 12px; white-space: nowrap; }
+    .rpt-results-hd .bar { height: 2px; border-radius: 2px; width: 100%;
+                           background: linear-gradient(90deg,#3d7fbf,#3dae8c,#e8a33d,#b05fa8,#c0395a); }
+    .rpt-results-hd .count { padding-left: 12px; white-space: nowrap; color: #727687; font-size: 8.5pt; }
+
+    /* ── Result section ──────────────────────────────────────────── */
+    .rpt-section { width: 100%; border: 1px solid #e0e3e5; border-radius: 6px;
+                   margin-bottom: 10px; page-break-inside: avoid; }
+    .rpt-section-body-cell { padding: 10px 14px 8px; }
+    .rpt-section-hd { width: 100%; margin-bottom: 6px; }
+    .rpt-section-hd .hd-left { vertical-align: middle; }
+    .rpt-section-hd .hd-right { vertical-align: middle; text-align: right; white-space: nowrap; }
+    .rpt-num { display: inline-block; width: 22px; height: 22px; line-height: 22px;
+               border-radius: 6px; color: #fff; font-weight: 800; font-size: 10pt;
+               text-align: center; vertical-align: middle; margin-right: 10px; }
+    .rpt-code { display: inline-block; font-family: 'Consolas', ui-monospace, monospace;
+                font-size: 7.5pt; color: #b05fa8; background: #f3dcef;
+                padding: 2px 6px; border-radius: 4px; letter-spacing: .4px;
+                font-weight: 700; vertical-align: middle; margin-right: 8px; }
+    .rpt-name { display: inline-block; font-size: 11.5pt; font-weight: 700;
+                color: #191c1e; vertical-align: middle; }
+    .chip { display: inline-block; padding: 2px 8px; border-radius: 999px;
+            font-size: 7.5pt; font-weight: 700; letter-spacing: .4px;
+            text-transform: uppercase; margin-left: 4px; }
+    .chip-crit { background: #c0395a; color: #fff; }
+    .chip-final { background: #d3efe5; color: #1f6750; }
+    .chip-prelim { background: #eceef0; color: #424656; }
+
+    .rpt-section-body { font-size: 10pt; color: #191c1e; padding: 4px 0 8px; }
+    .rpt-section-body p { margin: 4px 0; }
+
+    .rpt-section-ft { width: 100%; border-top: 1px dashed #c2c6d8; padding-top: 6px; }
+    .rpt-section-ft td.ft-cell { vertical-align: top; padding-top: 6px; padding-right: 12px; }
+    .ft-lbl { color: #727687; font-weight: 800; text-transform: uppercase;
+              letter-spacing: .5px; font-size: 7pt; margin-bottom: 1px; }
+    .ft-val { font-size: 8.5pt; color: #191c1e; font-weight: 600; }
+    .ft-val.pending { color: #c2c6d8; font-weight: 500; }
+
+    /* ── Signatures ──────────────────────────────────────────────── */
+    .rpt-sig { width: 100%; margin-top: 24px; border-collapse: separate; border-spacing: 24px 0;
+               page-break-inside: avoid; }
+    .rpt-sig td { vertical-align: top; padding-top: 8px; width: 50%; }
+    .sig-line { border-top: 1px solid #191c1e; height: 1px; margin-bottom: 6px; }
+    .sig-role { font-weight: 800; text-transform: uppercase; letter-spacing: .6px;
+                color: #424656; font-size: 8pt; }
+    .sig-hint { color: #727687; font-size: 8pt; margin-top: 2px; }
+
+    /* ── Footer ──────────────────────────────────────────────────── */
+    .rpt-foot { width: 100%; margin-top: 20px; padding-top: 8px;
+                border-top: 1px solid #e0e3e5; }
+    .rpt-foot td { vertical-align: middle; font-size: 8pt; color: #727687; }
+    .rpt-foot td.right { text-align: right; }
+    .foot-logo { height: 12px; width: auto; vertical-align: middle; margin-right: 6px; opacity: .7; }
+</style>
+</head>
+<body>
+<div class="rpt">
+
+    <div class="rpt-rail"></div>
+
+    <!-- Masthead -->
+    <table class="rpt-mast" cellpadding="0" cellspacing="0"><tr>
+        <td class="brand-cell">
+            ${logoUri ? `<img class="rpt-logo" src="${logoUri}" alt="IBCC" />` : ''}
+            <span class="rpt-lab-block">
+                <h1>International Blantyre Cancer Centre</h1>
+                <div class="dept">${esc(o.department?.name ?? '')}${o.department?.section ? ' · ' + esc(o.department.section) : ''}</div>
+                <span class="rpt-status">${esc(titleCase(o.status))}</span>
+            </span>
+        </td>
+        <td class="meta-cell">
+            <div><span class="acc-badge">${esc(o.accession_number)}</span></div>
+            <div><span class="acc-badge-sub">${esc(t.accession_number)}</span></div>
+            <div class="gen-time">Generated ${esc(generatedAt)}</div>
+        </td>
+    </tr></table>
+
+    ${criticalCount > 0 ? `
+    <div class="crit-banner">
+        <span class="icon">⚠</span>
+        ${criticalCount} critical result${criticalCount === 1 ? '' : 's'} — clinical action required
+    </div>` : ''}
+
+    <!-- Patient / Specimen -->
+    <table class="rpt-info" cellpadding="0" cellspacing="0"><tr>
+        <td>
+            <div class="info-card">
+                <h4>Patient</h4>
+                <table>
+                    <tr><td class="k">Name</td><td class="v">${esc(o.patient_name ?? '—')}</td></tr>
+                    <tr><td class="k">Age / Sex</td><td class="v">${o.age ?? '—'} <span class="muted">·</span> ${esc(titleCase(o.gender ?? ''))}</td></tr>
+                    <tr><td class="k">Requested by</td><td class="v">${esc(o.requested_by ?? '—')}</td></tr>
+                    <tr><td class="k">Referring facility</td><td class="v">${esc(o.referring_facility ?? '—')}</td></tr>
+                </table>
+            </div>
+        </td>
+        <td>
+            <div class="info-card teal">
+                <h4>Specimen</h4>
+                <table>
+                    <tr><td class="k">Test</td><td class="v">${esc(t.test_name)} <span class="muted">(${esc(t.test_code)})</span></td></tr>
+                    <tr><td class="k">Sample</td><td class="v">${esc(t.sample_name ?? '—')}</td></tr>
+                    <tr><td class="k">Site</td><td class="v">${esc(o.site ?? '—')}</td></tr>
+                    <tr><td class="k">Collected</td><td class="v">${o.collection_time ? esc(new Date(o.collection_time).toLocaleString()) : '—'}</td></tr>
+                    <tr><td class="k">Received</td><td class="v">${o.reception_time ? esc(new Date(o.reception_time).toLocaleString()) : '—'}</td></tr>
+                    <tr><td class="k">Cassettes / Slides</td><td class="v">${t.total_submitted_cassettes ?? 0} / ${t.total_submitted_slides ?? 0}</td></tr>
+                </table>
+            </div>
+        </td>
+    </tr></table>
+
+    <!-- Results header -->
+    <table class="rpt-results-hd" cellpadding="0" cellspacing="0"><tr>
+        <td class="title">Results</td>
+        <td><div class="bar"></div></td>
+        <td class="count">${results.length} section${results.length === 1 ? '' : 's'}</td>
+    </tr></table>
+
+    ${sections || '<p style="color:#727687">No results recorded.</p>'}
+
+    <!-- Signatures -->
+    <table class="rpt-sig" cellpadding="0" cellspacing="0"><tr>
+        <td>
+            <div class="sig-line"></div>
+            <div class="sig-role">Reporting Pathologist</div>
+            <div class="sig-hint">Signature &amp; date</div>
+        </td>
+        <td>
+            <div class="sig-line"></div>
+            <div class="sig-role">Reviewed / Authorised</div>
+            <div class="sig-hint">Signature &amp; date</div>
+        </td>
+    </tr></table>
+
+    <!-- Footer -->
+    <table class="rpt-foot" cellpadding="0" cellspacing="0"><tr>
+        <td>
+            ${logoUri ? `<img class="foot-logo" src="${logoUri}" alt="" />` : ''}
+            ${esc(o.accession_number)} · ${esc(o.patient_name)}
+        </td>
+        <td class="right">IBCC LIS · Generated ${esc(generatedAt)}</td>
+    </tr></table>
+
+</div>
+</body></html>`
+}
+
+// ── PRINT ───────────────────────────────────────────────────────────────────
+const printResultsReport = async () => {
+    if (!order.value || !test.value) return
+    reportGenerating.value = 'print'
+    const logoUri = await loadLogoDataUri()
+    const html = buildReportDocument(logoUri)
+
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.right = '0'; iframe.style.bottom = '0'
+    iframe.style.width = '0'; iframe.style.height = '0'; iframe.style.border = '0'
+    document.body.appendChild(iframe)
+    const doc = iframe.contentDocument!
+    doc.open(); doc.write(html); doc.close()
+
+    iframe.onload = () => {
+        // Wait for images to decode before printing
+        const imgs = Array.from(iframe.contentDocument?.images ?? [])
+        Promise.all(imgs.map(img => img.complete ? Promise.resolve() :
+            new Promise(res => { img.onload = img.onerror = () => res(null) })))
+            .then(() => setTimeout(() => {
+                iframe.contentWindow?.focus()
+                iframe.contentWindow?.print()
+                setTimeout(() => {
+                    document.body.removeChild(iframe)
+                    reportGenerating.value = null
+                }, 500)
+            }, 150))
+    }
+}
+
+// ── PDF ─────────────────────────────────────────────────────────────────────
+const downloadResultsPdf = async () => {
+    if (!order.value || !test.value) return
+    reportGenerating.value = 'pdf'
+    const filename = `${test.value.accession_number || 'report'}.pdf`
+    const logoUri = await loadLogoDataUri()
+    const html = buildReportDocument(logoUri)
+
+    // Same HTML as print; injected html2pdf script triggers the download.
+    // Rendering `document.body` (full document, not a fragment) gives the
+    // canvas rasteriser the same DOM the print engine would see.
+    const wrapper = html.replace(
+        '</body>',
+        `<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"><\/script>
+         <script>
+           window.addEventListener('load', function () {
+               var imgs = Array.prototype.slice.call(document.images);
+               Promise.all(imgs.map(function (img) {
+                   return img.complete ? Promise.resolve()
+                       : new Promise(function (res) { img.onload = img.onerror = res; });
+               })).then(function () {
+                   setTimeout(function () {
+                       window.html2pdf().set({
+                           margin: [10, 10, 12, 10],
+                           filename: ${JSON.stringify(filename)},
+                           image: { type: 'jpeg', quality: 0.98 },
+                           html2canvas: { scale: 2, useCORS: true, allowTaint: true,
+                                          backgroundColor: '#ffffff', letterRendering: true,
+                                          logging: false },
+                           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait',
+                                    compress: true },
+                           pagebreak: { mode: ['css', 'legacy'], avoid: ['.rpt-section', '.rpt-sig', '.info-card'] }
+                       }).from(document.body).save().then(function () {
+                           parent.postMessage('ibcc-pdf-done', '*');
+                       }).catch(function () { parent.postMessage('ibcc-pdf-done', '*'); });
+                   }, 200);
+               });
+           });
+         <\/script>
+       </body>`,
+    )
+
+    const iframe = document.createElement('iframe')
+    iframe.style.position = 'fixed'
+    iframe.style.left = '-9999px'; iframe.style.top = '0'
+    iframe.style.width = '794px'; iframe.style.height = '1123px'; iframe.style.border = '0'
+    document.body.appendChild(iframe)
+
+    const cleanup = () => {
+        window.removeEventListener('message', onMsg)
+        setTimeout(() => {
+            if (iframe.parentNode) document.body.removeChild(iframe)
+            reportGenerating.value = null
+        }, 300)
+    }
+    const onMsg = (e: MessageEvent) => { if (e.data === 'ibcc-pdf-done') cleanup() }
+    window.addEventListener('message', onMsg)
+
+    const doc = iframe.contentDocument!
+    doc.open(); doc.write(wrapper); doc.close()
+    setTimeout(() => { if (reportGenerating.value === 'pdf') cleanup() }, 30000)
+}
 
 const openResultWizard = () => {
     resultError.value = null
@@ -2753,6 +3707,26 @@ const submitResults = async () => {
         resultSubmitting.value = false
     }
 }
+
+// ── Result-detail modal (per-row expand) ────────────────────────────────────
+const resultDetailOpen = ref(false)
+const resultDetailRow = ref<any | null>(null)
+
+const openResultDetail = (r: any) => {
+    resultDetailRow.value = r
+    resultDetailOpen.value = true
+}
+
+// Section-code copy shown in the detail modal ("what is this code?")
+const RESULT_CODE_HINT: Record<string, string> = {
+    'CLIN_HX': 'Local code — clinical referral history.',
+    'IHC_PANEL': 'Local code — immunohistochemistry panel results.',
+    'COMMENT': 'Local code — pathologist recommendations.',
+    '22634-0': 'LOINC 22634-0 — gross description.',
+    '22635-7': 'LOINC 22635-7 — microscopic description.',
+    '22637-3': 'LOINC 22637-3 — final diagnosis.',
+}
+const resultCodeHint = (code?: string) => (code && RESULT_CODE_HINT[code]) || (code ? 'Custom code' : '')
 
 const allBlocksSelected = computed(() =>
     !!test.value?.blocks?.length &&
@@ -3450,7 +4424,7 @@ const GenericRecordList = (props: { items: any[] | null | undefined; emptyIcon: 
     box-shadow: 0 10px 30px rgba(61, 127, 191, 0.05);
     border: 1px solid rgba(255, 255, 255, 0.4);
     animation: island-in 0.5s ease-out backwards;
-    overflow: hidden;
+    overflow: visible;
 }
 
 /* ── Custom scrollbar for record lists ─────────────────────────────────────── */
