@@ -154,6 +154,12 @@
                   <font-awesome-icon :icon="['fas', 'trash-can']" class="text-ribbon-red" />
                   <span>Delete order</span>
                 </button>
+
+                <button type="button" class="adv-item" @click="printLabel(order?.accession_number, order?.accession_number)">
+                  <font-awesome-icon :icon="['fas', 'barcode']" class="text-ribbon-blue" />
+                  <span>Print Order barcode</span>
+                </button>
+
               </div>
             </div>
           </div>
@@ -550,6 +556,50 @@
         </template>
       </Modal>
 
+      <!-- bottom-right progress/result modal -->
+      <Transition enter-active-class="transition duration-300 ease-out"
+        enter-from-class="opacity-0 translate-y-4 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100"
+        leave-active-class="transition duration-200 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100"
+        leave-to-class="opacity-0 translate-y-2 scale-95">
+        <div v-if="visible"
+          class="fixed bottom-24 right-6 z-50 w-80 rounded-2xl overflow-hidden bg-surface-lowest border border-outline-variant/60 shadow-island">
+          <!-- ribbon-colored icon badge + heading -->
+          <div class="flex items-center gap-3 px-5 py-4">
+            <div class="w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-300"
+              :class="{
+                'bg-ribbon-blue/15 text-ribbon-blue': status === 'loading',
+                'bg-ribbon-teal/15 text-ribbon-teal': status === 'success',
+                'bg-ribbon-red/15 text-ribbon-red': status === 'error',
+              }">
+              <font-awesome-icon v-if="status === 'loading'" :icon="['fas', 'print']" class="text-sm animate-pulse" />
+              <font-awesome-icon v-else-if="status === 'success'" :icon="['fas', 'check']" class="text-sm" />
+              <font-awesome-icon v-else-if="status === 'error'" :icon="['fas', 'triangle-exclamation']"
+                class="text-sm" />
+            </div>
+
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-bold text-on-surface">
+                {{ status === 'loading' ? 'Printing label' : status === 'success' ? 'Print complete' : 'Print failed' }}
+              </p>
+              <p class="text-[11px] text-on-surface-variant truncate">{{ message }}</p>
+            </div>
+
+            <button @click="visible = false"
+              class="shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-outline hover:text-on-surface hover:bg-surface-low transition-colors">
+              <font-awesome-icon :icon="['fas', 'xmark']" class="text-xs" />
+            </button>
+          </div>
+
+          <!-- progress footer -->
+          <div class="h-1 w-full bg-surface-low overflow-hidden">
+            <div v-if="status === 'loading'"
+              class="h-full w-1/3 rounded-full bg-ribbon-blue animate-progress-indeterminate" />
+            <div v-else class="h-full transition-all duration-500"
+              :class="status === 'success' ? 'bg-ribbon-teal w-full' : 'bg-ribbon-red w-full'" />
+          </div>
+        </div>
+      </Transition>
+
       <!-- Toast -->
       <Teleport to="body">
         <Transition name="toast">
@@ -569,6 +619,7 @@
 import { ref, reactive, computed, h, onMounted } from 'vue'
 import type { LabOrderDetail } from '~/composables/useLaboratory'
 import { useLaboratorySettings } from '~/composables/useLaboratorySettings'
+const { printLabel, status, message, visible } = usePrintLabel()
 
 const route = useRoute()
 const router = useRouter()
