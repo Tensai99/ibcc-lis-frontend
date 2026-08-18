@@ -33,7 +33,8 @@
           <NuxtLink to="/orders" class="pager-btn !w-auto !h-auto !rounded-lg !px-3 !py-2 gap-2 text-sm font-semibold">
             <font-awesome-icon :icon="['fas', 'arrow-left']" /><span>Back to orders</span>
           </NuxtLink>
-          <button type="button" class="pager-btn !w-auto !h-auto !rounded-lg !px-3 !py-2 gap-2 text-sm font-semibold" @click="load">
+          <button type="button" class="pager-btn !w-auto !h-auto !rounded-lg !px-3 !py-2 gap-2 text-sm font-semibold"
+            @click="load">
             <font-awesome-icon :icon="['fas', 'rotate-right']" /><span>Retry</span>
           </button>
         </div>
@@ -43,14 +44,17 @@
       <template v-else-if="order">
 
         <!-- Header (g-card, gradient icon tile — matches department.vue) -->
-        <header class="g-card relative z-30 flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-5 sm:px-8 py-5 sm:py-6">
+        <header
+          class="g-card relative z-30 flex flex-col lg:flex-row lg:items-center justify-between gap-4 px-5 sm:px-8 py-5 sm:py-6">
           <div class="flex items-center gap-4 min-w-0">
-            <div class="w-12 h-12 bg-primary-gradient rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20 shrink-0">
+            <div
+              class="w-12 h-12 bg-primary-gradient rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary/20 shrink-0">
               <font-awesome-icon :icon="['fas', 'flask-vial']" class="text-xl" />
             </div>
             <div class="min-w-0">
               <p class="text-[10px] text-ribbon-blue font-bold uppercase tracking-wider">Accession</p>
-              <h1 class="text-xl sm:text-2xl font-bold text-on-surface break-words font-mono">{{ order.accession_number }}</h1>
+              <h1 class="text-xl sm:text-2xl font-bold text-on-surface break-words font-mono">{{ order.accession_number
+                }}</h1>
               <p class="text-xs sm:text-sm text-on-surface-variant mt-0.5 break-words">
                 <span class="font-semibold text-on-surface">{{ order.patient_name }}</span>
                 <span v-if="order.age != null || order.gender" class="text-outline">
@@ -61,10 +65,12 @@
           </div>
 
           <div class="flex flex-wrap items-center gap-2 shrink-0">
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap" :class="statusPillClass(order.status)">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap"
+              :class="statusPillClass(order.status)">
               {{ titleCase(order.status) }}
             </span>
-            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap uppercase" :class="urgencyClass(order.urgency)">
+            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap uppercase"
+              :class="urgencyClass(order.urgency)">
               {{ order.urgency || '—' }}
             </span>
 
@@ -78,79 +84,77 @@
               </button>
               <div v-if="advOpen" class="fixed inset-0 z-40" @click="advOpen = false" />
               <div v-if="advOpen"
-  class="absolute right-0 top-full mt-2 w-64 rounded-xl bg-surface-lowest shadow-island border border-outline-variant/40 py-1 z-50">
+                class="absolute right-0 top-full mt-2 w-64 rounded-xl bg-surface-lowest shadow-island border border-outline-variant/40 py-1 z-50">
 
-  <!-- 1. Update — always available -->
-  <button type="button" class="adv-item" @click="openUpdate(); advOpen = false">
-    <font-awesome-icon :icon="['fas', 'pen-to-square']" class="text-ribbon-blue" />
-    <span>Update order</span>
-  </button>
+                <!-- 1. Update — always available -->
+                <button type="button" class="adv-item" @click="openUpdate(); advOpen = false">
+                  <font-awesome-icon :icon="['fas', 'pen-to-square']" class="text-ribbon-blue" />
+                  <span>Update order</span>
+                </button>
 
-  <div class="my-1 h-px bg-outline-variant/40" />
-  <p class="px-3 pt-1 pb-0.5 text-[9px] font-bold text-outline uppercase tracking-wider">Pre-analytic</p>
+                <div class="my-1 h-px bg-outline-variant/40" />
+                <p class="px-3 pt-1 pb-0.5 text-[9px] font-bold text-outline uppercase tracking-wider">Pre-analytic</p>
 
-  <!-- 2. Receive — only while RECEPTION is pending -->
-  <button type="button" class="adv-item"
-    :disabled="!canReceive"
-    :title="gateReason('RECEPTION', ['pending'])"
-    :class="{ 'opacity-40 cursor-not-allowed': !canReceive }"
-    @click="canReceive && (receiveOpen = true, advOpen = false)">
-    <font-awesome-icon :icon="['fas', 'inbox']" class="text-ribbon-amber" />
-    <span>Receive order</span>
-    <span v-if="stationStatus('RECEPTION') === 'completed'"
-      class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
-    <span v-else-if="canReceive" class="ml-auto text-[9px] font-bold text-ribbon-amber">PENDING</span>
-  </button>
+                <!-- 2. Receive — only while RECEPTION is pending -->
+                <button type="button" class="adv-item" :disabled="!canReceive"
+                  :title="gateReason('RECEPTION', ['pending'])"
+                  :class="{ 'opacity-40 cursor-not-allowed': !canReceive }"
+                  @click="canReceive && (receiveOpen = true, advOpen = false)">
+                  <font-awesome-icon :icon="['fas', 'inbox']" class="text-ribbon-amber" />
+                  <span>Receive order</span>
+                  <span v-if="stationStatus('RECEPTION') === 'completed'"
+                    class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
+                  <span v-else-if="canReceive" class="ml-auto text-[9px] font-bold text-ribbon-amber">PENDING</span>
+                </button>
 
-  <!-- 3. Collect — only after RECEPTION completed -->
-  <button type="button" class="adv-item"
-    :disabled="!canCollect"
-    :title="canCollect ? '' : (stationStatus('RECEPTION') === 'pending' ? 'Receive the order first' : gateReason('RECEPTION', ['completed']))"
-    :class="{ 'opacity-40 cursor-not-allowed': !canCollect }"
-    @click="canCollect && (openCollect(), advOpen = false)">
-    <font-awesome-icon :icon="['fas', 'droplet']" class="text-ribbon-teal" />
-    <span>Collect specimen</span>
-    <span v-if="stationStatus('GROSSING') === 'completed'"
-      class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
-  </button>
+                <!-- 3. Collect — only after RECEPTION completed -->
+                <button type="button" class="adv-item" :disabled="!canCollect"
+                  :title="canCollect ? '' : (stationStatus('RECEPTION') === 'pending' ? 'Receive the order first' : gateReason('RECEPTION', ['completed']))"
+                  :class="{ 'opacity-40 cursor-not-allowed': !canCollect }"
+                  @click="canCollect && (openCollect(), advOpen = false)">
+                  <font-awesome-icon :icon="['fas', 'droplet']" class="text-ribbon-teal" />
+                  <span>Collect specimen</span>
+                  <span v-if="stationStatus('GROSSING') === 'completed'"
+                    class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
+                </button>
 
-  <div class="my-1 h-px bg-outline-variant/40" />
-  <p class="px-3 pt-1 pb-0.5 text-[9px] font-bold text-outline uppercase tracking-wider">Sign-out</p>
+                <div class="my-1 h-px bg-outline-variant/40" />
+                <p class="px-3 pt-1 pb-0.5 text-[9px] font-bold text-outline uppercase tracking-wider">Sign-out</p>
 
-  <!-- 4. Complete report — while REPORTING is pending/in_progress -->
-  <button type="button" class="adv-item"
-    :disabled="!canCompleteReport"
-    :title="gateReason('REPORTING', ['pending', 'in_progress'])"
-    :class="{ 'opacity-40 cursor-not-allowed': !canCompleteReport }"
-    @click="canCompleteReport && (openReport(), advOpen = false)">
-    <font-awesome-icon :icon="['fas', 'file-signature']" class="text-ribbon-teal" />
-    <span>Complete report</span>
-    <span v-if="stationStatus('REPORTING') === 'completed'"
-      class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
-    <span v-else-if="canCompleteReport" class="ml-auto text-[9px] font-bold text-ribbon-amber">PENDING</span>
-  </button>
+                <!-- 4. Complete report — while REPORTING is pending/in_progress -->
+                <button type="button" class="adv-item" :disabled="!canCompleteReport"
+                  :title="gateReason('REPORTING', ['pending', 'in_progress'])"
+                  :class="{ 'opacity-40 cursor-not-allowed': !canCompleteReport }"
+                  @click="canCompleteReport && (openReport(), advOpen = false)">
+                  <font-awesome-icon :icon="['fas', 'file-signature']" class="text-ribbon-teal" />
+                  <span>Complete report</span>
+                  <span v-if="stationStatus('REPORTING') === 'completed'"
+                    class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
+                  <span v-else-if="canCompleteReport"
+                    class="ml-auto text-[9px] font-bold text-ribbon-amber">PENDING</span>
+                </button>
 
-  <!-- 5. Release — while RELEASE is pending/planned -->
-  <button type="button" class="adv-item"
-    :disabled="!canReleaseReport"
-    :title="gateReason('RELEASE', ['pending', 'planned', 'in_progress'])"
-    :class="{ 'opacity-40 cursor-not-allowed': !canReleaseReport }"
-    @click="canReleaseReport && (openRelease(), advOpen = false)">
-    <font-awesome-icon :icon="['fas', 'paper-plane']" class="text-ribbon-purple" />
-    <span>Release report</span>
-    <span v-if="stationStatus('RELEASE') === 'completed'"
-      class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
-    <span v-else-if="canReleaseReport" class="ml-auto text-[9px] font-bold text-ribbon-purple">READY</span>
-  </button>
+                <!-- 5. Release — while RELEASE is pending/planned -->
+                <button type="button" class="adv-item" :disabled="!canReleaseReport"
+                  :title="gateReason('RELEASE', ['pending', 'planned', 'in_progress'])"
+                  :class="{ 'opacity-40 cursor-not-allowed': !canReleaseReport }"
+                  @click="canReleaseReport && (openRelease(), advOpen = false)">
+                  <font-awesome-icon :icon="['fas', 'paper-plane']" class="text-ribbon-purple" />
+                  <span>Release report</span>
+                  <span v-if="stationStatus('RELEASE') === 'completed'"
+                    class="ml-auto text-[9px] font-bold text-ribbon-teal">DONE</span>
+                  <span v-else-if="canReleaseReport"
+                    class="ml-auto text-[9px] font-bold text-ribbon-purple">READY</span>
+                </button>
 
-  <div class="my-1 h-px bg-outline-variant/40" />
+                <div class="my-1 h-px bg-outline-variant/40" />
 
-  <!-- 6. Delete — always available (guarded by its own confirm modal) -->
-  <button type="button" class="adv-item" @click="openVoid(); advOpen = false">
-    <font-awesome-icon :icon="['fas', 'trash-can']" class="text-ribbon-red" />
-    <span>Delete order</span>
-  </button>
-</div>
+                <!-- 6. Delete — always available (guarded by its own confirm modal) -->
+                <button type="button" class="adv-item" @click="openVoid(); advOpen = false">
+                  <font-awesome-icon :icon="['fas', 'trash-can']" class="text-ribbon-red" />
+                  <span>Delete order</span>
+                </button>
+              </div>
             </div>
           </div>
         </header>
@@ -177,7 +181,8 @@
 
         <!-- Tabs (pill row inside a g-card) -->
         <div class="g-card p-2 flex gap-1 self-start">
-          <button type="button" class="tab-pill" :class="{ 'tab-pill-active': tab === 'general' }" @click="tab = 'general'">
+          <button type="button" class="tab-pill" :class="{ 'tab-pill-active': tab === 'general' }"
+            @click="tab = 'general'">
             <font-awesome-icon :icon="['fas', 'circle-info']" class="text-[11px]" />
             <span>General</span>
           </button>
@@ -210,7 +215,8 @@
               </dl>
 
               <template v-if="clinicalEntries.length">
-                <h4 class="text-[10px] text-ribbon-purple font-bold uppercase tracking-wider mt-6 mb-3">Clinical details</h4>
+                <h4 class="text-[10px] text-ribbon-purple font-bold uppercase tracking-wider mt-6 mb-3">Clinical details
+                </h4>
                 <div class="flex flex-wrap gap-2">
                   <span v-for="[k, v] in clinicalEntries" :key="k"
                     class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-ribbon-blue/15 text-ribbon-blue">
@@ -222,63 +228,64 @@
 
             <!-- Workflow -->
             <div class="g-card p-6">
-  <div class="flex items-center gap-3 mb-4">
-    <div class="w-10 h-10 rounded-full bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue">
-      <font-awesome-icon :icon="['fas', 'timeline']" />
-    </div>
-    <h3 class="text-base sm:text-lg font-semibold sm:font-bold">Workflow</h3>
-    <span class="ml-auto text-[11px] font-bold text-ribbon-blue bg-ribbon-blue/10 px-2.5 py-1 rounded-full">
-      {{ timeline?.timeline?.length ?? order.encounters?.length ?? 0 }}
-    </span>
-  </div>
+              <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue">
+                  <font-awesome-icon :icon="['fas', 'timeline']" />
+                </div>
+                <h3 class="text-base sm:text-lg font-semibold sm:font-bold">Workflow</h3>
+                <span class="ml-auto text-[11px] font-bold text-ribbon-blue bg-ribbon-blue/10 px-2.5 py-1 rounded-full">
+                  {{ timeline?.timeline?.length ?? order.encounters?.length ?? 0 }}
+                </span>
+              </div>
 
-  <div v-if="timeline?.timeline?.length" class="space-y-2 max-h-[420px] overflow-y-auto scroll-area pr-1">
-    <div v-for="s in timeline.timeline" :key="s.uuid"
-      class="p-3 rounded-xl border-l-4 bg-white/50" :class="tatAccent(s.tat_status)">
-      <div class="flex items-center justify-between gap-2">
-        <div class="min-w-0">
-          <p class="font-bold text-xs text-on-surface truncate">{{ s.station }}</p>
-          <p class="text-[10px] text-outline font-mono">{{ s.code }} · seq {{ s.sequence }}</p>
-        </div>
-        <div class="flex flex-col items-end gap-1 shrink-0">
-          <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
-            :class="statusPillClass(s.status)">{{ titleCase(s.status) }}</span>
-          <span v-if="s.tat_status"
-            class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
-            :class="tatChip(s.tat_status)">{{ titleCase(s.tat_status) }}</span>
-        </div>
-      </div>
-      <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
-        <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
-        <span>Due {{ fmtDate(s.due_at) }}</span>
-      </p>
-      <p v-if="s.performed_by" class="text-[11px] text-outline">By {{ s.performed_by }}</p>
-      <p v-if="s.ended_at" class="text-[11px] text-outline">
-        Completed {{ fmtDate(s.ended_at) }}
-        <span v-if="s.turnaround_hours != null"> · {{ s.turnaround_hours }}h</span>
-      </p>
-    </div>
-  </div>
+              <div v-if="timeline?.timeline?.length" class="space-y-2 max-h-[420px] overflow-y-auto scroll-area pr-1">
+                <div v-for="s in timeline.timeline" :key="s.uuid" class="p-3 rounded-xl border-l-4 bg-white/50"
+                  :class="tatAccent(s.tat_status)">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="min-w-0">
+                      <p class="font-bold text-xs text-on-surface truncate">{{ s.station }}</p>
+                      <p class="text-[10px] text-outline font-mono">{{ s.code }} · seq {{ s.sequence }}</p>
+                    </div>
+                    <div class="flex flex-col items-end gap-1 shrink-0">
+                      <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
+                        :class="statusPillClass(s.status)">{{ titleCase(s.status) }}</span>
+                      <span v-if="s.tat_status"
+                        class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
+                        :class="tatChip(s.tat_status)">{{ titleCase(s.tat_status) }}</span>
+                    </div>
+                  </div>
+                  <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
+                    <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
+                    <span>Due {{ fmtDate(s.due_at) }}</span>
+                  </p>
+                  <p v-if="s.performed_by" class="text-[11px] text-outline">By {{ s.performed_by }}</p>
+                  <p v-if="s.ended_at" class="text-[11px] text-outline">
+                    Completed {{ fmtDate(s.ended_at) }}
+                    <span v-if="s.turnaround_hours != null"> · {{ s.turnaround_hours }}h</span>
+                  </p>
+                </div>
+              </div>
 
-  <!-- Fallback: legacy encounter list if timeline hasn't returned -->
-  <div v-else-if="order.encounters?.length" class="space-y-2 max-h-[420px] overflow-y-auto scroll-area pr-1">
-    <div v-for="e in order.encounters" :key="e.uuid"
-      class="p-3 rounded-xl border-l-4 bg-white/50" :class="tatAccent(e.tat_status)">
-      <div class="flex items-center justify-between gap-2">
-        <span class="font-bold text-xs text-on-surface">{{ titleCase(e.type) }}</span>
-        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
-          :class="tatChip(e.tat_status)">{{ titleCase(e.tat_status || e.status) }}</span>
-      </div>
-      <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
-        <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
-        <span>Due {{ fmtDate(e.due_at) }}</span>
-      </p>
-      <p v-if="e.performed_by" class="text-[11px] text-outline">By {{ e.performed_by }}</p>
-    </div>
-  </div>
+              <!-- Fallback: legacy encounter list if timeline hasn't returned -->
+              <div v-else-if="order.encounters?.length"
+                class="space-y-2 max-h-[420px] overflow-y-auto scroll-area pr-1">
+                <div v-for="e in order.encounters" :key="e.uuid" class="p-3 rounded-xl border-l-4 bg-white/50"
+                  :class="tatAccent(e.tat_status)">
+                  <div class="flex items-center justify-between gap-2">
+                    <span class="font-bold text-xs text-on-surface">{{ titleCase(e.type) }}</span>
+                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
+                      :class="tatChip(e.tat_status)">{{ titleCase(e.tat_status || e.status) }}</span>
+                  </div>
+                  <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
+                    <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
+                    <span>Due {{ fmtDate(e.due_at) }}</span>
+                  </p>
+                  <p v-if="e.performed_by" class="text-[11px] text-outline">By {{ e.performed_by }}</p>
+                </div>
+              </div>
 
-  <p v-else class="text-sm text-on-surface-variant py-6 text-center">No workflow stations yet.</p>
-</div>
+              <p v-else class="text-sm text-on-surface-variant py-6 text-center">No workflow stations yet.</p>
+            </div>
           </div>
 
           <!-- Notes -->
@@ -287,7 +294,8 @@
             <ul class="space-y-2">
               <li v-for="(n, i) in order.notes" :key="i" class="text-sm text-on-surface flex gap-2">
                 <font-awesome-icon :icon="['fas', 'notes-medical']" class="text-ribbon-purple mt-0.5" />
-                <span class="break-words">{{ typeof n === 'string' ? n : (n.body || n.note || JSON.stringify(n)) }}</span>
+                <span class="break-words">{{ typeof n === 'string' ? n : (n.body || n.note || JSON.stringify(n))
+                  }}</span>
               </li>
             </ul>
           </div>
@@ -315,7 +323,8 @@
                 <tbody class="divide-y divide-outline-variant/10">
                   <tr v-for="t in order.tests" :key="t.uuid" class="cursor-pointer transition-colors"
                     @click="router.push({ path: `/orders/test/${t.uuid}`, query: { order: order.uuid } })">
-                    <td class="py-4 px-5 font-mono text-[11px] text-ribbon-blue whitespace-nowrap border-l-4" :class="rowAccent(t.status)">
+                    <td class="py-4 px-5 font-mono text-[11px] text-ribbon-blue whitespace-nowrap border-l-4"
+                      :class="rowAccent(t.status)">
                       {{ t.accession_number }}
                     </td>
                     <td class="py-4 px-5">
@@ -329,7 +338,8 @@
                       <span class="text-xs font-semibold text-ribbon-teal">{{ t.slides?.length ?? 0 }}</span>
                     </td>
                     <td class="py-4 px-5 text-center">
-                      <span class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap" :class="statusPillClass(t.status)">
+                      <span class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap"
+                        :class="statusPillClass(t.status)">
                         {{ titleCase(t.status) }}
                       </span>
                     </td>
@@ -345,7 +355,8 @@
       </template>
 
       <!-- ═══ Update modal ═══ -->
-      <Modal v-model="updateOpen" title="Update order" :subtitle="order?.accession_number" class="w-[760px] max-w-[70%]">
+      <Modal v-model="updateOpen" title="Update order" :subtitle="order?.accession_number"
+        class="w-[760px] max-w-[70%]">
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
             <label class="input-label">Scheduled for</label>
@@ -370,7 +381,8 @@
           </div>
           <div>
             <label class="input-label">Referring facility type</label>
-            <input v-model="uForm.referring_facility_type" type="text" class="input-field" placeholder="e.g. hospital, clinic" />
+            <input v-model="uForm.referring_facility_type" type="text" class="input-field"
+              placeholder="e.g. hospital, clinic" />
           </div>
           <div>
             <label class="input-label">Urgency</label>
@@ -388,7 +400,8 @@
           </div>
           <div class="sm:col-span-2">
             <label class="input-label">Clinical details</label>
-            <ConsultNoteEditor v-model="uForm.clinical_details" placeholder="Relevant clinical history, indication, prior findings…" />
+            <ConsultNoteEditor v-model="uForm.clinical_details"
+              placeholder="Relevant clinical history, indication, prior findings…" />
           </div>
         </div>
         <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
@@ -402,7 +415,8 @@
       </Modal>
 
       <!-- ═══ Collect modal ═══ -->
-      <Modal v-model="collectOpen" title="Collect specimen" :subtitle="order?.accession_number" class="w-[520px] max-w-2xl">
+      <Modal v-model="collectOpen" title="Collect specimen" :subtitle="order?.accession_number"
+        class="w-[520px] max-w-2xl">
         <div class="space-y-4">
           <div>
             <label class="input-label">Collected at</label>
@@ -431,7 +445,9 @@
             <font-awesome-icon :icon="['fas', 'inbox']" class="text-ribbon-amber" />
           </div>
           <p class="text-sm text-on-surface">
-            Mark <span class="font-semibold">{{ order?.accession_number }}</span> as received at the laboratory? This stamps the reception step.
+            Mark <span class="font-semibold">{{ order?.accession_number }}</span> as received at the laboratory? This
+            stamps
+            the reception step.
           </p>
         </div>
         <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
@@ -451,7 +467,9 @@
             <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-error" />
           </div>
           <p class="text-sm text-on-surface">
-            Void <span class="font-semibold">{{ order?.accession_number }}</span>? This cancels the order and preserves the audit trail — it cannot be undone.
+            Void <span class="font-semibold">{{ order?.accession_number }}</span>? This cancels the order and preserves
+            the
+            audit trail — it cannot be undone.
           </p>
         </div>
         <div>
@@ -471,13 +489,16 @@
       </Modal>
 
       <!-- ═══ Complete report modal ═══ -->
-      <Modal v-model="reportOpen" title="Complete order report" :subtitle="order?.accession_number" class="w-[640px] max-w-[95vw]">
+      <Modal v-model="reportOpen" title="Complete order report" :subtitle="order?.accession_number"
+        class="w-[640px] max-w-[95vw]">
         <div class="flex items-start gap-3 mb-4">
           <div class="w-11 h-11 rounded-full bg-ribbon-teal/15 flex items-center justify-center shrink-0">
             <font-awesome-icon :icon="['fas', 'file-signature']" class="text-ribbon-teal" />
           </div>
           <p class="text-sm text-on-surface">
-            Finalise and lock the report for <span class="font-semibold">{{ order?.accession_number }}</span>. Add any final comments below.
+            Finalise and lock the report for <span class="font-semibold">{{ order?.accession_number }}</span>. Add any
+            final
+            comments below.
           </p>
         </div>
         <div>
@@ -496,13 +517,15 @@
       </Modal>
 
       <!-- ═══ Release report modal ═══ -->
-      <Modal v-model="releaseOpen" title="Release order report" :subtitle="order?.accession_number" class="w-[640px] max-w-[95vw]">
+      <Modal v-model="releaseOpen" title="Release order report" :subtitle="order?.accession_number"
+        class="w-[640px] max-w-[95vw]">
         <div class="flex items-start gap-3 mb-4">
           <div class="w-11 h-11 rounded-full bg-ribbon-purple/15 flex items-center justify-center shrink-0">
             <font-awesome-icon :icon="['fas', 'paper-plane']" class="text-ribbon-purple" />
           </div>
           <p class="text-sm text-on-surface">
-            Release the finalised report for <span class="font-semibold">{{ order?.accession_number }}</span> to the requesting clinician.
+            Release the finalised report for <span class="font-semibold">{{ order?.accession_number }}</span> to the
+            requesting clinician.
           </p>
         </div>
         <div class="grid grid-cols-1 gap-4">
@@ -519,7 +542,8 @@
         <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
         <template #footer>
           <button type="button" class="btn-secondary" @click="releaseOpen = false">Cancel</button>
-          <button type="button" class="btn-primary" :disabled="saving || !lForm.released_to.trim()" @click="submitRelease">
+          <button type="button" class="btn-primary" :disabled="saving || !lForm.released_to.trim()"
+            @click="submitRelease">
             <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
             <span>Release report</span>
           </button>
@@ -643,11 +667,11 @@ const stationStatus = (code: string) => stationByCode.value[code]?.status ?? nul
 //  - Release is offered while RELEASE is pending OR planned (after reporting).
 const canReceive = computed(() => stationStatus('RECEPTION') === 'pending')
 const canCollect = computed(() => stationStatus('RECEPTION') === 'completed'
-                                && stationStatus('GROSSING') !== 'completed')
+  && stationStatus('GROSSING') !== 'completed')
 const canCompleteReport = computed(() => stationStatus('REPORTING') === 'pending'
-                                       || stationStatus('REPORTING') === 'in_progress')
+  || stationStatus('REPORTING') === 'in_progress')
 const canReleaseReport = computed(() => ['pending', 'planned', 'in_progress']
-                                          .includes(stationStatus('RELEASE') ?? ''))
+  .includes(stationStatus('RELEASE') ?? ''))
 
 // Reason shown as a tooltip on a disabled item
 const gateReason = (code: string, wanted: string[]) => {
@@ -862,40 +886,122 @@ const Detail = (props: { label: string; value: string | number | null | undefine
 @reference "~/assets/css/main.css";
 
 .g-card {
-  position: relative; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-  border-radius: 1.5rem; box-shadow: 0 10px 30px rgba(61, 127, 191, 0.05); border: 1px solid rgba(255, 255, 255, 0.4);
+  position: relative;
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 1.5rem;
+  box-shadow: 0 10px 30px rgba(61, 127, 191, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.4);
   animation: island-in 0.5s ease-out backwards;
 }
 
 /* header advanced button (matches ribbon palette) */
-.adv-toggle { @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-ribbon-blue bg-ribbon-blue/10 hover:bg-ribbon-blue/20 transition-colors; }
-.adv-item { @apply w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors; }
+.adv-toggle {
+  @apply inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-semibold text-ribbon-blue bg-ribbon-blue/10 hover:bg-ribbon-blue/20 transition-colors;
+}
+
+.adv-item {
+  @apply w-full flex items-center gap-2.5 px-3 py-2 text-sm text-on-surface hover:bg-surface-low transition-colors;
+}
 
 /* pill tabs */
-.tab-pill { @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-on-surface-variant hover:bg-ribbon-blue/10 hover:text-ribbon-blue transition-colors; }
-.tab-pill-active { @apply text-white bg-primary-gradient shadow-md shadow-primary/20; }
-.tab-count { @apply ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-white/25; }
-.tab-pill:not(.tab-pill-active) .tab-count { @apply bg-ribbon-blue/15 text-ribbon-blue; }
+.tab-pill {
+  @apply inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold text-on-surface-variant hover:bg-ribbon-blue/10 hover:text-ribbon-blue transition-colors;
+}
+
+.tab-pill-active {
+  @apply text-white bg-primary-gradient shadow-md shadow-primary/20;
+}
+
+.tab-count {
+  @apply ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-white/25;
+}
+
+.tab-pill:not(.tab-pill-active) .tab-count {
+  @apply bg-ribbon-blue/15 text-ribbon-blue;
+}
 
 /* alive table — ribbon blue header + hover, matches department.vue */
-.alive-tbl tbody tr { transition: background 0.15s ease; }
-.alive-tbl tbody tr:nth-child(even) { background: rgba(25, 28, 30, 0.018); }
-.tbl-blue thead tr { background: linear-gradient(90deg, rgba(61,127,191,0.14), rgba(61,127,191,0.04)); }
-.tbl-blue thead th { border-bottom: 2px solid rgba(61,127,191,0.40); }
-.tbl-blue tbody tr:hover { background: rgba(61,127,191,0.09); }
+.alive-tbl tbody tr {
+  transition: background 0.15s ease;
+}
+
+.alive-tbl tbody tr:nth-child(even) {
+  background: rgba(25, 28, 30, 0.018);
+}
+
+.tbl-blue thead tr {
+  background: linear-gradient(90deg, rgba(61, 127, 191, 0.14), rgba(61, 127, 191, 0.04));
+}
+
+.tbl-blue thead th {
+  border-bottom: 2px solid rgba(61, 127, 191, 0.40);
+}
+
+.tbl-blue tbody tr:hover {
+  background: rgba(61, 127, 191, 0.09);
+}
 
 /* scroll area (workflow list) */
-.scroll-area::-webkit-scrollbar { width: 6px; height: 6px; }
-.scroll-area::-webkit-scrollbar-thumb { background: rgba(61,127,191,0.2); border-radius: 10px; }
-.scroll-area { scrollbar-width: thin; scrollbar-color: rgba(61,127,191,0.2) transparent; }
+.scroll-area::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
 
-.pager-btn { width: 2.25rem; height: 2.25rem; display: inline-flex; align-items: center; justify-content: center; border-radius: 0.75rem; background: rgba(255, 255, 255, 0.7); border: 1px solid var(--color-outline-variant, #c2c6d8); color: #3d7fbf; transition: background 0.15s ease; }
-.pager-btn:hover:not(:disabled) { background: #fff; }
-.pager-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.scroll-area::-webkit-scrollbar-thumb {
+  background: rgba(61, 127, 191, 0.2);
+  border-radius: 10px;
+}
+
+.scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(61, 127, 191, 0.2) transparent;
+}
+
+.pager-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.75rem;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--color-outline-variant, #c2c6d8);
+  color: #3d7fbf;
+  transition: background 0.15s ease;
+}
+
+.pager-btn:hover:not(:disabled) {
+  background: #fff;
+}
+
+.pager-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 /* toast transition */
-.toast-enter-active, .toast-leave-active { transition: all 0.25s ease; }
-.toast-enter-from, .toast-leave-to { opacity: 0; transform: translateY(10px); }
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.25s ease;
+}
 
-@keyframes island-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+@keyframes island-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 </style>

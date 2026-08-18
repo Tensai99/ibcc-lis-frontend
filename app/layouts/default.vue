@@ -35,7 +35,7 @@
 
     <!-- ── Sidebar ──────────────────────────────────────────────────────── -->
     <aside
-      class="h-full flex-shrink-0 w-[240px] sm:w-[260px]
+      class="h-full shrink-0 w-[240px] sm:w-[260px]
              transition-transform duration-300 ease-in-out
              fixed top-0 left-0 lg:relative lg:top-auto lg:left-auto
              z-40 lg:z-10"
@@ -55,13 +55,23 @@
       "
     >
       <TopBar @toggle-sidebar="sidebarOpen = !sidebarOpen" />
+      <!-- Landing banner for the notification the user just clicked -->
+      <NotificationBanner />
+      
       <main class="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-5 md:p-6 bg-surface-container">
         <slot />
       </main>
       <AppFooter />
     </div>
 
+    <!-- apiService error toasts (existing store) -->
     <NotificationCenter />
+
+    <!-- Server-side notification toaster — bottom-right, polled every 30s -->
+    <ServerNotificationToaster />
+
+    <!-- Idle-timeout "Are you still there?" modal -->
+    <IdleTimeoutModal />
   </div>
 </template>
 
@@ -72,6 +82,8 @@ watch(() => route.path, () => { sidebarOpen.value = false })
 </script>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; }
 </style>

@@ -148,25 +148,6 @@
             </div>
           </div>
 
-          <!-- Remember me + Forgot password -->
-          <div class="flex items-center justify-between pt-1">
-            <label class="flex items-center gap-2 cursor-pointer select-none">
-              <input
-                v-model="remember"
-                type="checkbox"
-                class="h-4 w-4 rounded border-[#c2c6d5] text-[#145abf]
-                       focus:ring-[#145abf] bg-white cursor-pointer"
-              />
-              <span class="text-sm sm:text-base text-[#424753] font-medium">Keep me logged in</span>
-            </label>
-            <a
-              href="#"
-              class="text-sm sm:text-base font-semibold text-[#145abf] hover:underline hover:text-[#6297ff] transition-colors"
-            >
-              Forgot Password?
-            </a>
-          </div>
-
           <!-- Submit -->
           <div class="pt-4">
             <button
@@ -230,6 +211,9 @@ const handleLogin = async () => {
     })
     if (!data?.token) throw new Error('Invalid response from server.')
     auth.setAuth({ ...data, token: String(data.token) })
+    // Kick off notification polling immediately (plugin will also react to
+    // the auth.token change, but this fires the first fetch without waiting)
+    useServerNotifications().start()
     const LAB_ADMIN_ROLES = ['system_administrator', 'lab_technician']
     const role = auth.user?.role ?? ''
     const dashboard = LAB_ADMIN_ROLES.includes(role)

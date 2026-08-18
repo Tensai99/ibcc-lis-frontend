@@ -141,7 +141,7 @@
                                 <div class="flex flex-wrap items-center gap-1.5 mb-1">
                                     <span
                                         class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-ribbon-purple/15 text-ribbon-purple font-mono">{{
-                                        test.test_code }}</span>
+                                            test.test_code }}</span>
                                     <span :class="statusClass(test.status)" class="!py-0.5 !px-2 !text-[10px]">{{
                                         titleCase(test.status) }}</span>
                                 </div>
@@ -151,7 +151,7 @@
                                 </h1>
                                 <p class="text-sm sm:text-base text-on-surface-variant mt-1 break-words">
                                     <span class="font-mono font-semibold text-ribbon-blue">{{ test.accession_number
-                                        }}</span>
+                                    }}</span>
                                     <span v-if="test.sample_name" class="text-outline"> · {{ test.sample_name }}</span>
                                 </p>
                             </div>
@@ -696,15 +696,49 @@
                                     </div>
                                 </div>
 
-                                <!-- Slide image — first visual element so the card reads like a slide -->
+                                <!-- Slide image — click to open in the external viewer -->
                                 <div
                                     class="rounded-xl border border-outline-variant/30 bg-white overflow-hidden mb-3 relative">
-                                    <div
-                                        class="relative bg-gradient-to-br from-secondary-fixed/40 to-surface-low aspect-[5/2] flex items-center justify-center">
-                                        <!-- Actual image -->
-                                        <img v-if="slide.image_url" :src="slide.image_url" :alt="`Slide ${slide.label}`"
+                                    <div class="relative bg-gradient-to-br from-secondary-fixed/40 to-surface-low aspect-[5/2] flex items-center justify-center group/img"
+                                        :class="slideImageSrc(slide) ? 'cursor-zoom-in' : ''"
+                                        :role="slideImageSrc(slide) ? 'button' : undefined"
+                                        :tabindex="slideImageSrc(slide) ? 0 : undefined"
+                                        :aria-label="slideImageSrc(slide) ? `View slide ${slide.label}` : undefined"
+                                        @click.stop="slideImageSrc(slide) && openSlideViewer(slide)"
+                                        @keydown.enter.stop.prevent="slideImageSrc(slide) && openSlideViewer(slide)"
+                                        @keydown.space.stop.prevent="slideImageSrc(slide) && openSlideViewer(slide)">
+
+                                       <!-- Actual image -->
+                                        <img v-if="slideImageState(slide) === 'ok'" :src="slideImageSrc(slide)"
+                                            :alt="`Slide ${slide.label}`"
                                             class="max-h-full max-w-full object-contain p-1.5" loading="lazy"
-                                            @error="($event.target as HTMLImageElement).dataset.failed = '1'" />
+                                            @error="markSlideImageFailed(slide.uuid)" />
+
+                                        <!-- Signed link has expired — recoverable by re-fetching -->
+                                        <div v-else-if="slideImageState(slide) === 'expired'"
+                                            class="flex flex-col items-center gap-1 text-ribbon-amber px-2 text-center">
+                                            <font-awesome-icon :icon="['fas', 'clock-rotate-left']" class="text-2xl" />
+                                            <span class="text-[11px] font-medium">Image link expired</span>
+                                            <button type="button"
+                                                class="mt-0.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-ribbon-amber/15 text-ribbon-amber text-[10px] font-semibold hover:bg-ribbon-amber/25 transition-colors"
+                                                :disabled="refreshingImages" @click.stop="refreshSlideImages">
+                                                <font-awesome-icon
+                                                    :icon="['fas', refreshingImages ? 'circle-notch' : 'rotate']"
+                                                    :class="refreshingImages ? 'animate-spin' : ''"
+                                                    class="text-[9px]" />
+                                                {{ refreshingImages ? 'Refreshing…' : 'Refresh' }}
+                                            </button>
+                                        </div>
+
+                                        <!-- Loaded but unreachable (403 / network) — viewer still works -->
+                                        <div v-else-if="slideImageState(slide) === 'error'"
+                                            class="flex flex-col items-center gap-1 text-error px-2 text-center">
+                                            <font-awesome-icon :icon="['fas', 'triangle-exclamation']"
+                                                class="text-2xl" />
+                                            <span class="text-[11px] font-medium">Preview unavailable</span>
+                                            <span class="text-[10px] text-on-surface-variant">Click to open
+                                                viewer</span>
+                                        </div>
 
                                         <!-- No image yet -->
                                         <div v-else class="flex flex-col items-center gap-1 text-outline">
@@ -712,9 +746,20 @@
                                             <span class="text-xs">Not imaged</span>
                                         </div>
 
+                                        <!-- Hover affordance — only over a rendered image -->
+                                        <div v-if="slideImageState(slide) === 'ok'"
+                                            class="absolute inset-0 flex items-center justify-center bg-on-surface/0 group-hover/img:bg-on-surface/40 opacity-0 group-hover/img:opacity-100 transition-all duration-200">
+                                            <span
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/95 text-on-surface text-[11px] font-semibold shadow-md">
+                                                <font-awesome-icon :icon="['fas', 'magnifying-glass-plus']"
+                                                    class="text-[10px]" />
+                                                View slide
+                                            </span>
+                                        </div>
+
                                         <!-- Imaged badge (top-right of preview) -->
                                         <span v-if="slide.imaged"
-                                            class="absolute top-1.5 right-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-ribbon-teal text-white shadow-sm">
+                                            class="absolute top-1.5 right-1.5 inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-ribbon-teal text-white shadow-sm pointer-events-none">
                                             <font-awesome-icon :icon="['fas', 'camera']" class="text-[9px]" />
                                             Imaged
                                         </span>
@@ -1139,7 +1184,7 @@
                                         <p class="text-sm sm:text-base text-on-surface truncate">{{ ct.name }}</p>
                                         <p class="text-xs text-on-surface-variant truncate">{{ ct.code }} · {{
                                             ct.category
-                                            }}</p>
+                                        }}</p>
                                     </button>
                                     <div v-if="!filteredContainerTypes(block.containerSearch).length"
                                         class="px-3 py-4 text-center text-xs text-on-surface-variant">
@@ -1741,7 +1786,7 @@
                                     <div class="flex items-center gap-2 min-w-0">
                                         <select v-model="r.flag" class="input-field flex-1 min-w-0">
                                             <option v-for="f in FLAG_OPTIONS" :key="f.value" :value="f.value">{{ f.label
-                                            }}
+                                                }}
                                             </option>
                                         </select>
                                         <span :class="flagChipClass(r.flag)"
@@ -2160,7 +2205,7 @@
                             <p class="text-xs sm:text-sm text-accent-on/90 break-words mb-2">
                                 We'll process <strong>{{ validationLevel === 'technical' ? 'technical sign-off' :
                                     'clinical release'
-                                    }}</strong> first
+                                }}</strong> first
                                 ({{validationRows.filter(r => nextLevelForRow(r) === validationLevel).length}} row{{
                                     validationRows.filter(r => nextLevelForRow(r) === validationLevel).length === 1 ? '' :
                                         's'}}).
@@ -2421,6 +2466,84 @@
             </template>
         </Modal>
 
+        <!-- ── Slide viewer — full-screen overlay, no Modal wrapper ──────────────── -->
+        <Teleport to="body">
+            <div v-if="slideViewerOpen" class="fixed inset-0 z-[9999] flex flex-col bg-surface"
+                role="dialog" aria-modal="true" aria-label="Slide viewer">
+
+                <!-- Slim header strip -->
+                <div
+                    class="flex items-center justify-between gap-3 shrink-0 h-14 px-3 sm:px-4 bg-primary-gradient text-white shadow-md">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <font-awesome-icon :icon="['fas', 'microscope']" class="text-base shrink-0" />
+                        <div class="min-w-0">
+                            <p class="text-sm sm:text-base font-semibold leading-tight truncate">
+                                Slide {{ viewerSlide?.label || '' }}
+                            </p>
+                            <p class="text-[10px] sm:text-[11px] text-white/80 leading-tight truncate">
+                                {{ test?.accession_number || '' }}<span v-if="viewerSlide?.stain"> · {{
+                                    viewerSlide.stain }}</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <!-- Elapsed timer while recording -->
+                        <span v-if="recording"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-black/25 text-white text-xs font-semibold tabular-nums">
+                            <span class="w-2 h-2 rounded-full bg-ribbon-red animate-pulse" />
+                            {{ recordElapsed }}
+                        </span>
+
+                        <button v-if="recorderSupported" type="button"
+                            class="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                            :class="recording
+                                ? 'bg-ribbon-red text-white hover:bg-ribbon-red/85'
+                                : 'bg-white/15 text-white hover:bg-white/25'"
+                            :disabled="recordStarting"
+                            :title="recording ? 'Stop recording and download' : 'Record this session'"
+                            @click="toggleRecording">
+                            <font-awesome-icon
+                                :icon="['fas', recordStarting ? 'circle-notch' : (recording ? 'stop' : 'video')]"
+                                :class="recordStarting ? 'animate-spin' : ''" class="text-[11px]" />
+                            <span class="hidden sm:inline">
+                                {{ recordStarting ? 'Starting…' : (recording ? 'Stop' : 'Record') }}
+                            </span>
+                        </button>
+                        <button type="button"
+                            class="inline-flex items-center justify-center w-9 h-9 rounded-lg bg-white/15 hover:bg-white/25 text-white transition-colors"
+                            aria-label="Close viewer" @click="closeSlideViewer">
+                            <font-awesome-icon :icon="['fas', 'xmark']" class="text-base" />
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Recording error -->
+                <div v-if="recordError"
+                    class="shrink-0 flex items-center gap-2 px-3 sm:px-4 py-2 bg-ribbon-red/10 border-b border-ribbon-red/25 text-ribbon-red text-xs">
+                    <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-[11px]" />
+                    <span class="min-w-0 flex-1">{{ recordError }}</span>
+                    <button type="button" class="font-semibold hover:underline" @click="recordError = ''">
+                        Dismiss
+                    </button>
+                </div>
+
+                <!-- Viewer surface — full remaining width and height, no radius -->
+                <div class="relative flex-1 min-h-0 bg-white">
+                    <div v-if="viewerLoading"
+                        class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 bg-surface-low">
+                        <font-awesome-icon :icon="['fas', 'circle-notch']"
+                            class="animate-spin text-3xl text-ribbon-teal" />
+                        <p class="text-xs text-on-surface-variant">Loading viewer…</p>
+                    </div>
+
+                    <iframe v-if="slideViewerSrc" :src="slideViewerSrc"
+                        :title="`Slide ${viewerSlide?.label || ''} viewer`" class="block w-full h-full border-0"
+                        allow="fullscreen" referrerpolicy="no-referrer" @load="viewerLoading = false" />
+                </div>
+            </div>
+        </Teleport>
+
         <!-- ── Result detail modal ──────────────────────────────────────── -->
         <Modal v-model="resultDetailOpen" title="Result details" :subtitle="resultDetailRow?.analyte || ''"
             class="w-[860px] max-w-[92%]">
@@ -2447,7 +2570,7 @@
                                     {{ resultDetailRow.code }}
                                     <span v-if="resultCodeHint(resultDetailRow.code)"
                                         class="font-sans text-on-surface-variant/80"> · {{
-                                        resultCodeHint(resultDetailRow.code)
+                                            resultCodeHint(resultDetailRow.code)
                                         }}</span>
                                 </p>
                             </div>
@@ -2480,7 +2603,7 @@
                     <p v-else class="text-sm sm:text-base text-on-surface break-words">
                         <span class="font-semibold">{{ resultDetailRow.value ?? '—' }}</span>
                         <span v-if="resultDetailRow.unit" class="text-on-surface-variant"> {{ resultDetailRow.unit
-                            }}</span>
+                        }}</span>
                     </p>
 
                     <dl v-if="resultDetailRow.unit || resultDetailRow.reference || resultDetailRow.instrument"
@@ -2562,7 +2685,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, h, onMounted } from 'vue'
+import { ref, computed, h, onMounted, onUnmounted, watch } from 'vue'
 import type { LabOrderDetail, LabOrderTest, LabOrderTimeline } from '~/composables/useLaboratory'
 import type { ContainerType } from '~/composables/useLaboratorySettings'
 
@@ -2761,6 +2884,267 @@ const submitImageUrls = async () => {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   SLIDE IMAGES — preview src normalisation + external viewer (iframe)
+   The iframe never loads image_url directly; it points at the viewer service
+   (NUXT_PUBLIC_SLIDE_VIEWER_URL) which resolves the slide from its identifiers.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const runtime = useRuntimeConfig()
+
+// Payloads carry a literal "\u0026" (and sometimes a percent-encoded or HTML
+// entity form) instead of "&" in the signed MinIO URL, which invalidates the
+// AWS signature. Normalise every variant before rendering.
+const normalizeUrl = (raw?: string | null): string => {
+    if (!raw) return ''
+    return String(raw)
+        .replace(/\\u0026/gi, '&')
+        .replace(/%5Cu0026/gi, '&')
+        .replace(/&amp;/g, '&')
+        .trim()
+}
+
+const slideImageSrc = (slide: any): string => normalizeUrl(slide?.image_url)
+
+// ── Presigned-URL expiry ────────────────────────────────────────────────────
+// image_url is persisted server-side as an already-signed URL, so it goes stale
+// X-Amz-Expires seconds after X-Amz-Date. Detect that up front rather than
+// firing a request we know MinIO will answer with 403 Request has expired.
+const presignExpiresAt = (url: string): number | null => {
+    const d = url.match(/[?&]X-Amz-Date=(\d{8}T\d{6}Z)/i)?.[1]
+    const e = url.match(/[?&]X-Amz-Expires=(\d+)/i)?.[1]
+    if (!d || !e) return null
+    const iso = `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}T${d.slice(9, 11)}:${d.slice(11, 13)}:${d.slice(13, 15)}Z`
+    const t = Date.parse(iso)
+    return Number.isNaN(t) ? null : t + Number(e) * 1000
+}
+
+// Ticks so expiry flips reactively while the tab stays open
+const nowTick = ref(Date.now())
+let nowTimer: ReturnType<typeof setInterval> | null = null
+onMounted(() => { nowTimer = setInterval(() => { nowTick.value = Date.now() }, 30_000) })
+onUnmounted(() => { if (nowTimer) clearInterval(nowTimer) })
+
+// Track images that fail to load so we can swap in a fallback tile
+const failedSlideImages = ref<Set<string>>(new Set())
+const markSlideImageFailed = (uuid: string) => {
+    const s = new Set(failedSlideImages.value)
+    s.add(uuid)
+    failedSlideImages.value = s
+}
+
+type SlideImageState = 'none' | 'ok' | 'expired' | 'error'
+
+const slideImageState = (slide: any): SlideImageState => {
+    const url = slideImageSrc(slide)
+    if (!url) return 'none'
+    const exp = presignExpiresAt(url)
+    if (exp !== null && exp <= nowTick.value) return 'expired'
+    if (failedSlideImages.value.has(slide.uuid)) return 'error'
+    return 'ok'
+}
+
+// Re-fetch the test so the server hands back freshly signed URLs.
+// Only helps once the backend signs on read rather than persisting the URL.
+const refreshingImages = ref(false)
+const refreshSlideImages = async () => {
+    if (refreshingImages.value) return
+    refreshingImages.value = true
+    failedSlideImages.value = new Set()
+    try { await load() } finally {
+        nowTick.value = Date.now()
+        refreshingImages.value = false
+    }
+}
+
+// ── Viewer modal ────────────────────────────────────────────────────────────
+const slideViewerOpen = ref(false)
+const viewerSlide = ref<any | null>(null)
+const viewerLoading = ref(false)
+
+const slideViewerBase = computed(() =>
+    String(runtime.public.slideViewerUrl || 'http://localhost:3001').replace(/\/+$/, ''),
+)
+
+const buildSlideViewerUrl = (slide: any): string => {
+    if (!slide) return ''
+    const qs = new URLSearchParams({
+        slide: slide.uuid || '',
+        label: slide.label || '',
+        stain: slide.stain || '',
+        accession: test.value?.accession_number || '',
+        order: orderUuid.value || '',
+    })
+    return `${slideViewerBase.value}/?${qs.toString()}`
+}
+
+const slideViewerSrc = computed(() => buildSlideViewerUrl(viewerSlide.value))
+
+const openSlideViewer = (slide: any) => {
+    if (!slideImageSrc(slide)) return
+    viewerSlide.value = slide
+    viewerLoading.value = true
+    slideViewerOpen.value = true
+}
+
+const closeSlideViewer = () => { slideViewerOpen.value = false }
+
+// ── Session recording ───────────────────────────────────────────────────────
+// The viewer is a cross-origin iframe, so its contents cannot be captured from
+// the DOM. Screen capture via getDisplayMedia is the only option; the browser
+// prompts the user to pick a surface (preferCurrentTab pre-selects this tab).
+const recording = ref(false)
+const recordStarting = ref(false)
+const recordError = ref('')
+const recordSeconds = ref(0)
+
+let mediaRecorder: MediaRecorder | null = null
+let captureStream: MediaStream | null = null
+let recordChunks: Blob[] = []
+let recordTimer: ReturnType<typeof setInterval> | null = null
+
+const recorderSupported = computed(() =>
+    typeof window !== 'undefined'
+    && typeof window.MediaRecorder !== 'undefined'
+    && typeof navigator?.mediaDevices?.getDisplayMedia === 'function',
+)
+
+const recordElapsed = computed(() => {
+    const m = Math.floor(recordSeconds.value / 60)
+    const s = recordSeconds.value % 60
+    return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+})
+
+const pickRecordMimeType = (): string => {
+    const candidates = [
+        'video/webm;codecs=vp9,opus',
+        'video/webm;codecs=vp8,opus',
+        'video/webm;codecs=vp9',
+        'video/webm',
+        'video/mp4',
+    ]
+    return candidates.find((t) => MediaRecorder.isTypeSupported(t)) ?? ''
+}
+
+const recordFileName = (): string => {
+    const acc = String(test.value?.accession_number || 'slide').replace(/[^\w.-]+/g, '_')
+    const label = String(viewerSlide.value?.label || '').replace(/[^\w.-]+/g, '_')
+    const ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19)
+    const ext = (mediaRecorder?.mimeType || '').includes('mp4') ? 'mp4' : 'webm'
+    return `slide-${acc}${label ? `-${label}` : ''}-${ts}.${ext}`
+}
+
+const teardownRecorder = () => {
+    if (recordTimer) { clearInterval(recordTimer); recordTimer = null }
+    captureStream?.getTracks().forEach((t) => t.stop())
+    captureStream = null
+    mediaRecorder = null
+    recording.value = false
+    recordSeconds.value = 0
+}
+
+const downloadRecording = () => {
+    if (!recordChunks.length) {
+        recordError.value = 'Recording produced no data — nothing to download.'
+        return
+    }
+    const blob = new Blob(recordChunks, { type: mediaRecorder?.mimeType || 'video/webm' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = recordFileName()
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    // Revoke after the download has been handed to the browser
+    setTimeout(() => URL.revokeObjectURL(url), 10_000)
+    recordChunks = []
+}
+
+const startRecording = async () => {
+    if (!recorderSupported.value || recording.value || recordStarting.value) return
+    recordError.value = ''
+    recordStarting.value = true
+    try {
+        captureStream = await navigator.mediaDevices.getDisplayMedia({
+            // preferCurrentTab is Chromium-only; harmless elsewhere
+            video: { frameRate: 30 },
+            audio: false,
+            preferCurrentTab: true,
+        } as DisplayMediaStreamOptions)
+
+        recordChunks = []
+        const mimeType = pickRecordMimeType()
+        mediaRecorder = new MediaRecorder(captureStream, mimeType ? { mimeType } : undefined)
+
+        mediaRecorder.ondataavailable = (e: BlobEvent) => {
+            if (e.data && e.data.size > 0) recordChunks.push(e.data)
+        }
+        mediaRecorder.onstop = () => { downloadRecording(); teardownRecorder() }
+        mediaRecorder.onerror = () => {
+            recordError.value = 'Recording failed. The capture was stopped.'
+            teardownRecorder()
+        }
+
+        // User pressing the browser's own "Stop sharing" ends the track
+        captureStream.getVideoTracks().forEach((track) => {
+            track.addEventListener('ended', () => {
+                if (mediaRecorder?.state === 'recording') mediaRecorder.stop()
+            })
+        })
+
+        mediaRecorder.start(1000) // 1s timeslices so nothing is lost on abrupt stop
+        recording.value = true
+        recordSeconds.value = 0
+        recordTimer = setInterval(() => { recordSeconds.value += 1 }, 1000)
+    } catch (e: any) {
+        // NotAllowedError = user dismissed the picker; not worth an error strip
+        if (e?.name !== 'NotAllowedError' && e?.name !== 'AbortError') {
+            recordError.value = e?.message || 'Could not start screen recording.'
+        }
+        teardownRecorder()
+    } finally {
+        recordStarting.value = false
+    }
+}
+
+const stopRecording = () => {
+    if (mediaRecorder?.state === 'recording' || mediaRecorder?.state === 'paused') {
+        mediaRecorder.stop() // onstop downloads and tears down
+    } else {
+        teardownRecorder()
+    }
+}
+
+const toggleRecording = () => { recording.value ? stopRecording() : startRecording() }
+
+// Escape closes the overlay — Modal used to provide this
+const onViewerKeydown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape' && slideViewerOpen.value) closeSlideViewer()
+}
+onMounted(() => { document.addEventListener('keydown', onViewerKeydown) })
+onUnmounted(() => {
+    document.removeEventListener('keydown', onViewerKeydown)
+    document.body.style.overflow = ''
+    if (mediaRecorder?.state === 'recording') mediaRecorder.stop()
+    else teardownRecorder()
+})
+
+// Tear the iframe down on close so the viewer session ends,
+// and lock page scroll behind the overlay while it is open
+watch(slideViewerOpen, (open) => {
+    if (open) {
+        document.body.style.overflow = 'hidden'
+    } else {
+        document.body.style.overflow = ''
+        // Closing mid-recording finalises and downloads rather than discarding
+        if (recording.value) stopRecording()
+        recordError.value = ''
+        viewerSlide.value = null
+        viewerLoading.value = false
+    }
+})
+
+/* ═══════════════════════════════════════════════════════════════════════════
    RESULT WIZARD — POST /laboratory/order/test/results
    Adapts inputs by row value_type; falls back to AP narrative template
    for histopathology test_codes (11xxx). Single-page for now; steps preserved
@@ -2826,7 +3210,7 @@ const VALUE_TYPE_HINT: Record<ResultValueType, string> = {
 }
 
 const AP_SECTION_HINT: Record<string, string> = {
-    'Clinical History': 'The referral context — presenting complaint, duration, prior workup.',
+    'Clinical Interaction': 'The referral context — presenting complaint, duration, prior workup.',
     'Gross Description': 'Macroscopic exam — dimensions, cut surface, how submitted.',
     'Microscopic Description': 'What you see under the scope — architecture, cells, atypia, mitoses.',
     'Immunohistochemistry': 'IHC panel — positive and negative markers, Ki-67 index.',
@@ -2848,7 +3232,7 @@ interface StepGuidance {
 }
 
 const AP_SECTION_GUIDANCE: Record<string, StepGuidance> = {
-    'Clinical History': {
+    'Clinical Interaction': {
         icon: 'notes-medical',
         what: 'The referring clinician\'s context — why the biopsy was sent.',
         tips: [
@@ -3214,12 +3598,12 @@ const buildReportDocument = (logoUri: string): string => {
 
     // Flag → colour on the section left rail + chip
     const flagPalette: Record<string, { rail: string; chipBg: string; chipFg: string }> = {
-        normal:        { rail: '#3dae8c', chipBg: '#d3efe5', chipFg: '#1f6750' },
-        abnormal:      { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
-        high:          { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
-        low:           { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
-        positive:      { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
-        reactive:      { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
+        normal: { rail: '#3dae8c', chipBg: '#d3efe5', chipFg: '#1f6750' },
+        abnormal: { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
+        high: { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
+        low: { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
+        positive: { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
+        reactive: { rail: '#e8a33d', chipBg: '#fbe8cc', chipFg: '#8a5a10' },
         indeterminate: { rail: '#b05fa8', chipBg: '#f3dcef', chipFg: '#7a4073' },
     }
     const railFor = (r: any) => r.is_critical ? '#c0395a'
@@ -3227,14 +3611,12 @@ const buildReportDocument = (logoUri: string): string => {
 
     const sections = results.map((r: any, i: number) => {
         const flagLabel = (FLAG_OPTIONS.find((f: any) => f.value === r.flag)?.label)
-                       || titleCase(r.flag || 'normal')
+            || titleCase(r.flag || 'normal')
         const pal = flagPalette[r.flag] ?? flagPalette.normal!
         const showFlagChip = r.flag && r.flag !== 'normal'
         const valueHtml = isHtmlValue(r.value)
             ? r.value
-            : `<p style="margin:4px 0">${esc(r.value ?? '—')}${
-                r.unit ? ' ' + esc(r.unit) : ''}${
-                r.reference ? ` <span style="color:#727687;font-size:9pt">(ref ${esc(r.reference)})</span>` : ''}</p>`
+            : `<p style="margin:4px 0">${esc(r.value ?? '—')}${r.unit ? ' ' + esc(r.unit) : ''}${r.reference ? ` <span style="color:#727687;font-size:9pt">(ref ${esc(r.reference)})</span>` : ''}</p>`
 
         return `
         <table class="rpt-section" cellpadding="0" cellspacing="0" style="border-left:4px solid ${railFor(r)}">
@@ -3963,6 +4345,7 @@ const submitGross = async () => {
         const res = await grossTest(orderUuid.value, testUuid.value, payload)
         order.value = res?.order ?? order.value
         test.value = res?.test ?? test.value
+        await load()
         grossModalOpen.value = false
         tab.value = 'blocks'
     } catch (e: any) {

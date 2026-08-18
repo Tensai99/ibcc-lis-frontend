@@ -4,10 +4,25 @@ export default defineEventHandler(async (event) => {
   const config     = useRuntimeConfig(event)
   const backEndUrl = (() => { try { return new URL(config.public.backEndUrl || 'http://localhost:5000').origin } catch { return '' } })()
   const objectStorageUrl = config.public.objectStorageUrl || ''
-  const isDev      = process.env.NODE_ENV !== 'production'
+  // Slide viewer service (framed in the LIS slide viewer modal)
+  const slideViewerUrl = (() => {
+    try { return new URL(config.public.slideViewerUrl || '').origin } catch { return '' }
+  })()
+const isDev      = process.env.NODE_ENV !== 'production'
 
   // Extra origins to whitelist (object storage / MinIO), filtered so empty values never leak in
   const extra = [objectStorageUrl].filter(Boolean)
+
+  // Origins we allow to be framed — object storage + the slide viewer
+  const frameOrigins = [objectStorageUrl, slideViewerUrl].filter(Boolean)
+
+  // If any whitelisted origin is plain http (localhost stacks, on-prem MinIO),
+  // upgrade-insecure-requests would rewrite it to https:// and the frame/fetch
+  // is then blocked against an http-only directive. HSTS has the same effect
+  // host-wide, and it is port-blind — an entry for `localhost` upgrades :3001 too.
+  const hasInsecureOrigin = [backEndUrl, objectStorageUrl, slideViewerUrl]
+    .filter(Boolean)
+    .some((o) => o.startsWith('http://'))
 
   // In development, Vite HMR and Nuxt DevTools open WebSocket connections on
   // random high ports. CSP connect-src must allow these or the browser blocks them.
@@ -19,8 +34,10 @@ export default defineEventHandler(async (event) => {
         'https://api.iconify.design',
       ]
     : []
-  const hstsOptions = isDev ? false : { maxAge: 63072000, includeSubDomains: true, preload: true }
-  const upgradeInsecureRequests = isDev ? null : []
+  const hstsOptions = (isDev || hasInsecureOrigin)
+    ? false
+    : { maxAge: 63072000, includeSubDomains: true, preload: true }
+  const upgradeInsecureRequests = (isDev || hasInsecureOrigin) ? null : []
   await new Promise((resolve, reject) => {
     helmet({
       frameguard:     { action: 'deny' },
@@ -55,20 +72,23 @@ export default defineEventHandler(async (event) => {
             'data:',
           ],
           imgSrc: ["'self'", 'data:', 'blob:', 'https:', backEndUrl, ...extra],
-          // Allow framing the object-storage / MinIO origin so uploaded forms render
+          // Allow framing the object-storage / MinIO origin so uploaded forms render,
+          // plus the slide viewer service embedded in the LIS slide viewer modal
           workerSrc: ["'self'", 'blob:'],
-          frameSrc: ["'self'", ...extra],
+          frameSrc: ["'self'", ...frameOrigins],
           connectSrc: [
             "'self'",
             backEndUrl,
             ...extra,
+            ...(slideViewerUrl ? [slideViewerUrl] : []),
             ...devConnectSrc,
           ],
           objectSrc: ["'none'"],
           baseUri:   ["'self'"],
-          ...(upgradeInsecureRequests !== null
-            ? { upgradeInsecureRequests }
-            : {}),
+          // Must be passed explicitly as null to suppress it — omitting the key
+          // falls through to helmet's default, which re-adds the directive and
+          // rewrites every http:// frame/subresource to https://.
+          upgradeInsecureRequests,
         },
       },
     })(

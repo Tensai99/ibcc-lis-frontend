@@ -20,14 +20,14 @@
     • Dropdown animates in with the existing `.dropdown-*` transition classes.
 -->
 <template>
-  <header class="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white/80 backdrop-blur-md shadow-sm gap-3 flex-shrink-0 min-w-0">
+  <header class="sticky top-0 z-50 flex items-center justify-between px-4 sm:px-6 py-3 sm:py-4 bg-white/80 backdrop-blur-md shadow-sm gap-3 shrink-0 min-w-0">
 
     <!-- ── Left: hamburger + title + search ──────────────────────────── -->
     <div class="flex items-center gap-3 sm:gap-5 min-w-0 flex-1">
 
       <!-- Hamburger (mobile) -->
       <button
-        class="lg:hidden text-on-surface-variant hover:text-primary p-1 -ml-1 flex-shrink-0 transition-colors"
+        class="lg:hidden text-on-surface-variant hover:text-primary p-1 -ml-1 shrink-0 transition-colors"
         @click="$emit('toggle-sidebar')"
         aria-label="Open menu"
       >
@@ -35,19 +35,16 @@
       </button>
 
       <!-- Page title -->
-      <h1 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold text-on-surface truncate hidden sm:block flex-shrink-0">
+      <h1 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold text-on-surface truncate hidden sm:block shrink-0">
         {{ pageTitle }}
       </h1>
     </div>
 
     <!-- ── Right: bell + quick action + user menu ────────────────────── -->
-    <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+    <div class="flex items-center gap-2 sm:gap-3 shrink-0">
 
-      <!-- Notification bell -->
-      <button class="relative w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-surface-container-high/50 flex items-center justify-center text-on-surface hover:bg-surface-container-highest transition-colors">
-        <font-awesome-icon :icon="['fas','bell']" class="text-sm sm:text-base" />
-        <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-error rounded-full" />
-      </button>
+      <!-- Notification bell (dropdown lives inside the component) -->
+      <NotificationBell />
 
       <!-- ── User menu ───────────────────────────────────────────────── -->
       <!-- Wrapping div provides the click-outside boundary via ref -->
@@ -69,7 +66,7 @@
           <!-- Avatar: gradient circle with user initials -->
           <div
             class="w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center
-                   text-white text-xs sm:text-sm font-bold flex-shrink-0 select-none"
+                   text-white text-xs sm:text-sm font-bold shrink-0 select-none"
             style="background: linear-gradient(135deg, #FFA500 0%, #DB9D00 100%); box-shadow: 0 2px 8px rgba(0,80,203,0.30);"
           >
             {{ initials }}
@@ -104,7 +101,7 @@
               <!-- Larger avatar for the dropdown header -->
               <div
                 class="w-10 h-10 rounded-full flex items-center justify-center
-                       text-white text-sm font-bold flex-shrink-0 select-none"
+                       text-white text-sm font-bold shrink-0 select-none"
                 style="background: linear-gradient(135deg, #FFA500 0%, #DB9D00 100%); box-shadow: 0 2px 8px rgba(0,80,203,0.30);"
               >
                 {{ initials }}
@@ -133,7 +130,7 @@
                        hover:bg-surface-low transition-colors duration-150"
                 @click="userMenuOpen = false"
               >
-                <div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center flex-shrink-0">
+                <div class="w-7 h-7 rounded-lg bg-surface-container flex items-center justify-center shrink-0">
                   <font-awesome-icon :icon="['fas','gear']" class="text-on-surface-variant text-xs" />
                 </div>
                 <span>Settings</span>
@@ -149,7 +146,7 @@
                        hover:bg-error-container/40 transition-colors duration-150"
                 @click="logout"
               >
-                <div class="w-7 h-7 rounded-lg bg-error-container/60 flex items-center justify-center flex-shrink-0">
+                <div class="w-7 h-7 rounded-lg bg-error-container/60 flex items-center justify-center shrink-0">
                   <font-awesome-icon :icon="['fas','right-from-bracket']" class="text-error text-xs" />
                 </div>
                 <span>Sign Out</span>
@@ -193,14 +190,11 @@ const initials = computed(() => {
     .join('')
 })
 
+const { logout: doLogout } = useLogout()
+
 const logout = async () => {
   userMenuOpen.value = false
-  try {
-    const { request } = useApi()
-    await request('/session', { method: 'DELETE' })
-  } catch { /* ignore network errors on logout */ }
-  auth.clear()
-  router.push('/login')
+  await doLogout()
 }
 
 // ── Page title ─────────────────────────────────────────────────────────────
@@ -288,6 +282,8 @@ onUnmounted(() => { document.removeEventListener('click', handleClickOutside) })
 </script>
 
 <style scoped>
+@reference "~/assets/css/main.css";
+
 .dropdown-enter-active,.dropdown-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
 .dropdown-enter-from,.dropdown-leave-to { opacity: 0; transform: translateY(-4px); }
 </style>
