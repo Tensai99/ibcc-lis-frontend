@@ -216,9 +216,7 @@ const handleLogin = async () => {
     useServerNotifications().start()
     const LAB_ADMIN_ROLES = ['system_administrator', 'lab_technician']
     const role = auth.user?.role ?? ''
-    const dashboard = LAB_ADMIN_ROLES.includes(role)
-      ? '/dashboard/laboratory-admin'
-      : '/dashboard/laboratory'
+    const dashboard = '/dashboard/laboratory'
 
     // Only honour ?redirect= when it's a real internal path. Bare "/dashboard" has
     // no index route (pages/dashboard/ holds only laboratory[-admin].vue), so a
