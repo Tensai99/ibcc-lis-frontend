@@ -54,7 +54,7 @@
             <div class="min-w-0">
               <p class="text-[10px] text-ribbon-blue font-bold uppercase tracking-wider">Accession</p>
               <h1 class="text-xl sm:text-2xl font-bold text-on-surface break-words font-mono">{{ order.accession_number
-                }}</h1>
+              }}</h1>
               <p class="text-xs sm:text-sm text-on-surface-variant mt-0.5 break-words">
                 <span class="font-semibold text-on-surface">{{ order.patient_name }}</span>
                 <span v-if="order.age != null || order.gender" class="text-outline">
@@ -155,7 +155,8 @@
                   <span>Delete order</span>
                 </button>
 
-                <button type="button" class="adv-item" @click="printLabel(order?.accession_number, order?.accession_number)">
+                <button type="button" class="adv-item"
+                  @click="printLabel(order?.accession_number, order?.accession_number)">
                   <font-awesome-icon :icon="['fas', 'barcode']" class="text-ribbon-blue" />
                   <span>Print Order barcode</span>
                 </button>
@@ -301,7 +302,7 @@
               <li v-for="(n, i) in order.notes" :key="i" class="text-sm text-on-surface flex gap-2">
                 <font-awesome-icon :icon="['fas', 'notes-medical']" class="text-ribbon-purple mt-0.5" />
                 <span class="break-words">{{ typeof n === 'string' ? n : (n.body || n.note || JSON.stringify(n))
-                  }}</span>
+                }}</span>
               </li>
             </ul>
           </div>
@@ -324,6 +325,7 @@
                     <th class="py-4 px-5">Sample</th>
                     <th class="py-4 px-5 text-center">Blocks / Slides</th>
                     <th class="py-4 px-5 text-center">Status</th>
+                    <th class="py-4 px-5 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-outline-variant/10">
@@ -349,14 +351,58 @@
                         {{ titleCase(t.status) }}
                       </span>
                     </td>
+
+                    <!-- Actions — kebab menu, click never bubbles to the row's own navigate handler -->
+                    <td class="py-4 px-5 text-center" @click.stop>
+  <button type="button"
+    class="inline-flex w-8 h-8 rounded-full items-center justify-center leading-none shrink-0 transition-colors test-actions-menu"
+    :class="openTestMenuUuid === t.uuid
+      ? 'bg-ribbon-blue/15 text-ribbon-blue'
+      : 'text-on-surface-variant hover:bg-surface-low hover:text-ribbon-blue'"
+    aria-haspopup="true" :aria-expanded="openTestMenuUuid === t.uuid"
+    :title="`Actions for ${t.accession_number}`"
+    @click.stop="toggleTestMenu(t, $event)">
+    <font-awesome-icon :icon="['fas', 'ellipsis-vertical']" class="text-sm leading-none" />
+  </button>
+</td>
                   </tr>
                   <tr v-if="!order.tests?.length">
-                    <td colspan="6" class="py-8 text-center text-on-surface-variant">No tests on this order.</td>
+                    <td colspan="7" class="py-8 text-center text-on-surface-variant">No tests on this order.</td>
                   </tr>
                 </tbody>
               </table>
             </div>
           </div>
+
+          <!-- Tests table row-actions dropdown — teleported to <body> and fixed-positioned
+     off the trigger button's own rect, so the table's overflow-x-auto can never
+     clip it (the same problem the department/inventory filter-bar dropdowns hit). -->
+          <Teleport to="body">
+  <Transition name="menu-pop">
+    <div v-if="openTestMenuUuid"
+      class="fixed w-48 bg-white rounded-xl shadow-island-active border border-outline-variant/20 py-1.5 z-[70] text-left test-actions-menu"
+      :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }">
+      <!-- pointer arrow — visually anchors the menu to the ellipsis button above it -->
+      <div class="absolute -top-1.5 w-3 h-3 bg-white border-t border-l border-outline-variant/20 rotate-45"
+        :style="{ right: menuArrowOffset + 'px' }" />
+
+      <p class="px-3 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
+        {{ openTestRow?.accession_number }}
+      </p>
+
+      <button type="button" class="adv-item" @click.stop="goToTest(openTestRow)">
+        <span
+          class="w-7 h-7 rounded-lg bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue shrink-0">
+          <font-awesome-icon :icon="['fas', 'eye']" class="text-xs" />
+        </span>
+        <div class="min-w-0">
+          <p class="font-semibold leading-tight">View test</p>
+          <p class="text-[11px] text-on-surface-variant leading-tight">Open the full test record</p>
+        </div>
+      </button>
+    </div>
+  </Transition>
+</Teleport>
         </div>
       </template>
 
@@ -668,6 +714,54 @@ const error = ref<string | null>(null)
 
 const tab = ref<'general' | 'tests'>('general')
 const advOpen = ref(false)
+
+// ── Tests table row actions (kebab menu) ────────────────────────────────
+const openTestMenuUuid = ref<string | null>(null)
+const menuPos = ref({ top: 0, left: 0 })
+const MENU_WIDTH = 192 // px — matches w-44
+
+// The row currently backing the open menu, so the teleported dropdown
+// (which no longer lives inside the v-for) can still reach the right test.
+const openTestRow = computed(() =>
+  order.value?.tests?.find((t: any) => t.uuid === openTestMenuUuid.value) ?? null,
+)
+
+const menuArrowOffset = ref(16) // px from the menu's right edge
+
+const toggleTestMenu = (t: { uuid: string }, ev: MouseEvent) => {
+  if (openTestMenuUuid.value === t.uuid) {
+    openTestMenuUuid.value = null
+    return
+  }
+  const rect = (ev.currentTarget as HTMLElement).getBoundingClientRect()
+  const rawLeft = rect.right - MENU_WIDTH
+  const clampedLeft = Math.max(8, rawLeft)
+  menuPos.value = { top: rect.bottom + 8, left: clampedLeft }
+  // Arrow sits under the button's horizontal center, relative to the menu's
+  // right edge — stays correct even when clamping shifted the menu left.
+  const buttonCenter = rect.left + rect.width / 2
+  menuArrowOffset.value = Math.min(MENU_WIDTH - 20, Math.max(12, clampedLeft + MENU_WIDTH - buttonCenter - 6))
+  openTestMenuUuid.value = t.uuid
+}
+
+const goToTest = (t: { uuid: string } | null) => {
+  if (!t) return
+  openTestMenuUuid.value = null
+  router.push({ path: `/orders/test/${t.uuid}`, query: { order: order.value?.uuid } })
+}
+
+onMounted(() => {
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+    if (openTestMenuUuid.value && !target.closest?.('.test-actions-menu')) {
+      openTestMenuUuid.value = null
+    }
+  })
+  // A fixed-position menu doesn't track scroll — close it rather than let it drift
+  // away from the button. `true` = capture phase, so it also catches scrolling
+  // inside the table's own overflow-x-auto wrapper (scroll doesn't bubble).
+  window.addEventListener('scroll', () => { openTestMenuUuid.value = null }, true)
+})
 
 const load = async () => {
   if (!uuid.value) { error.value = 'No order selected.'; loading.value = false; return }
@@ -1054,5 +1148,19 @@ const Detail = (props: { label: string; value: string | number | null | undefine
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+/* dropdown menu fade (Tests table row actions) */
+.menu-pop-enter-active {
+  transition: opacity 0.14s ease, transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.menu-pop-leave-active {
+  transition: opacity 0.1s ease, transform 0.1s ease;
+}
+
+.menu-pop-enter-from,
+.menu-pop-leave-to {
+  opacity: 0;
+  transform: translateY(-6px) scale(0.97);
 }
 </style>

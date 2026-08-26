@@ -153,11 +153,18 @@
                 <font-awesome-icon :icon="['fas', 'vials']" />
               </div>
               <div class="min-w-0">
-                <h3 class="text-lg sm:text-xl font-bold text-on-surface">Laboratory orders</h3>
+                <div class="flex items-center gap-2 flex-wrap">
+                  <h3 class="text-lg sm:text-xl font-bold text-on-surface">Laboratory orders</h3>
+                  <span
+                    class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-ribbon-amber/15 text-ribbon-amber whitespace-nowrap">
+                    <font-awesome-icon :icon="['fas', 'calendar-day']" class="text-[9px]" />
+                    Today
+                  </span>
+                </div>
                 <p class="text-[11px] text-outline">
-                  <span v-if="ordersMeta">{{ fmt(ordersMeta.total) }} total · page {{ ordersMeta.page }} / {{
+                  <span v-if="ordersMeta">{{ fmt(ordersMeta.total) }} today · page {{ ordersMeta.page }} / {{
                     ordersMeta.total_pages }}</span>
-                  <span v-else>Live worklist across all disciplines</span>
+                  <span v-else>{{ todayLabel }}</span>
                 </p>
               </div>
             </div>
@@ -175,12 +182,12 @@
             </div>
           </div>
 
-          <div v-if="ordersLoading && !orders.length" class="py-16 flex flex-col items-center gap-2">
+          <div v-if="ordersLoading && !todaysOrders.length" class="py-16 flex flex-col items-center gap-2">
             <font-awesome-icon :icon="['fas', 'circle-notch']" class="text-2xl text-primary animate-spin" />
             <p class="text-xs text-on-surface-variant">Loading orders…</p>
           </div>
 
-          <div v-else-if="orders.length" class="overflow-x-auto -mx-2 sm:mx-0">
+          <div v-else-if="todaysOrders.length" class="overflow-x-auto -mx-2 sm:mx-0">
             <table class="w-full text-left border-collapse text-sm alive-tbl tbl-blue">
               <thead>
                 <tr class="text-[11px] text-on-surface-variant uppercase tracking-widest">
@@ -195,7 +202,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-outline-variant/10">
-                <tr v-for="o in orders" :key="o.uuid" class="cursor-pointer" @click="openOrder(o.uuid)">
+                <tr v-for="o in todaysOrders" :key="o.uuid" class="cursor-pointer" @click="openOrder(o.uuid)">
                   <td class="py-3 px-4 font-mono text-[11px] text-ribbon-blue whitespace-nowrap border-l-4"
                     :class="rowAccent(o.status)">
                     {{ o.accession_number }}
@@ -239,7 +246,10 @@
             <div class="w-12 h-12 rounded-full bg-ribbon-blue/10 flex items-center justify-center text-ribbon-blue">
               <font-awesome-icon :icon="['fas', 'inbox']" />
             </div>
-            <p class="text-sm text-on-surface-variant">No orders match your search.</p>
+            <!-- was: No orders match your search. -->
+            <p class="text-sm text-on-surface-variant">
+              {{ ordersQuery ? 'No orders today match your search.' : 'No orders scheduled for today.' }}
+            </p>
           </div>
 
           <!-- Pagination -->
@@ -255,7 +265,7 @@
                 <font-awesome-icon :icon="['fas', 'chevron-left']" />
               </button>
               <span class="text-sm font-semibold text-on-surface px-2">{{ ordersMeta.page }} / {{ ordersMeta.total_pages
-                }}</span>
+              }}</span>
               <button type="button" class="pager-btn" :disabled="ordersMeta.page >= ordersMeta.total_pages"
                 @click="goOrdersPage(ordersMeta.page + 1)">
                 <font-awesome-icon :icon="['fas', 'chevron-right']" />
@@ -439,7 +449,7 @@
                     <p class="text-[10px] text-outline uppercase tracking-wider">Critical</p>
                     <p class="text-lg font-extrabold" :class="d.results.critical > 0 ? 'text-error' : ''">{{
                       fmt(d.results.critical)
-                      }}</p>
+                    }}</p>
                   </div>
                   <div>
                     <p class="text-[10px] text-outline uppercase tracking-wider">Pending tech</p>
@@ -595,13 +605,20 @@ const ordersQuery = ref('')
 const ordersPage = ref(1)
 const ordersPerPage = 25
 
+const todayIso = () => isoDate(new Date())
+
 const loadOrders = async () => {
   ordersLoading.value = true
   try {
+    const today = todayIso()
     const res = await listOrders({
       q: ordersQuery.value || undefined,
       page: ordersPage.value,
       per_page: ordersPerPage,
+      // ADD ↓ — restrict the worklist to today only
+      date: today,
+      from: today,
+      to: today,
     })
     orders.value = res?.data ?? []
     ordersMeta.value = res?.meta ?? null
@@ -628,6 +645,16 @@ const stationTatMax = computed(() =>
 // ── row-styling helpers (mirror index.vue) ──────────────────────────────────
 const fmtDate = (s: string | null) =>
   s ? new Date(s).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—'
+
+// ADD ↓ — local-date comparison (avoids UTC offset drift)
+const isToday = (s: string | null) => {
+  if (!s) return false
+  const dt = new Date(s), n = new Date()
+  return dt.getFullYear() === n.getFullYear()
+    && dt.getMonth() === n.getMonth()
+    && dt.getDate() === n.getDate()
+}
+const todaysOrders = computed(() => orders.value.filter(o => isToday(o.scheduled_for)))
 
 const statusPillClass = (s: string) => {
   const k = (s || '').toLowerCase()
@@ -688,6 +715,11 @@ const filters = reactive<Record<string, any>>({
 const filtersOpen = ref(false)
 
 const windowLabel = computed(() => `${filters.from || '—'} → ${filters.to || '—'}`)
+
+// ADD ↓
+const todayLabel = computed(() =>
+  new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }),
+)
 
 // ── quick range presets ──────────────────────────────────────────────────────
 const PRESETS = [
@@ -1003,7 +1035,11 @@ const MiniStat = (props: { label: string; value: string; danger?: boolean }) =>
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
 }
-.insight-card:hover { transform: translateY(-2px); box-shadow: 0 12px 28px rgba(61, 127, 191, 0.10); }
+
+.insight-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(61, 127, 191, 0.10);
+}
 
 .insight-head {
   @apply flex items-center justify-between gap-2 px-4 py-3 border-b border-outline-variant/15;
