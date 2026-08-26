@@ -192,6 +192,8 @@ const errorMsg = ref('')
 const showPw   = ref(false)
 const remember = ref(false)
 
+const ALLOWED_ROLES = ['lab_technician', 'lab_lead', 'pathologist', 'system_administrator']
+
 const handleLogin = async () => {
   errorMsg.value = ''
   if (!form.login.trim() || !form.password) {
@@ -210,23 +212,20 @@ const handleLogin = async () => {
       body: { login: form.login.trim(), password: form.password },
     })
     if (!data?.token) throw new Error('Invalid response from server.')
+
+    // Role gate — checked BEFORE auth.setAuth, so a denied user never has
+    // client-side auth state written for them.
+    const role = data.user?.role ?? ''
+    if (!ALLOWED_ROLES.includes(role)) {
+      errorMsg.value = 'Your account does not have access to this system.'
+      return
+    }
+
     auth.setAuth({ ...data, token: String(data.token) })
     // Kick off notification polling immediately (plugin will also react to
     // the auth.token change, but this fires the first fetch without waiting)
     useServerNotifications().start()
-    const LAB_ADMIN_ROLES = ['system_administrator', 'lab_technician']
-    const role = auth.user?.role ?? ''
-    const dashboard = '/dashboard/laboratory'
-
-    // Only honour ?redirect= when it's a real internal path. Bare "/dashboard" has
-    // no index route (pages/dashboard/ holds only laboratory[-admin].vue), so a
-    // guard that stashed redirect=/dashboard must fall through to the role landing.
-    const raw = (route.query.redirect as string) || ''
-    const redirect =
-      raw.startsWith('/') && raw !== '/dashboard' && !raw.startsWith('/login')
-        ? raw
-        : dashboard
-    router.push(redirect)
+    router.push('/dashboard')
   } catch (e: unknown) {
     const err = e as Error & { status?: number }
     if (err.status === 401 || err.message?.toLowerCase().includes('unauthorized')) {

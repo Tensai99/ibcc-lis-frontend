@@ -229,16 +229,11 @@ interface NavItem {
 }
 
 // Dashboard target follows the logged-in role (admin → admin view, etc.).
-const LAB_ADMIN_ROLES = ['system_administrator', 'lab_technician']
-const dashboardPath = computed(() =>
-  LAB_ADMIN_ROLES.includes(auth.currentRole)
-    ? '/dashboard/laboratory-admin'
-    : '/dashboard/laboratory',
-)
+const LAB_ADMIN_ROLES = ['system_administrator', 'lab_lead']
 
 const navItems = computed<NavItem[]>(() => {
   const items: NavItem[] = [
-    { to: dashboardPath.value, icon: ['fas', 'gauge'], label: 'Dashboard', show: true },
+    { to: '/dashboard', icon: ['fas', 'gauge'], label: 'Dashboard', show: true },
     //{ to: '/customers', icon: ['fas', 'users'], label: 'Customers', show: can('customer_view') },
     //{ to: '/patients', icon: ['fas', 'hospital-user'], label: 'Patients', show: can('patient_view') || can('patient_search') },
     // ── Laboratory ──────────────────────────────────────────────────────────
