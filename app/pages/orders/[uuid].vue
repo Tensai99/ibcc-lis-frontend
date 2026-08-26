@@ -54,7 +54,7 @@
             <div class="min-w-0">
               <p class="text-[10px] text-ribbon-blue font-bold uppercase tracking-wider">Accession</p>
               <h1 class="text-xl sm:text-2xl font-bold text-on-surface break-words font-mono">{{ order.accession_number
-              }}</h1>
+                }}</h1>
               <p class="text-xs sm:text-sm text-on-surface-variant mt-0.5 break-words">
                 <span class="font-semibold text-on-surface">{{ order.patient_name }}</span>
                 <span v-if="order.age != null || order.gender" class="text-outline">
@@ -203,39 +203,137 @@
         <!-- ══ General tab ══ -->
         <div v-show="tab === 'general'" class="flex flex-col gap-5">
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
-            <!-- Order details -->
-            <div class="g-card p-6 sm:p-8 lg:col-span-2">
-              <h3 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold mb-5">Order details</h3>
-              <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4">
-                <Detail label="Department" :value="order.department?.name" />
-                <Detail label="Section" :value="order.department?.section" />
-                <Detail label="Specimen" :value="order.specimen" />
-                <Detail label="Site" :value="order.site" />
-                <Detail label="Scheduled for" :value="fmtDate(order.scheduled_for)" />
-                <Detail label="Disposition" :value="order.disposition" />
-                <Detail label="Collection time" :value="fmtDate(order.collection_time)" />
-                <Detail label="Reception time" :value="fmtDate(order.reception_time)" />
-                <Detail label="Referring facility" :value="order.referring_facility" />
-                <Detail label="Requested by" :value="order.requested_by" />
-                <Detail label="Requested by occupation" :value="order.requested_by_occupation" />
-                <Detail label="Received by" :value="order.received_by" />
-              </dl>
 
-              <template v-if="clinicalEntries.length">
-                <h4 class="text-[10px] text-ribbon-purple font-bold uppercase tracking-wider mt-6 mb-3">Clinical details
-                </h4>
-                <div class="flex flex-wrap gap-2">
-                  <span v-for="[k, v] in clinicalEntries" :key="k"
-                    class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-ribbon-blue/15 text-ribbon-blue">
-                    {{ titleCase(k) }}: {{ v }}
+            <!-- Left column: Order details + Notes stacked together -->
+            <div class="flex flex-col gap-5 lg:col-span-2">
+
+              <!-- Order details -->
+              <div class="g-card p-6 sm:p-8">
+                <div class="flex items-center gap-3 mb-6">
+                  <div
+                    class="w-10 h-10 rounded-full bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue">
+                    <font-awesome-icon :icon="['fas', 'clipboard-list']" />
+                  </div>
+                  <h3 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold">Order details</h3>
+                </div>
+
+                <!-- Specimen & collection — teal -->
+                <section class="mb-6">
+                  <h4
+                    class="text-[10px] text-ribbon-teal font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <font-awesome-icon :icon="['fas', 'flask-vial']" class="text-[10px]" />
+                    Specimen &amp; collection
+                  </h4>
+                  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div v-for="f in specimenFields" :key="f.label"
+                      class="flex items-start gap-3 p-3 rounded-xl bg-ribbon-teal/5 border border-ribbon-teal/15">
+                      <div
+                        class="w-8 h-8 rounded-lg bg-ribbon-teal/15 flex items-center justify-center text-ribbon-teal shrink-0">
+                        <font-awesome-icon :icon="f.icon" class="text-xs" />
+                      </div>
+                      <div class="min-w-0">
+                        <dt class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{{ f.label }}
+                        </dt>
+                        <dd class="text-sm font-semibold text-on-surface break-words">{{ f.value || '—' }}</dd>
+                      </div>
+                    </div>
+                  </dl>
+                </section>
+
+                <!-- Scheduling & disposition — amber -->
+                <section class="mb-6">
+                  <h4
+                    class="text-[10px] text-ribbon-amber font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <font-awesome-icon :icon="['fas', 'calendar-days']" class="text-[10px]" />
+                    Scheduling &amp; disposition
+                  </h4>
+                  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div v-for="f in schedulingFields" :key="f.label"
+                      class="flex items-start gap-3 p-3 rounded-xl bg-ribbon-amber/5 border border-ribbon-amber/15">
+                      <div
+                        class="w-8 h-8 rounded-lg bg-ribbon-amber/15 flex items-center justify-center text-ribbon-amber shrink-0">
+                        <font-awesome-icon :icon="f.icon" class="text-xs" />
+                      </div>
+                      <div class="min-w-0">
+                        <dt class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{{ f.label }}
+                        </dt>
+                        <dd class="text-sm font-semibold text-on-surface break-words">{{ f.value || '—' }}</dd>
+                      </div>
+                    </div>
+                  </dl>
+                </section>
+
+                <!-- Referral & personnel — purple -->
+                <section>
+                  <h4
+                    class="text-[10px] text-ribbon-purple font-bold uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                    <font-awesome-icon :icon="['fas', 'user-doctor']" class="text-[10px]" />
+                    Referral &amp; personnel
+                  </h4>
+                  <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div v-for="f in personnelFields" :key="f.label"
+                      class="flex items-start gap-3 p-3 rounded-xl bg-ribbon-purple/5 border border-ribbon-purple/15">
+                      <div
+                        class="w-8 h-8 rounded-lg bg-ribbon-purple/15 flex items-center justify-center text-ribbon-purple shrink-0">
+                        <font-awesome-icon :icon="f.icon" class="text-xs" />
+                      </div>
+                      <div class="min-w-0">
+                        <dt class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">{{ f.label }}
+                        </dt>
+                        <dd class="text-sm font-semibold text-on-surface break-words">{{ f.value || '—' }}</dd>
+                      </div>
+                    </div>
+                  </dl>
+                </section>
+
+                <!-- Clinical details -->
+                <template v-if="clinicalEntries.length">
+                  <h4
+                    class="text-[10px] text-ribbon-red font-bold uppercase tracking-wider mt-6 mb-3 flex items-center gap-1.5">
+                    <font-awesome-icon :icon="['fas', 'notes-medical']" class="text-[10px]" />
+                    Clinical details
+                  </h4>
+                  <div class="flex flex-wrap gap-2">
+                    <span v-for="[k, v] in clinicalEntries" :key="k"
+                      class="px-2.5 py-1 rounded-full text-[11px] font-semibold bg-ribbon-red/10 text-ribbon-red border border-ribbon-red/20">
+                      {{ titleCase(k) }}: {{ v }}
+                    </span>
+                  </div>
+                </template>
+              </div>
+
+              <!-- Notes -->
+              <div v-if="order.notes?.length" class="g-card p-6 sm:p-8">
+                <div class="flex items-center gap-3 mb-5">
+                  <div
+                    class="w-10 h-10 rounded-full bg-ribbon-purple/15 flex items-center justify-center text-ribbon-purple">
+                    <font-awesome-icon :icon="['fas', 'notes-medical']" />
+                  </div>
+                  <h3 class="text-base sm:text-lg font-semibold sm:font-bold">Notes</h3>
+                  <span
+                    class="ml-auto text-[11px] font-bold text-ribbon-purple bg-ribbon-purple/10 px-2.5 py-1 rounded-full">
+                    {{ order.notes.length }}
                   </span>
                 </div>
-              </template>
+                <ol class="space-y-4">
+                  <li v-for="(n, i) in order.notes" :key="n.uuid || i" class="relative pl-7">
+                    <span
+                      class="absolute left-0 top-1.5 w-2.5 h-2.5 rounded-full bg-ribbon-purple ring-4 ring-ribbon-purple/15" />
+                    <span v-if="i < order.notes.length - 1"
+                      class="absolute left-[4.5px] top-5 bottom-[-1rem] w-px bg-outline-variant/30" />
+                    <div class="p-4 rounded-xl bg-white/60 border border-outline-variant/20">
+                      <div class="note-prose text-sm text-on-surface break-words"
+                        v-html="sanitizeNoteHtml(noteText(n))" />
+                    </div>
+                  </li>
+                </ol>
+              </div>
+
             </div>
 
-            <!-- Workflow -->
-            <div class="g-card p-6">
-              <div class="flex items-center gap-3 mb-4">
+            <!-- Right column: Workflow — no scroll, timeline fills the full card height -->
+            <div class="g-card p-6 lg:col-span-1 flex flex-col">
+              <div class="flex items-center gap-3 mb-5">
                 <div class="w-10 h-10 rounded-full bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue">
                   <font-awesome-icon :icon="['fas', 'timeline']" />
                 </div>
@@ -245,66 +343,68 @@
                 </span>
               </div>
 
-              <div v-if="timeline?.timeline?.length" class="space-y-2 max-h-[420px] overflow-y-auto scroll-area pr-1">
-                <div v-for="s in timeline.timeline" :key="s.uuid" class="p-3 rounded-xl border-l-4 bg-white/50"
-                  :class="tatAccent(s.tat_status)">
-                  <div class="flex items-center justify-between gap-2">
-                    <div class="min-w-0">
-                      <p class="font-bold text-xs text-on-surface truncate">{{ s.station }}</p>
-                      <p class="text-[10px] text-outline font-mono">{{ s.code }} · seq {{ s.sequence }}</p>
+              <ol v-if="timeline?.timeline?.length" class="flex-1">
+                <li v-for="(s, i) in timeline.timeline" :key="s.uuid" class="relative pl-7"
+                  :class="i < timeline.timeline.length - 1 ? 'pb-5' : ''">
+                  <span class="absolute left-0 top-1.5 w-3 h-3 rounded-full ring-4"
+                    :class="tatDotClass(s.tat_status)" />
+                  <span v-if="i < timeline.timeline.length - 1"
+                    class="absolute left-[5.5px] top-5 bottom-0 w-px bg-outline-variant/30" />
+                  <div class="p-3 rounded-xl border-l-4 bg-white/50" :class="tatAccent(s.tat_status)">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="min-w-0">
+                        <p class="font-bold text-xs text-on-surface truncate">{{ s.station }}</p>
+                        <p class="text-[10px] text-outline font-mono">{{ s.code }} · seq {{ s.sequence }}</p>
+                      </div>
+                      <div class="flex flex-col items-end gap-1 shrink-0">
+                        <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
+                          :class="statusPillClass(s.status)">{{ titleCase(s.status) }}</span>
+                        <span v-if="s.tat_status"
+                          class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
+                          :class="tatChip(s.tat_status)">{{ titleCase(s.tat_status) }}</span>
+                      </div>
                     </div>
-                    <div class="flex flex-col items-end gap-1 shrink-0">
-                      <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
-                        :class="statusPillClass(s.status)">{{ titleCase(s.status) }}</span>
-                      <span v-if="s.tat_status"
-                        class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
-                        :class="tatChip(s.tat_status)">{{ titleCase(s.tat_status) }}</span>
-                    </div>
+                    <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
+                      <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
+                      <span>Due {{ fmtDate(s.due_at) }}</span>
+                    </p>
+                    <p v-if="s.performed_by" class="text-[11px] text-outline">By {{ s.performed_by }}</p>
+                    <p v-if="s.ended_at" class="text-[11px] text-outline">
+                      Completed {{ fmtDate(s.ended_at) }}
+                      <span v-if="s.turnaround_hours != null"> · {{ s.turnaround_hours }}h</span>
+                    </p>
                   </div>
-                  <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
-                    <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
-                    <span>Due {{ fmtDate(s.due_at) }}</span>
-                  </p>
-                  <p v-if="s.performed_by" class="text-[11px] text-outline">By {{ s.performed_by }}</p>
-                  <p v-if="s.ended_at" class="text-[11px] text-outline">
-                    Completed {{ fmtDate(s.ended_at) }}
-                    <span v-if="s.turnaround_hours != null"> · {{ s.turnaround_hours }}h</span>
-                  </p>
-                </div>
-              </div>
+                </li>
+              </ol>
 
               <!-- Fallback: legacy encounter list if timeline hasn't returned -->
-              <div v-else-if="order.encounters?.length"
-                class="space-y-2 max-h-[420px] overflow-y-auto scroll-area pr-1">
-                <div v-for="e in order.encounters" :key="e.uuid" class="p-3 rounded-xl border-l-4 bg-white/50"
-                  :class="tatAccent(e.tat_status)">
-                  <div class="flex items-center justify-between gap-2">
-                    <span class="font-bold text-xs text-on-surface">{{ titleCase(e.type) }}</span>
-                    <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
-                      :class="tatChip(e.tat_status)">{{ titleCase(e.tat_status || e.status) }}</span>
+              <ol v-else-if="order.encounters?.length" class="flex-1">
+                <li v-for="(e, i) in order.encounters" :key="e.uuid" class="relative pl-7"
+                  :class="i < order.encounters.length - 1 ? 'pb-5' : ''">
+                  <span class="absolute left-0 top-1.5 w-3 h-3 rounded-full ring-4"
+                    :class="tatDotClass(e.tat_status || e.status)" />
+                  <span v-if="i < order.encounters.length - 1"
+                    class="absolute left-[5.5px] top-5 bottom-0 w-px bg-outline-variant/30" />
+                  <div class="p-3 rounded-xl border-l-4 bg-white/50" :class="tatAccent(e.tat_status)">
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="font-bold text-xs text-on-surface">{{ titleCase(e.type) }}</span>
+                      <span class="px-2 py-0.5 rounded-full text-[9px] font-bold uppercase whitespace-nowrap"
+                        :class="tatChip(e.tat_status)">{{ titleCase(e.tat_status || e.status) }}</span>
+                    </div>
+                    <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
+                      <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
+                      <span>Due {{ fmtDate(e.due_at) }}</span>
+                    </p>
+                    <p v-if="e.performed_by" class="text-[11px] text-outline">By {{ e.performed_by }}</p>
                   </div>
-                  <p class="text-[11px] text-on-surface-variant mt-1 flex items-center gap-1.5">
-                    <font-awesome-icon :icon="['fas', 'clock']" class="opacity-70 text-[10px]" />
-                    <span>Due {{ fmtDate(e.due_at) }}</span>
-                  </p>
-                  <p v-if="e.performed_by" class="text-[11px] text-outline">By {{ e.performed_by }}</p>
-                </div>
+                </li>
+              </ol>
+
+              <div v-else class="flex-1 flex items-center justify-center">
+                <p class="text-sm text-on-surface-variant text-center">No workflow stations yet.</p>
               </div>
-
-              <p v-else class="text-sm text-on-surface-variant py-6 text-center">No workflow stations yet.</p>
             </div>
-          </div>
 
-          <!-- Notes -->
-          <div v-if="order.notes?.length" class="g-card p-6 sm:p-8">
-            <h3 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold mb-4">Notes</h3>
-            <ul class="space-y-2">
-              <li v-for="(n, i) in order.notes" :key="i" class="text-sm text-on-surface flex gap-2">
-                <font-awesome-icon :icon="['fas', 'notes-medical']" class="text-ribbon-purple mt-0.5" />
-                <span class="break-words">{{ typeof n === 'string' ? n : (n.body || n.note || JSON.stringify(n))
-                }}</span>
-              </li>
-            </ul>
           </div>
         </div>
 
@@ -354,17 +454,16 @@
 
                     <!-- Actions — kebab menu, click never bubbles to the row's own navigate handler -->
                     <td class="py-4 px-5 text-center" @click.stop>
-  <button type="button"
-    class="inline-flex w-8 h-8 rounded-full items-center justify-center leading-none shrink-0 transition-colors test-actions-menu"
-    :class="openTestMenuUuid === t.uuid
-      ? 'bg-ribbon-blue/15 text-ribbon-blue'
-      : 'text-on-surface-variant hover:bg-surface-low hover:text-ribbon-blue'"
-    aria-haspopup="true" :aria-expanded="openTestMenuUuid === t.uuid"
-    :title="`Actions for ${t.accession_number}`"
-    @click.stop="toggleTestMenu(t, $event)">
-    <font-awesome-icon :icon="['fas', 'ellipsis-vertical']" class="text-sm leading-none" />
-  </button>
-</td>
+                      <button type="button"
+                        class="inline-flex w-8 h-8 rounded-full items-center justify-center leading-none shrink-0 transition-colors test-actions-menu"
+                        :class="openTestMenuUuid === t.uuid
+                          ? 'bg-ribbon-blue/15 text-ribbon-blue'
+                          : 'text-on-surface-variant hover:bg-surface-low hover:text-ribbon-blue'" aria-haspopup="true"
+                        :aria-expanded="openTestMenuUuid === t.uuid" :title="`Actions for ${t.accession_number}`"
+                        @click.stop="toggleTestMenu(t, $event)">
+                        <font-awesome-icon :icon="['fas', 'ellipsis-vertical']" class="text-sm leading-none" />
+                      </button>
+                    </td>
                   </tr>
                   <tr v-if="!order.tests?.length">
                     <td colspan="7" class="py-8 text-center text-on-surface-variant">No tests on this order.</td>
@@ -378,31 +477,31 @@
      off the trigger button's own rect, so the table's overflow-x-auto can never
      clip it (the same problem the department/inventory filter-bar dropdowns hit). -->
           <Teleport to="body">
-  <Transition name="menu-pop">
-    <div v-if="openTestMenuUuid"
-      class="fixed w-48 bg-white rounded-xl shadow-island-active border border-outline-variant/20 py-1.5 z-[70] text-left test-actions-menu"
-      :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }">
-      <!-- pointer arrow — visually anchors the menu to the ellipsis button above it -->
-      <div class="absolute -top-1.5 w-3 h-3 bg-white border-t border-l border-outline-variant/20 rotate-45"
-        :style="{ right: menuArrowOffset + 'px' }" />
+            <Transition name="menu-pop">
+              <div v-if="openTestMenuUuid"
+                class="fixed w-48 bg-white rounded-xl shadow-island-active border border-outline-variant/20 py-1.5 z-[70] text-left test-actions-menu"
+                :style="{ top: menuPos.top + 'px', left: menuPos.left + 'px' }">
+                <!-- pointer arrow — visually anchors the menu to the ellipsis button above it -->
+                <div class="absolute -top-1.5 w-3 h-3 bg-white border-t border-l border-outline-variant/20 rotate-45"
+                  :style="{ right: menuArrowOffset + 'px' }" />
 
-      <p class="px-3 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
-        {{ openTestRow?.accession_number }}
-      </p>
+                <p class="px-3 pt-1 pb-1.5 text-[10px] font-bold uppercase tracking-wider text-on-surface-variant">
+                  {{ openTestRow?.accession_number }}
+                </p>
 
-      <button type="button" class="adv-item" @click.stop="goToTest(openTestRow)">
-        <span
-          class="w-7 h-7 rounded-lg bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue shrink-0">
-          <font-awesome-icon :icon="['fas', 'eye']" class="text-xs" />
-        </span>
-        <div class="min-w-0">
-          <p class="font-semibold leading-tight">View test</p>
-          <p class="text-[11px] text-on-surface-variant leading-tight">Open the full test record</p>
-        </div>
-      </button>
-    </div>
-  </Transition>
-</Teleport>
+                <button type="button" class="adv-item" @click.stop="goToTest(openTestRow)">
+                  <span
+                    class="w-7 h-7 rounded-lg bg-ribbon-blue/15 flex items-center justify-center text-ribbon-blue shrink-0">
+                    <font-awesome-icon :icon="['fas', 'eye']" class="text-xs" />
+                  </span>
+                  <div class="min-w-0">
+                    <p class="font-semibold leading-tight">View test</p>
+                    <p class="text-[11px] text-on-surface-variant leading-tight">Open the full test record</p>
+                  </div>
+                </button>
+              </div>
+            </Transition>
+          </Teleport>
         </div>
       </template>
 
@@ -834,6 +933,42 @@ const clinicalEntries = computed(() =>
   Object.entries(order.value?.clinical_details ?? {}).filter(([, v]) => v != null && v !== ''),
 )
 
+interface OrderField {
+  icon: [string, string]
+  label: string
+  value: string | number | null | undefined
+}
+
+const specimenFields = computed<OrderField[]>(() => [
+  { icon: ['fas', 'hospital'], label: 'Department', value: order.value?.department?.name },
+  { icon: ['fas', 'layer-group'], label: 'Section', value: order.value?.department?.section },
+  { icon: ['fas', 'vial'], label: 'Specimen', value: order.value?.specimen },
+  { icon: ['fas', 'location-dot'], label: 'Site', value: order.value?.site },
+  { icon: ['fas', 'calendar-check'], label: 'Collection time', value: fmtDate(order.value?.collection_time) },
+  { icon: ['fas', 'inbox'], label: 'Reception time', value: fmtDate(order.value?.reception_time) },
+])
+
+const schedulingFields = computed<OrderField[]>(() => [
+  { icon: ['fas', 'calendar-days'], label: 'Scheduled for', value: fmtDate(order.value?.scheduled_for) },
+  { icon: ['fas', 'box-archive'], label: 'Disposition', value: order.value?.disposition },
+])
+
+const personnelFields = computed<OrderField[]>(() => [
+  { icon: ['fas', 'hospital-user'], label: 'Referring facility', value: order.value?.referring_facility },
+  { icon: ['fas', 'user-doctor'], label: 'Requested by', value: order.value?.requested_by },
+  { icon: ['fas', 'id-badge'], label: 'Occupation', value: order.value?.requested_by_occupation },
+  { icon: ['fas', 'user-check'], label: 'Received by', value: order.value?.received_by },
+])
+
+const tatDotClass = (tat: string | null | undefined): string => {
+  switch (tat) {
+    case 'on_time': return 'bg-ribbon-teal ring-ribbon-teal/20'
+    case 'at_risk': return 'bg-ribbon-amber ring-ribbon-amber/20'
+    case 'breached': return 'bg-ribbon-red ring-ribbon-red/20'
+    default: return 'bg-ribbon-blue ring-ribbon-blue/20'
+  }
+}
+
 // ── datetime helpers ─────────────────────────────────────────────────────────
 const pad = (n: number) => String(n).padStart(2, '0')
 const toLocalInput = (iso: string | null) => {
@@ -981,6 +1116,26 @@ const fmtDate = (s: string | null | undefined) =>
   s ? new Date(s).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—'
 const titleCase = (s: string | null | undefined) =>
   (s || '—').replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+
+// Notes payload shape is { uuid, notes }, but tolerate string / legacy
+// body|note keys too rather than assuming one API version forever.
+const noteText = (n: any): string =>
+  typeof n === 'string' ? n : (n?.notes ?? n?.body ?? n?.note ?? '')
+
+// Note content comes from the CKEditor-backed clinical note field, so it's
+// already real HTML (paragraphs, bold, lists) rather than plain text — it
+// needs to render as HTML, not print the tags literally. This strips the
+// handful of genuinely dangerous constructs before it hits v-html; if a
+// project-wide DOMPurify import ever gets added, swap this for that.
+const sanitizeNoteHtml = (html: string): string => {
+  if (!html) return ''
+  return html
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    .replace(/\son\w+="[^"]*"/gi, '')
+    .replace(/\son\w+='[^']*'/gi, '')
+    .replace(/javascript:/gi, '')
+}
 
 // pill classes (ribbon palette) — covers reported / imaged / received / verified / planned
 const statusPillClass = (s: string) => {
@@ -1154,6 +1309,7 @@ const Detail = (props: { label: string; value: string | number | null | undefine
 .menu-pop-enter-active {
   transition: opacity 0.14s ease, transform 0.14s cubic-bezier(0.16, 1, 0.3, 1);
 }
+
 .menu-pop-leave-active {
   transition: opacity 0.1s ease, transform 0.1s ease;
 }
@@ -1162,5 +1318,30 @@ const Detail = (props: { label: string; value: string | number | null | undefine
 .menu-pop-leave-to {
   opacity: 0;
   transform: translateY(-6px) scale(0.97);
+}
+
+/* Notes: format the CKEditor HTML rendered via v-html inside .note-prose.
+   :deep() is required because v-html content isn't seen by scoped styles. */
+.note-prose :deep(p) {
+  margin: 0 0 0.5em;
+}
+
+.note-prose :deep(p:last-child) {
+  margin-bottom: 0;
+}
+
+.note-prose :deep(strong) {
+  font-weight: 700;
+}
+
+.note-prose :deep(ul),
+.note-prose :deep(ol) {
+  padding-left: 1.25rem;
+  margin: 0.25em 0;
+}
+
+.note-prose :deep(a) {
+  color: #3d7fbf;
+  text-decoration: underline;
 }
 </style>
