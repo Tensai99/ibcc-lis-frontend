@@ -38,6 +38,23 @@
       <h1 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold text-on-surface truncate hidden sm:block shrink-0">
         {{ pageTitle }}
       </h1>
+
+      <!-- Search bar (visual only — not wired to any search yet) -->
+      <div class="hidden md:block relative w-full max-w-xs min-w-0">
+        <font-awesome-icon
+          :icon="['fas','magnifying-glass']"
+          class="absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-sm pointer-events-none"
+        />
+        <input
+          type="text"
+          placeholder="Search…"
+          class="w-full pl-9 pr-3 py-2 text-sm rounded-full bg-surface-container
+                 border border-outline-variant/40 text-on-surface
+                 placeholder:text-on-surface-variant
+                 focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/40
+                 transition-colors"
+        />
+      </div>
     </div>
 
     <!-- ── Right: bell + quick action + user menu ────────────────────── -->
