@@ -158,7 +158,7 @@
                                 </h1>
                                 <p class="text-sm sm:text-base text-on-surface-variant mt-1 break-words">
                                     <span class="font-mono font-semibold text-ribbon-blue">{{ test.accession_number
-                                        }}</span>
+                                    }}</span>
                                     <span v-if="test.sample_name" class="text-outline"> · {{ test.sample_name }}</span>
                                 </p>
                             </div>
@@ -1166,7 +1166,7 @@
                                         <p class="text-sm sm:text-base text-on-surface truncate">{{ ct.name }}</p>
                                         <p class="text-xs text-on-surface-variant truncate">{{ ct.code }} · {{
                                             ct.category
-                                            }}</p>
+                                        }}</p>
                                     </button>
                                     <div v-if="!filteredContainerTypes(block.containerSearch).length"
                                         class="px-3 py-4 text-center text-xs text-on-surface-variant">
@@ -1785,7 +1785,7 @@
                                     <div class="flex items-center gap-2 min-w-0">
                                         <select v-model="r.flag" class="input-field flex-1 min-w-0">
                                             <option v-for="f in FLAG_OPTIONS" :key="f.value" :value="f.value">{{ f.label
-                                                }}
+                                            }}
                                             </option>
                                         </select>
                                         <span :class="flagChipClass(r.flag)"
@@ -2098,7 +2098,7 @@
                     <font-awesome-icon v-else :icon="['fas', 'check']" />
                     <span>{{ resultSubmitting ? 'Saving…' : `Submit ${filledResultRows.length}
                         section${filledResultRows.length ===
-                        1 ? '' : 's'}` }}</span>
+                            1 ? '' : 's'}` }}</span>
                 </button>
             </template>
         </Modal>
@@ -2193,10 +2193,10 @@
                                 Only the
                                 {{validationRows.filter(r => nextLevelForRow(r) === validationLevel).length}}
                                 row{{validationRows.filter(r => nextLevelForRow(r) === validationLevel).length === 1 ?
-                                '' : 's' }}
+                                    '' : 's'}}
                                 eligible for
                                 <strong>{{ validationLevel === 'technical' ? 'technical sign-off' : 'clinical release'
-                                    }}</strong>
+                                }}</strong>
                                 will be processed here — the rest need the other role first.
                             </p>
                         </div>
@@ -2578,7 +2578,7 @@
                     <p v-else class="text-sm sm:text-base text-on-surface break-words">
                         <span class="font-semibold">{{ resultDetailRow.value ?? '—' }}</span>
                         <span v-if="resultDetailRow.unit" class="text-on-surface-variant"> {{ resultDetailRow.unit
-                            }}</span>
+                        }}</span>
                     </p>
 
                     <dl v-if="resultDetailRow.unit || resultDetailRow.reference || resultDetailRow.instrument"
@@ -3723,7 +3723,7 @@ const buildReportDocument = (logoUri: string): string => {
         color-adjust: exact !important;
         box-sizing: border-box; }
 
-    @page { size: A4; margin: 12mm 12mm 16mm 12mm; }
+    @page { size: A4; margin: 12mm 12mm 22mm 12mm; }
 
     html, body { margin: 0; padding: 0; background: #fff; }
     body { font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
@@ -3825,14 +3825,18 @@ const buildReportDocument = (logoUri: string): string => {
     .sig-line { border-top: 1px solid #191c1e; height: 1px; margin-bottom: 6px; }
     .sig-role { font-weight: 800; text-transform: uppercase; letter-spacing: .6px;
                 color: #424656; font-size: 8pt; }
-    .sig-hint { color: #727687; font-size: 8pt; margin-top: 2px; }
+        .sig-hint { color: #727687; font-size: 8pt; margin-top: 2px; }
+
+    /* ── Barcode ─────────────────────────────────────────────────── */
+    .rpt-barcode { width: 100%; margin-top: 18px; text-align: left; page-break-inside: avoid; }
+.rpt-barcode svg { height: 42px; max-width: 260px; }
 
     /* ── Footer ──────────────────────────────────────────────────── */
-    .rpt-foot { width: 100%; margin-top: 20px; padding-top: 8px;
-                border-top: 1px solid #e0e3e5; }
-    .rpt-foot td { vertical-align: middle; font-size: 8pt; color: #727687; }
-    .rpt-foot td.right { text-align: right; }
-    .foot-logo { height: 12px; width: auto; vertical-align: middle; margin-right: 6px; opacity: .7; }
+    .rpt-foot { position: fixed; left: 12mm; right: 12mm; bottom: 6mm;
+            padding-top: 6px; border-top: 1px solid #e0e3e5; }
+.rpt-foot td { vertical-align: middle; font-size: 8pt; color: #727687; }
+.rpt-foot td.right { text-align: right; }
+.foot-logo { height: 12px; width: auto; vertical-align: middle; margin-right: 6px; opacity: .7; }
 </style>
 </head>
 <body>
@@ -3914,6 +3918,11 @@ const buildReportDocument = (logoUri: string): string => {
         </td>
     </tr></table>
 
+    <!-- Barcode -->
+    <div class="rpt-barcode">
+    <svg id="rpt-barcode-svg"></svg>
+</div>
+
     <!-- Footer -->
     <table class="rpt-foot" cellpadding="0" cellspacing="0"><tr>
         <td>
@@ -3924,6 +3933,15 @@ const buildReportDocument = (logoUri: string): string => {
     </tr></table>
 
 </div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.5/JsBarcode.all.min.js"><\/script>
+<script>
+  try {
+    JsBarcode('#rpt-barcode-svg', ${JSON.stringify(t.accession_number || '')}, {
+      format: 'CODE128', width: 1.6, height: 40, displayValue: false,
+      margin: 0, background: 'transparent'
+    });
+  } catch (e) { /* non-fatal — report still prints without the barcode */ }
+<\/script>
 </body></html>`
 }
 
@@ -3989,7 +4007,7 @@ const downloadResultsPdf = async () => {
                                           logging: false },
                            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait',
                                     compress: true },
-                           pagebreak: { mode: ['css', 'legacy'], avoid: ['.rpt-section', '.rpt-sig', '.info-card'] }
+                           pagebreak: { mode: ['css', 'legacy'], avoid: ['.rpt-section', '.rpt-sig', '.info-card', '.rpt-barcode'] }
                        }).from(document.body).save().then(function () {
                            parent.postMessage('ibcc-pdf-done', '*');
                        }).catch(function () { parent.postMessage('ibcc-pdf-done', '*'); });
