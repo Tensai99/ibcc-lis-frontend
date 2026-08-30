@@ -87,6 +87,19 @@ export default defineNuxtConfig({
     },
   },
 
+  routeRules: {
+    '/images/**': { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
+    '/_nuxt/**':  { headers: { 'cache-control': 'public, max-age=31536000, immutable' } },
+    '/admin/**': { ssr: false },
+    '/assets/**': { ssr: false },
+    '/customers/**': { ssr: false },
+    '/dashboard/**': { ssr: false },
+    '/inventory/**': { ssr: false },
+    '/notifications/**': { ssr: false },
+    '/orders/**': { ssr: false },
+    '/patients/**': { ssr: false },
+  },
+
   app: {
     head: {
       title: 'IBCC — Laboratory Information System',
