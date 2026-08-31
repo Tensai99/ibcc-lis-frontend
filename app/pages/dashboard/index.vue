@@ -612,10 +612,10 @@ const loadOrders = async () => {
       q: ordersQuery.value || undefined,
       page: ordersPage.value,
       per_page: ordersPerPage,
-      // ADD ↓ — restrict the worklist to today only
-      date: today,
-      from: today,
-      to: today,
+      // Fall back to today only when no dashboard filter window is set
+      from: filters.from || today,
+      to: filters.to || today,
+      sub_department_id: filters.sub_department_id || undefined,
     })
     orders.value = res?.data ?? []
     ordersMeta.value = res?.meta ?? null
@@ -818,6 +818,7 @@ const load = async (useFilters = true) => {
   } finally {
     loading.value = false
   }
+  ordersPage.value = 1
   loadOrders()
 }
 
