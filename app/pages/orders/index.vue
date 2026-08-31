@@ -218,7 +218,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-outline-variant/10">
-                <tr v-for="o in rows" :key="o.uuid" class="cursor-pointer transition-colors" @click="openOrder(o.uuid)">
+                <tr v-for="o in rows" :key="o.uuid" class="cursor-pointer transition-colors">
                   <td class="py-4 px-5 font-mono text-[11px] text-ribbon-blue whitespace-nowrap border-l-4"
                     :class="rowAccent(o.status)">
                     {{ o.accession_number }}

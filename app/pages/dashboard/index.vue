@@ -199,7 +199,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-outline-variant/10">
-                <tr v-for="o in orders" :key="o.uuid" class="cursor-pointer" @click="openOrder(o.uuid)">
+                <tr v-for="o in orders" :key="o.uuid" class="cursor-pointer">
                   <td class="py-3 px-4 font-mono text-[11px] text-ribbon-blue whitespace-nowrap border-l-4"
                     :class="rowAccent(o.status)">
                     {{ o.accession_number }}
