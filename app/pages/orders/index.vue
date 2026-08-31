@@ -52,7 +52,7 @@
           </button>
           <button type="button" class="preset-chip" @click="applyPreset('all'); apply()">
             <font-awesome-icon :icon="['fas', 'infinity']" class="text-[10px]" />
-            <span>All time</span>
+            <span>All Quarter</span>
           </button>
           <button type="button" class="preset-chip" @click="filtersOpen = true">
             <font-awesome-icon :icon="['fas', 'sliders']" class="text-[10px]" />
@@ -200,7 +200,6 @@
         <div class="g-card p-6 sm:p-8">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
             <h3 class="text-lg sm:text-xl md:text-2xl font-semibold sm:font-bold">Orders</h3>
-            <div class="text-xs sm:text-sm text-on-surface-variant">Click a row to open the order</div>
           </div>
 
           <div class="overflow-x-auto">
@@ -358,7 +357,7 @@ const PRESETS = [
   { key: '7d', label: 'Last 7 days', icon: 'calendar-week' },
   { key: '30d', label: 'Last 30 days', icon: 'calendar' },
   { key: 'month', label: 'This month', icon: 'calendar-days' },
-  { key: 'all', label: 'All time', icon: 'infinity' },
+  { key: 'all', label: 'All Quarter', icon: 'infinity' },
 ] as const
 type PresetKey = typeof PRESETS[number]['key'] | 'custom'
 const activePreset = ref<PresetKey>('today')
@@ -413,7 +412,7 @@ const rangeLabel = computed(() => {
   if (isTodayScope.value) {
     return new Date().toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
   }
-  if (!filters.from && !filters.to) return 'All time'
+  if (!filters.from && !filters.to) return 'All Quarter'
   return `${filters.from || '…'} → ${filters.to || '…'}`
 })
 

@@ -721,7 +721,7 @@ const PRESETS = [
   { key: '7d', label: 'Last 7 days', icon: 'calendar-week' },
   { key: '30d', label: 'Last 30 days', icon: 'calendar' },
   { key: 'month', label: 'This month', icon: 'calendar-days' },
-  { key: 'all', label: 'All time', icon: 'infinity' },
+  { key: 'all', label: 'This Quarter', icon: 'infinity' },
 ] as const
 type PresetKey = typeof PRESETS[number]['key'] | 'custom'
 const activePreset = ref<PresetKey>('custom')
