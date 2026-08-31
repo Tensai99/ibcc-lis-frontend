@@ -179,12 +179,12 @@
             </div>
           </div>
 
-          <div v-if="ordersLoading && !todaysOrders.length" class="py-16 flex flex-col items-center gap-2">
+          <div v-if="ordersLoading && !orders.length" class="py-16 flex flex-col items-center gap-2">
             <font-awesome-icon :icon="['fas', 'circle-notch']" class="text-2xl text-primary animate-spin" />
             <p class="text-xs text-on-surface-variant">Loading orders…</p>
           </div>
 
-          <div v-else-if="todaysOrders.length" class="overflow-x-auto -mx-2 sm:mx-0">
+          <div v-else-if="orders.length" class="overflow-x-auto -mx-2 sm:mx-0">
             <table class="w-full text-left border-collapse text-sm alive-tbl tbl-blue">
               <thead>
                 <tr class="text-[11px] text-on-surface-variant uppercase tracking-widest">
@@ -199,7 +199,7 @@
                 </tr>
               </thead>
               <tbody class="divide-y divide-outline-variant/10">
-                <tr v-for="o in todaysOrders" :key="o.uuid" class="cursor-pointer" @click="openOrder(o.uuid)">
+                <tr v-for="o in orders" :key="o.uuid" class="cursor-pointer" @click="openOrder(o.uuid)">
                   <td class="py-3 px-4 font-mono text-[11px] text-ribbon-blue whitespace-nowrap border-l-4"
                     :class="rowAccent(o.status)">
                     {{ o.accession_number }}
@@ -262,7 +262,7 @@
                 <font-awesome-icon :icon="['fas', 'chevron-left']" />
               </button>
               <span class="text-sm font-semibold text-on-surface px-2">{{ ordersMeta.page }} / {{ ordersMeta.total_pages
-              }}</span>
+                }}</span>
               <button type="button" class="pager-btn" :disabled="ordersMeta.page >= ordersMeta.total_pages"
                 @click="goOrdersPage(ordersMeta.page + 1)">
                 <font-awesome-icon :icon="['fas', 'chevron-right']" />
@@ -446,7 +446,7 @@
                     <p class="text-[10px] text-outline uppercase tracking-wider">Critical</p>
                     <p class="text-lg font-extrabold" :class="d.results.critical > 0 ? 'text-error' : ''">{{
                       fmt(d.results.critical)
-                    }}</p>
+                      }}</p>
                   </div>
                   <div>
                     <p class="text-[10px] text-outline uppercase tracking-wider">Pending tech</p>
@@ -642,16 +642,6 @@ const stationTatMax = computed(() =>
 // ── row-styling helpers (mirror index.vue) ──────────────────────────────────
 const fmtDate = (s: string | null) =>
   s ? new Date(s).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—'
-
-// ADD ↓ — local-date comparison (avoids UTC offset drift)
-const isToday = (s: string | null) => {
-  if (!s) return false
-  const dt = new Date(s), n = new Date()
-  return dt.getFullYear() === n.getFullYear()
-    && dt.getMonth() === n.getMonth()
-    && dt.getDate() === n.getDate()
-}
-const todaysOrders = computed(() => orders.value.filter(o => isToday(o.scheduled_for)))
 
 const statusPillClass = (s: string) => {
   const k = (s || '').toLowerCase()
