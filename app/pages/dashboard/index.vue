@@ -176,9 +176,6 @@
                 <input v-model="ordersQuery" type="search" placeholder="Search accession, patient…"
                   class="cust-input has-icon" />
               </div>
-              <button type="button" class="pager-btn" :disabled="ordersLoading" @click="loadOrders()">
-                <font-awesome-icon :icon="['fas', 'rotate-right']" :class="ordersLoading ? 'animate-spin' : ''" />
-              </button>
             </div>
           </div>
 
@@ -714,7 +711,14 @@ const filters = reactive<Record<string, any>>({
 })
 const filtersOpen = ref(false)
 
-const windowLabel = computed(() => `${filters.from || '—'} → ${filters.to || '—'}`)
+const fmtWindowDate = (iso: string | null | undefined) =>
+  iso ? new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—'
+
+const windowLabel = computed(() => {
+  const from = d.value?.window?.from ?? filters.from
+  const to = d.value?.window?.to ?? filters.to
+  return `${fmtWindowDate(from)} → ${fmtWindowDate(to)}`
+})
 
 // ADD ↓
 const todayLabel = computed(() =>
@@ -814,12 +818,12 @@ const load = async (useFilters = true) => {
   } finally {
     loading.value = false
   }
+  loadOrders()
 }
 
 onMounted(() => {
   loadDepartments()
-  load(false) // initial fetch: no filters applied
-  loadOrders()
+  load(false) // initial fetch: no filters applied — also loads orders now
 })
 
 // ── formatting helpers ───────────────────────────────────────────────────────
