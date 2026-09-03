@@ -419,17 +419,53 @@
               <table class="w-full text-left border-collapse text-sm sm:text-base alive-tbl tbl-blue">
                 <thead>
                   <tr class="text-[11px] text-on-surface-variant uppercase tracking-widest">
-                    <th class="py-4 px-5">Accession</th>
-                    <th class="py-4 px-5">Test</th>
-                    <th class="py-4 px-5">Code</th>
-                    <th class="py-4 px-5">Sample</th>
-                    <th class="py-4 px-5 text-center">Blocks / Slides</th>
-                    <th class="py-4 px-5 text-center">Status</th>
+                    <th class="py-4 px-5 cursor-pointer select-none" @click="toggleTestSort('accession_number')">
+                      <span class="inline-flex items-center gap-1">
+                        Accession
+                        <font-awesome-icon :icon="['fas', testSortIcon('accession_number')]" class="text-[9px]"
+                          :class="testSortKey === 'accession_number' ? 'text-ribbon-blue' : 'opacity-30'" />
+                      </span>
+                    </th>
+                    <th class="py-4 px-5 cursor-pointer select-none" @click="toggleTestSort('test_name')">
+                      <span class="inline-flex items-center gap-1">
+                        Test
+                        <font-awesome-icon :icon="['fas', testSortIcon('test_name')]" class="text-[9px]"
+                          :class="testSortKey === 'test_name' ? 'text-ribbon-blue' : 'opacity-30'" />
+                      </span>
+                    </th>
+                    <th class="py-4 px-5 cursor-pointer select-none" @click="toggleTestSort('test_code')">
+                      <span class="inline-flex items-center gap-1">
+                        Code
+                        <font-awesome-icon :icon="['fas', testSortIcon('test_code')]" class="text-[9px]"
+                          :class="testSortKey === 'test_code' ? 'text-ribbon-blue' : 'opacity-30'" />
+                      </span>
+                    </th>
+                    <th class="py-4 px-5 cursor-pointer select-none" @click="toggleTestSort('sample_name')">
+                      <span class="inline-flex items-center gap-1">
+                        Sample
+                        <font-awesome-icon :icon="['fas', testSortIcon('sample_name')]" class="text-[9px]"
+                          :class="testSortKey === 'sample_name' ? 'text-ribbon-blue' : 'opacity-30'" />
+                      </span>
+                    </th>
+                    <th class="py-4 px-5 text-center cursor-pointer select-none" @click="toggleTestSort('blocks')">
+                      <span class="inline-flex items-center justify-center gap-1">
+                        Blocks / Slides
+                        <font-awesome-icon :icon="['fas', testSortIcon('blocks')]" class="text-[9px]"
+                          :class="testSortKey === 'blocks' ? 'text-ribbon-blue' : 'opacity-30'" />
+                      </span>
+                    </th>
+                    <th class="py-4 px-5 text-center cursor-pointer select-none" @click="toggleTestSort('status')">
+                      <span class="inline-flex items-center justify-center gap-1">
+                        Status
+                        <font-awesome-icon :icon="['fas', testSortIcon('status')]" class="text-[9px]"
+                          :class="testSortKey === 'status' ? 'text-ribbon-blue' : 'opacity-30'" />
+                      </span>
+                    </th>
                     <th class="py-4 px-5 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody class="divide-y divide-outline-variant/10">
-                  <tr v-for="t in order.tests" :key="t.uuid" class="cursor-pointer transition-colors"
+                  <tr v-for="t in sortedTests" :key="t.uuid" class="cursor-pointer transition-colors"
                     @click="router.push({ path: `/orders/test/${t.uuid}`, query: { order: order.uuid } })">
                     <td class="py-4 px-5 font-mono text-[11px] text-ribbon-blue whitespace-nowrap border-l-4"
                       :class="rowAccent(t.status)">
@@ -465,7 +501,7 @@
                       </button>
                     </td>
                   </tr>
-                  <tr v-if="!order.tests?.length">
+                  <tr v-if="!sortedTests.length">
                     <td colspan="7" class="py-8 text-center text-on-surface-variant">No tests on this order.</td>
                   </tr>
                 </tbody>
@@ -570,13 +606,14 @@
         class="w-[520px] max-w-2xl">
         <div class="space-y-4">
           <div>
-            <label class="input-label">Collected at</label>
-            <input v-model="cForm.collected_at" type="datetime-local" class="input-field" />
-          </div>
-          <div>
             <label class="input-label">Specimen site</label>
-            <SearchSelect v-model="cForm.laboratory_specimen_site_uuid" :options="siteOptions" label-key="label"
-              value-key="value" placeholder="Search specimen site…" :clearable="true" />
+            <div class="relative">
+              <font-awesome-icon :icon="['fas', 'location-dot']"
+                class="absolute left-3.5 top-1/2 -translate-y-1/2 text-outline/50 text-sm pointer-events-none z-10" />
+              <SearchSelect v-model="cForm.laboratory_specimen_site_uuid" :options="activeSites" option-value="uuid"
+                option-label="name" placeholder="Search specimen site…" search-placeholder="Search specimen sites…"
+                class="has-icon" clearable />
+            </div>
           </div>
         </div>
         <p v-if="formError" class="alert-error mt-4">{{ formError }}</p>
@@ -607,6 +644,87 @@
           <button type="button" class="btn-primary" :disabled="saving" @click="submitReceive">
             <font-awesome-icon v-if="saving" :icon="['fas', 'circle-notch']" class="animate-spin" />
             <span>Confirm receive</span>
+          </button>
+        </template>
+      </Modal>
+
+      <!-- ═══ Guided workflow modal — auto-shown on first load, per department ═══ -->
+      <Modal v-model="guidedOpen" :title="guidedAction === 'receive' ? 'Receive this order?' : 'Collect this specimen?'"
+        :subtitle="order?.accession_number" class="w-[480px] max-w-xl" :closable="false">
+        <div class="flex flex-col items-center text-center gap-4 py-2">
+          <div class="w-16 h-16 rounded-full flex items-center justify-center"
+            :class="guidedAction === 'receive' ? 'bg-ribbon-amber/15' : 'bg-ribbon-teal/15'">
+            <font-awesome-icon :icon="['fas', guidedAction === 'receive' ? 'inbox' : 'vial-circle-check']"
+              class="text-2xl" :class="guidedAction === 'receive' ? 'text-ribbon-amber' : 'text-ribbon-teal'" />
+          </div>
+          <div>
+            <p class="text-base font-bold text-on-surface">
+              {{ guidedAction === 'receive' ? 'Ready to receive this order?' : 'Ready to collect this specimen?' }}
+            </p>
+            <p class="text-sm text-on-surface-variant mt-1.5">
+              {{ guidedAction === 'receive'
+                ? `Confirm that ${order?.accession_number} has physically arrived at the laboratory. This stamps the
+              reception
+              step and moves the order forward.`
+                : `Confirm that the specimen for ${order?.accession_number} has been collected. This stamps the collection
+              step
+              and moves the order forward.` }}
+            </p>
+          </div>
+        </div>
+
+        <!-- ADD ↓ specimen site picker — only shown on the collect step, same styling as the standalone Collect modal -->
+        <div v-if="guidedAction === 'collect'" class="mt-1">
+          <label class="input-label">Specimen site</label>
+          <div class="relative">
+            <font-awesome-icon :icon="['fas', 'location-dot']"
+              class="absolute left-3.5 top-1/2 -translate-y-1/2 text-outline/50 text-sm pointer-events-none z-10" />
+            <SearchSelect v-model="guidedSiteUuid" :options="activeSites" option-value="uuid" option-label="name"
+              placeholder="Search specimen site…" search-placeholder="Search specimen sites…" class="has-icon"
+              clearable />
+          </div>
+        </div>
+
+        <p v-if="formError" class="alert-error mt-2">{{ formError }}</p>
+        <template #footer>
+          <template v-if="guidedIsAcceptReject">
+            <button type="button" class="btn-secondary" :disabled="guidedAccepting" @click="openGuidedReject">
+              <font-awesome-icon :icon="['fas', 'xmark']" />
+              <span>Reject</span>
+            </button>
+            <button type="button" class="btn-primary" :disabled="guidedAccepting" @click="guidedAccept">
+              <font-awesome-icon v-if="guidedAccepting" :icon="['fas', 'circle-notch']" class="animate-spin" />
+              <font-awesome-icon v-else :icon="['fas', 'check']" />
+              <span>Accept</span>
+            </button>
+          </template>
+          <button v-else type="button" class="btn-primary w-full sm:w-auto" :disabled="guidedAccepting"
+            @click="guidedAccept">
+            <font-awesome-icon v-if="guidedAccepting" :icon="['fas', 'circle-notch']" class="animate-spin" />
+            <font-awesome-icon v-else :icon="['fas', guidedAction === 'receive' ? 'inbox' : 'vial-circle-check']" />
+            <span>{{ guidedSingleLabel }}</span>
+          </button>
+        </template>
+      </Modal>
+
+      <!-- ═══ Guided reject confirm modal ═══ -->
+      <Modal v-model="guidedRejectOpen" title="Are you sure?" :subtitle="order?.accession_number"
+        class="w-[440px] max-w-xl">
+        <div class="flex items-start gap-3">
+          <div class="w-11 h-11 rounded-full bg-error/10 flex items-center justify-center shrink-0">
+            <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-error" />
+          </div>
+          <p class="text-sm text-on-surface">
+            {{ guidedAction === 'receive'
+              ? 'This order will stay unreceived for now. You can receive it later from the workflow actions.'
+              : 'This specimen will stay uncollected for now. You can collect it later from the workflow actions.' }}
+          </p>
+        </div>
+        <template #footer>
+          <button type="button" class="btn-secondary" @click="guidedRejectOpen = false">Go back</button>
+          <button type="button" class="btn-danger" @click="confirmGuidedReject">
+            <font-awesome-icon :icon="['fas', 'xmark']" />
+            <span>Yes, skip for now</span>
           </button>
         </template>
       </Modal>
@@ -764,11 +882,19 @@
 import { ref, reactive, computed, h, onMounted } from 'vue'
 import type { LabOrderDetail } from '~/composables/useLaboratory'
 import { useLaboratorySettings } from '~/composables/useLaboratorySettings'
+// ADD ↓
+import { useAuthStore } from '~/stores/auth'
 const { printLabel, status, message, visible } = usePrintLabel()
 
 const route = useRoute()
 const router = useRouter()
 const { showOrder, updateOrder, collectOrder, receiveOrder, voidOrder, reportOrder, releaseOrder, getOrderTimeline } = useLaboratory()
+
+// ADD ↓ — drives which guided step (receive-first vs collect-first) applies
+const auth = useAuthStore()
+const userDepartment = computed(() => (auth.currentUser?.department || '').toLowerCase())
+const isHistopathologyUser = computed(() => userDepartment.value.includes('histopath'))
+const isClinicalLabUser = computed(() => userDepartment.value.includes('clinical'))
 
 const { specimenSites, loaded: settingsLoaded, preload: preloadSettings } = useLaboratorySettings()
 onMounted(() => { if (!settingsLoaded.value) preloadSettings() })
@@ -880,7 +1006,10 @@ const load = async () => {
     loading.value = false
   }
 }
-onMounted(load)
+onMounted(async () => {
+  await load()
+  startGuidedFlow()
+})
 
 // KPI tallies across tests and encounters
 const counts = computed(() => {
@@ -893,6 +1022,41 @@ const counts = computed(() => {
     if ((e.tat_status || '').toLowerCase() === 'breached') acc.breached++
   }
   return acc
+})
+
+// ADD ↓ Tests table sorting — sorts the tests currently on this order
+type TestSortKey = 'accession_number' | 'test_name' | 'test_code' | 'sample_name' | 'blocks' | 'status'
+const testSortKey = ref<TestSortKey | null>(null)
+const testSortDir = ref<'asc' | 'desc'>('asc')
+
+const toggleTestSort = (key: TestSortKey) => {
+  if (testSortKey.value === key) {
+    testSortDir.value = testSortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    testSortKey.value = key
+    testSortDir.value = 'asc'
+  }
+}
+
+const testSortIcon = (key: TestSortKey) =>
+  testSortKey.value !== key ? 'sort' : testSortDir.value === 'asc' ? 'sort-up' : 'sort-down'
+
+const testSortValue = (t: any, key: TestSortKey): string | number => {
+  if (key === 'blocks') return (t.blocks?.length ?? 0) + (t.slides?.length ?? 0)
+  return (t[key] ?? '').toString().toLowerCase()
+}
+
+const sortedTests = computed(() => {
+  const tests = order.value?.tests ?? []
+  if (!testSortKey.value) return tests
+  const key = testSortKey.value
+  const dir = testSortDir.value === 'asc' ? 1 : -1
+  return [...tests].sort((a, b) => {
+    const av = testSortValue(a, key)
+    const bv = testSortValue(b, key)
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir
+    return String(av).localeCompare(String(bv), undefined, { sensitivity: 'base', numeric: true }) * dir
+  })
 })
 
 // ── Timeline-driven action gates ────────────────────────────────────────────
@@ -914,7 +1078,7 @@ const canCollect = computed(() => stationStatus('RECEPTION') === 'completed'
   && stationStatus('GROSSING') !== 'completed')
 const canCompleteReport = computed(() => stationStatus('REPORTING') === 'pending'
   || stationStatus('REPORTING') === 'in_progress')
-const canReleaseReport = computed(() => ['pending', 'planned', 'in_progress']
+const canReleaseReport = computed(() => ['pending', 'in_progress']
   .includes(stationStatus('RELEASE') ?? ''))
 
 // Reason shown as a tooltip on a disabled item
@@ -987,6 +1151,14 @@ const releaseOpen = ref(false)
 const saving = ref(false)
 const formError = ref<string | null>(null)
 
+// ADD ↓ — guided workflow modal (auto-prompted on first load, per department)
+const guidedOpen = ref(false)
+const guidedRejectOpen = ref(false)
+const guidedAction = ref<'receive' | 'collect' | null>(null)
+const guidedAccepting = ref(false)
+const guidedFlowStarted = ref(false)
+const guidedSiteUuid = ref('')
+
 const voidOpen = ref(false)
 const vForm = reactive<{ voided_reason: string }>({ voided_reason: '' })
 
@@ -1018,7 +1190,7 @@ const uForm = reactive<Record<string, any>>({
   referring_facility: '', referring_facility_type: '',
   urgency: '', disposition: '', clinical_details: '',
 })
-const cForm = reactive<Record<string, any>>({ collected_at: '', laboratory_specimen_site_uuid: '' })
+const cForm = reactive<Record<string, any>>({ laboratory_specimen_site_uuid: '' })
 
 const openUpdate = () => {
   formError.value = null
@@ -1038,7 +1210,6 @@ const openUpdate = () => {
 }
 const openCollect = () => {
   formError.value = null
-  cForm.collected_at = toLocalInput(new Date().toISOString())
   cForm.laboratory_specimen_site_uuid = ''
   collectOpen.value = true
 }
@@ -1072,11 +1243,85 @@ const submitUpdate = () => run(() => updateOrder(uuid.value, {
 }), 'Order updated.', () => (updateOpen.value = false))
 
 const submitCollect = () => run(() => collectOrder(uuid.value, {
-  collected_at: toIso(cForm.collected_at) || undefined,
+  uuid: uuid.value,
   laboratory_specimen_site_uuid: cForm.laboratory_specimen_site_uuid || undefined,
 }), 'Specimen collected.', () => (collectOpen.value = false))
 
 const submitReceive = () => run(() => receiveOrder(uuid.value), 'Order received.', () => (receiveOpen.value = false))
+
+// ADD ↓ — guided workflow: decides which step to prompt, per department
+const openGuided = (action: 'receive' | 'collect') => {
+  guidedAction.value = action
+  formError.value = null
+  // ADD ↓ clear any previously chosen site each time a fresh collect step opens
+  if (action === 'collect') guidedSiteUuid.value = ''
+  guidedOpen.value = true
+}
+
+// Picks the next guided step based on the logged-in user's department and
+// the live timeline gates (canReceive / canCollect). Called once on first
+// load, then again after each successful accept to chain to the 2nd step.
+const runGuidedFlow = () => {
+  if (isHistopathologyUser.value) {
+    if (canReceive.value) return openGuided('receive')
+    if (canCollect.value) return openGuided('collect')
+  } else if (isClinicalLabUser.value) {
+    if (canCollect.value) return openGuided('collect')
+    if (canReceive.value) return openGuided('receive')
+  }
+  guidedAction.value = null
+}
+
+// ADD ↓ — which button style the guided modal shows for the current step:
+//  - Histopath: Accept/Reject only on the COLLECT step; plain confirm on RECEIVE
+//  - Clinical:  Accept/Reject only on the RECEIVE step; plain confirm on COLLECT
+const guidedIsAcceptReject = computed(() => {
+  if (isHistopathologyUser.value) return guidedAction.value === 'collect'
+  if (isClinicalLabUser.value) return guidedAction.value === 'receive'
+  return false
+})
+
+const guidedSingleLabel = computed(() => {
+  if (guidedAction.value === 'receive') return 'Receive specimen'
+  if (guidedAction.value === 'collect') return 'Collect specimen'
+  return ''
+})
+
+const startGuidedFlow = () => {
+  if (guidedFlowStarted.value) return
+  guidedFlowStarted.value = true
+  runGuidedFlow()
+}
+
+const guidedAccept = async () => {
+  if (!guidedAction.value) return
+  guidedAccepting.value = true
+  formError.value = null
+  try {
+    order.value = guidedAction.value === 'receive'
+      ? await receiveOrder(uuid.value)
+      // CHANGED — was: collectOrder(uuid.value, { collected_at: new Date().toISOString() })
+      : await collectOrder(uuid.value, {
+        uuid: uuid.value,
+        laboratory_specimen_site_uuid: guidedSiteUuid.value || undefined,
+      })
+    await load()
+    flash(true, guidedAction.value === 'receive' ? 'Order received.' : 'Specimen collected.')
+    guidedOpen.value = false
+    setTimeout(runGuidedFlow, 300)
+  } catch (e: any) {
+    formError.value = e?.message ?? 'Something went wrong. Please try again.'
+  } finally {
+    guidedAccepting.value = false
+  }
+}
+
+const openGuidedReject = () => { guidedRejectOpen.value = true }
+const confirmGuidedReject = () => {
+  guidedRejectOpen.value = false
+  guidedOpen.value = false
+  guidedAction.value = null // stop the chain — user can act later from the header/timeline
+}
 
 const submitReport = () => run(
   () => reportOrder(uuid.value, rForm.comments),

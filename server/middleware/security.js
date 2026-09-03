@@ -4,23 +4,22 @@ export default defineEventHandler(async (event) => {
   const config     = useRuntimeConfig(event)
   const backEndUrl = (() => { try { return new URL(config.public.backEndUrl || 'http://localhost:5000').origin } catch { return '' } })()
   const objectStorageUrl = config.public.objectStorageUrl || ''
-  // Slide viewer service (framed in the LIS slide viewer modal)
-  const slideViewerUrl = (() => {
-    try { return new URL(config.public.slideViewerUrl || '').origin } catch { return '' }
-  })()
-const isDev      = process.env.NODE_ENV !== 'production'
+  const isDev      = process.env.NODE_ENV !== 'production'
+  const printLabelUrl = new URL(config.public.printMiddlewareLabelUrl) || ''
+
+  // Origins permitted to embed this viewer in an iframe (the HIS/LIS shell).
+  // Empty by default — framing stays denied unless an origin is configured.
+  const frameAncestors = String(config.public.frameAncestors || '')
+    .split(',').map((s) => s.trim()).filter(Boolean)
+  const framingAllowed = frameAncestors.length > 0
+  console.log('[csp] frameAncestors =', JSON.stringify(config.public.frameAncestors), '→', frameAncestors)
 
   // Extra origins to whitelist (object storage / MinIO), filtered so empty values never leak in
   const extra = [objectStorageUrl].filter(Boolean)
 
-  // Origins we allow to be framed — object storage + the slide viewer
-  const frameOrigins = [objectStorageUrl, slideViewerUrl].filter(Boolean)
-
-  // If any whitelisted origin is plain http (localhost stacks, on-prem MinIO),
-  // upgrade-insecure-requests would rewrite it to https:// and the frame/fetch
-  // is then blocked against an http-only directive. HSTS has the same effect
-  // host-wide, and it is port-blind — an entry for `localhost` upgrades :3001 too.
-  const hasInsecureOrigin = [backEndUrl, objectStorageUrl, slideViewerUrl]
+  // Same trap as the shell app: any http:// origin here means
+  // upgrade-insecure-requests would rewrite it to https:// and break it.
+  const hasInsecureOrigin = [backEndUrl, objectStorageUrl, ...frameAncestors, printLabelUrl]
     .filter(Boolean)
     .some((o) => o.startsWith('http://'))
 
@@ -34,20 +33,22 @@ const isDev      = process.env.NODE_ENV !== 'production'
         'https://api.iconify.design',
       ]
     : []
-  const hstsOptions = (isDev || hasInsecureOrigin)
+const hstsOptions = (isDev || hasInsecureOrigin)
     ? false
     : { maxAge: 63072000, includeSubDomains: true, preload: true }
   const upgradeInsecureRequests = (isDev || hasInsecureOrigin) ? null : []
   await new Promise((resolve, reject) => {
     helmet({
-      frameguard:     { action: 'deny' },
+      // X-Frame-Options has no origin-scoped form — it is all or nothing.
+      // When framing is configured, drop it and let frame-ancestors enforce.
+      frameguard:     framingAllowed ? false : { action: 'deny' },
       hsts:           hstsOptions,
       noSniff:        true,
       xssFilter:      true,
       referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
       contentSecurityPolicy: {
         directives: {
-          defaultSrc: ["'self'", backEndUrl],
+          defaultSrc: ["'self'", backEndUrl, printLabelUrl],
           styleSrc: [
             "'self'",
             "'unsafe-inline'",
@@ -71,23 +72,22 @@ const isDev      = process.env.NODE_ENV !== 'production'
             'https://use.fontawesome.com',
             'data:',
           ],
-          imgSrc: ["'self'", 'data:', 'blob:', 'https:', backEndUrl, ...extra],
-          // Allow framing the object-storage / MinIO origin so uploaded forms render,
-          // plus the slide viewer service embedded in the LIS slide viewer modal
+          imgSrc: ["'self'", 'data:', 'blob:', 'https:', backEndUrl, ...extra, printLabelUrl],
+          // Allow framing the object-storage / MinIO origin so uploaded forms render
           workerSrc: ["'self'", 'blob:'],
-          frameSrc: ["'self'", ...frameOrigins],
+          frameSrc: ["'self'", ...extra],
           connectSrc: [
             "'self'",
             backEndUrl,
+            printLabelUrl,
             ...extra,
-            ...(slideViewerUrl ? [slideViewerUrl] : []),
             ...devConnectSrc,
           ],
           objectSrc: ["'none'"],
           baseUri:   ["'self'"],
+          frameAncestors: ["'self'", ...frameAncestors],
           // Must be passed explicitly as null to suppress it — omitting the key
-          // falls through to helmet's default, which re-adds the directive and
-          // rewrites every http:// frame/subresource to https://.
+          // falls through to helmet's default, which re-adds the directive.
           upgradeInsecureRequests,
         },
       },

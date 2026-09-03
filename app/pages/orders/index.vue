@@ -206,18 +206,54 @@
             <table class="w-full text-left border-collapse text-sm sm:text-base alive-tbl tbl-blue">
               <thead>
                 <tr class="text-[11px] text-on-surface-variant uppercase tracking-widest">
-                  <th class="py-4 px-5">Accession</th>
-                  <th class="py-4 px-5">Patient</th>
-                  <th class="py-4 px-5">Scheduled</th>
-                  <th class="py-4 px-5">Department</th>
-                  <th class="py-4 px-5">Specimen</th>
-                  <th class="py-4 px-5 text-center">Urgency</th>
-                  <th class="py-4 px-5 text-center">Status</th>
+                  <th class="py-4 px-5 cursor-pointer select-none" @click="toggleSort('accession_number')">
+                    <span class="inline-flex items-center gap-1">
+                      Accession
+                      <font-awesome-icon :icon="['fas', sortIcon('accession_number')]" class="text-[9px]"
+                        :class="sortKey === 'accession_number' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
+                  <th class="py-4 px-5 cursor-pointer select-none" @click="toggleSort('patient_name')">
+                    <span class="inline-flex items-center gap-1">
+                      Patient
+                      <font-awesome-icon :icon="['fas', sortIcon('patient_name')]" class="text-[9px]"
+                        :class="sortKey === 'patient_name' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
+                  <th class="py-4 px-5 cursor-pointer select-none" @click="toggleSort('scheduled_for')">
+                    <span class="inline-flex items-center gap-1">
+                      Scheduled
+                      <font-awesome-icon :icon="['fas', sortIcon('scheduled_for')]" class="text-[9px]"
+                        :class="sortKey === 'scheduled_for' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
+                  <!-- REMOVED: <th class="py-4 px-5">Department</th> -->
+                  <th class="py-4 px-5 cursor-pointer select-none" @click="toggleSort('specimen')">
+                    <span class="inline-flex items-center gap-1">
+                      Specimen
+                      <font-awesome-icon :icon="['fas', sortIcon('specimen')]" class="text-[9px]"
+                        :class="sortKey === 'specimen' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
+                  <th class="py-4 px-5 text-center cursor-pointer select-none" @click="toggleSort('urgency')">
+                    <span class="inline-flex items-center justify-center gap-1">
+                      Urgency
+                      <font-awesome-icon :icon="['fas', sortIcon('urgency')]" class="text-[9px]"
+                        :class="sortKey === 'urgency' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
+                  <th class="py-4 px-5 text-center cursor-pointer select-none" @click="toggleSort('status')">
+                    <span class="inline-flex items-center justify-center gap-1">
+                      Status
+                      <font-awesome-icon :icon="['fas', sortIcon('status')]" class="text-[9px]"
+                        :class="sortKey === 'status' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
                   <th class="py-4 px-5 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-outline-variant/10">
-                <tr v-for="o in rows" :key="o.uuid" class="cursor-pointer transition-colors">
+                <tr v-for="o in sortedRows" :key="o.uuid" class="cursor-pointer transition-colors">
                   <td class="py-4 px-5 font-mono text-[11px] text-ribbon-blue whitespace-nowrap border-l-4"
                     :class="rowAccent(o.status)">
                     {{ o.accession_number }}
@@ -230,11 +266,7 @@
                   </td>
                   <td class="py-4 px-5 text-xs text-on-surface-variant whitespace-nowrap">{{ fmtDate(o.scheduled_for) }}
                   </td>
-                  <td class="py-4 px-5">
-                    <p class="text-sm break-words">{{ o.department?.section || o.department?.name || '—' }}</p>
-                    <p class="text-[10px] text-outline font-mono">{{ o.department?.section_code || o.department?.code ||
-                      '' }}</p>
-                  </td>
+                  <!-- REMOVED: department <td> -->
                   <td class="py-4 px-5 text-xs text-on-surface-variant break-words">{{ o.specimen || '—' }}</td>
                   <td class="py-4 px-5 text-center">
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold whitespace-nowrap uppercase"
@@ -332,6 +364,44 @@ const rows = ref<any[]>([])
 const meta = ref<any>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+// ADD ↓ column sorting — sorts the current page of rows only
+type OrderSortKey = 'accession_number' | 'patient_name' | 'scheduled_for' | 'specimen' | 'urgency' | 'status'
+const sortKey = ref<OrderSortKey | null>(null)
+const sortDir = ref<'asc' | 'desc'>('asc')
+
+const toggleSort = (key: OrderSortKey) => {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortDir.value = 'asc'
+  }
+}
+
+const sortIcon = (key: OrderSortKey) =>
+  sortKey.value !== key ? 'sort' : sortDir.value === 'asc' ? 'sort-up' : 'sort-down'
+
+const sortValue = (o: any, key: OrderSortKey): string | number => {
+  switch (key) {
+    case 'scheduled_for':
+      return o.scheduled_for ? new Date(o.scheduled_for).getTime() : 0
+    default:
+      return (o[key] ?? '').toString().toLowerCase()
+  }
+}
+
+const sortedRows = computed(() => {
+  if (!sortKey.value) return rows.value
+  const key = sortKey.value
+  const dir = sortDir.value === 'asc' ? 1 : -1
+  return [...rows.value].sort((a, b) => {
+    const av = sortValue(a, key)
+    const bv = sortValue(b, key)
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir
+    return String(av).localeCompare(String(bv), undefined, { sensitivity: 'base', numeric: true }) * dir
+  })
+})
 
 // ── filter option maps ───────────────────────────────────────────────────────
 const STATUS_OPTS = [

@@ -1,5 +1,6 @@
 // composables/usePrintLabel.ts
 export const usePrintLabel = () => {
+  const config = useRuntimeConfig()
   const status = ref<'idle' | 'loading' | 'success' | 'error'>('idle')
   const message = ref('')
   const visible = ref(false)
@@ -10,8 +11,11 @@ export const usePrintLabel = () => {
     message.value = 'Sending print job...'
 
     try {
-      await $fetch('/api/print-label', { // hits Nuxt server, not the printer directly
+      await $fetch(config.public.printMiddlewareLabelUrl, { // hits 127.0.0.1 directly from the browser
         method: 'POST',
+        mode: 'cors',
+        credentials: 'omit',
+        headers: { 'Content-Type': 'application/json' },
         body: {
           source: {
             mode: 'template_data',
@@ -24,7 +28,11 @@ export const usePrintLabel = () => {
       message.value = 'Print job completed'
     } catch (e: any) {
       status.value = 'error'
-      message.value = e?.data?.data?.error || 'Print job failed'
+      if (!e?.response) {
+        message.value = 'Could not reach print service — check that it allows this origin (CORS) and is running'
+      } else {
+        message.value = e?.data?.message || 'Print job failed'
+      }
     } finally {
       setTimeout(() => { visible.value = false }, 5000)
     }

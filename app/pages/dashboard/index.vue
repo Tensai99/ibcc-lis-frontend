@@ -103,7 +103,7 @@
               <font-awesome-icon :icon="['fas', 'rotate-left']" />
               <span>Reset</span>
             </button>
-            <button type="button" class="btn-apply" @click="load(true)">
+            <button type="button" class="btn-apply" @click="applyFilters">
               <font-awesome-icon :icon="['fas', 'magnifying-glass']" />
               <span>Apply filters</span>
             </button>
@@ -188,18 +188,54 @@
             <table class="w-full text-left border-collapse text-sm alive-tbl tbl-blue">
               <thead>
                 <tr class="text-[11px] text-on-surface-variant uppercase tracking-widest">
-                  <th class="py-3 px-4">Accession</th>
-                  <th class="py-3 px-4">Patient</th>
-                  <th class="py-3 px-4">Scheduled</th>
-                  <th class="py-3 px-4">Department</th>
-                  <th class="py-3 px-4">Specimen</th>
-                  <th class="py-3 px-4 text-center">Urgency</th>
-                  <th class="py-3 px-4 text-center">Status</th>
+                  <th class="py-3 px-4 cursor-pointer select-none" @click="toggleSort('accession_number')">
+                    <span class="inline-flex items-center gap-1">
+                      Accession
+                      <font-awesome-icon :icon="['fas', sortIcon('accession_number')]" class="text-[9px]"
+                        :class="sortKey === 'accession_number' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
+                  <th class="py-3 px-4 cursor-pointer select-none" @click="toggleSort('patient_name')">
+                    <span class="inline-flex items-center gap-1">
+                      Patient
+                      <font-awesome-icon :icon="['fas', sortIcon('patient_name')]" class="text-[9px]"
+                        :class="sortKey === 'patient_name' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
+                  <th class="py-3 px-4 cursor-pointer select-none" @click="toggleSort('scheduled_for')">
+                    <span class="inline-flex items-center gap-1">
+                      Scheduled
+                      <font-awesome-icon :icon="['fas', sortIcon('scheduled_for')]" class="text-[9px]"
+                        :class="sortKey === 'scheduled_for' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
+                  <!-- REMOVED: <th class="py-3 px-4">Department</th> -->
+                  <th class="py-3 px-4 cursor-pointer select-none" @click="toggleSort('specimen')">
+                    <span class="inline-flex items-center gap-1">
+                      Specimen
+                      <font-awesome-icon :icon="['fas', sortIcon('specimen')]" class="text-[9px]"
+                        :class="sortKey === 'specimen' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
+                  <th class="py-3 px-4 text-center cursor-pointer select-none" @click="toggleSort('urgency')">
+                    <span class="inline-flex items-center justify-center gap-1">
+                      Urgency
+                      <font-awesome-icon :icon="['fas', sortIcon('urgency')]" class="text-[9px]"
+                        :class="sortKey === 'urgency' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
+                  <th class="py-3 px-4 text-center cursor-pointer select-none" @click="toggleSort('status')">
+                    <span class="inline-flex items-center justify-center gap-1">
+                      Status
+                      <font-awesome-icon :icon="['fas', sortIcon('status')]" class="text-[9px]"
+                        :class="sortKey === 'status' ? 'text-ribbon-blue' : 'opacity-30'" />
+                    </span>
+                  </th>
                   <th class="py-3 px-4 text-right w-12">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-outline-variant/10">
-                <tr v-for="o in orders" :key="o.uuid" class="cursor-pointer">
+                <tr v-for="o in sortedOrders" :key="o.uuid" class="cursor-pointer">
                   <td class="py-3 px-4 font-mono text-[11px] text-ribbon-blue whitespace-nowrap border-l-4"
                     :class="rowAccent(o.status)">
                     {{ o.accession_number }}
@@ -211,11 +247,7 @@
                   </td>
                   <td class="py-3 px-4 text-xs text-on-surface-variant whitespace-nowrap">{{ fmtDate(o.scheduled_for) }}
                   </td>
-                  <td class="py-3 px-4">
-                    <p class="text-sm break-words">{{ o.department?.section || o.department?.name || '—' }}</p>
-                    <p class="text-[10px] text-outline font-mono">{{ o.department?.section_code || o.department?.code ||
-                      '' }}</p>
-                  </td>
+                  <!-- REMOVED: department <td> -->
                   <td class="py-3 px-4 text-xs text-on-surface-variant break-words">{{ o.specimen || '—' }}</td>
                   <td class="py-3 px-4 text-center">
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase whitespace-nowrap"
@@ -602,19 +634,27 @@ const ordersQuery = ref('')
 const ordersPage = ref(1)
 const ordersPerPage = 25
 
+// ADD ↓ tracks whether the user has explicitly applied the LabDashboardFilterBar window.
+// Orders always fall back to *today* until this becomes true.
+const ordersUseDashboardWindow = ref(false)
+
+
 const todayIso = () => isoDate(new Date())
 
 const loadOrders = async () => {
   ordersLoading.value = true
   try {
     const today = todayIso()
+    // CHANGED ↓ only trust the dashboard filter window once the user has
+    // explicitly applied it — otherwise always use today's date, on first
+    // load AND on every reload.
+    const useWindow = ordersUseDashboardWindow.value
     const res = await listOrders({
       q: ordersQuery.value || undefined,
       page: ordersPage.value,
       per_page: ordersPerPage,
-      // Fall back to today only when no dashboard filter window is set
-      from: filters.from || today,
-      to: filters.to || today,
+      from: useWindow && filters.from ? filters.from : today,
+      to: useWindow && filters.to ? filters.to : today,
       sub_department_id: filters.sub_department_id || undefined,
     })
     orders.value = res?.data ?? []
@@ -632,6 +672,44 @@ let searchTimer: any = null
 watch(ordersQuery, () => {
   clearTimeout(searchTimer)
   searchTimer = setTimeout(() => { ordersPage.value = 1; loadOrders() }, 350)
+})
+
+// ADD ↓ column sorting — sorts the current orders page only
+type OrderSortKey = 'accession_number' | 'patient_name' | 'scheduled_for' | 'specimen' | 'urgency' | 'status'
+const sortKey = ref<OrderSortKey | null>(null)
+const sortDir = ref<'asc' | 'desc'>('asc')
+
+const toggleSort = (key: OrderSortKey) => {
+  if (sortKey.value === key) {
+    sortDir.value = sortDir.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortDir.value = 'asc'
+  }
+}
+
+const sortIcon = (key: OrderSortKey) =>
+  sortKey.value !== key ? 'sort' : sortDir.value === 'asc' ? 'sort-up' : 'sort-down'
+
+const sortValue = (o: any, key: OrderSortKey): string | number => {
+  switch (key) {
+    case 'scheduled_for':
+      return o.scheduled_for ? new Date(o.scheduled_for).getTime() : 0
+    default:
+      return (o[key] ?? '').toString().toLowerCase()
+  }
+}
+
+const sortedOrders = computed(() => {
+  if (!sortKey.value) return orders.value
+  const key = sortKey.value
+  const dir = sortDir.value === 'asc' ? 1 : -1
+  return [...orders.value].sort((a, b) => {
+    const av = sortValue(a, key)
+    const bv = sortValue(b, key)
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * dir
+    return String(av).localeCompare(String(bv), undefined, { sensitivity: 'base', numeric: true }) * dir
+  })
 })
 
 // ── Insights helpers ────────────────────────────────────────────────────────
@@ -750,12 +828,21 @@ const applyPreset = (key: PresetKey) => {
   }
 }
 
+// ADD ↓ called only by the "Apply filters" button in the filter panel —
+// this is the one place the dashboard window is allowed to drive orders.
+const applyFilters = () => {
+  ordersUseDashboardWindow.value = true
+  load(true)
+}
+
 const resetFilters = () => {
   filters.from = ''
   filters.to = ''
   filters.sub_department_id = undefined
   deptUuid.value = ''
   activePreset.value = 'all'
+  // ADD ↓ reset also un-applies the window so orders fall back to today
+  ordersUseDashboardWindow.value = false
   load(true)
 }
 

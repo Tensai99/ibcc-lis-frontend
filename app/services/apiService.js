@@ -20,6 +20,22 @@ function extractErrorMessage(errorData, fallback) {
   return errorData?.message || errorData?.error || fallback
 }
 
+// Some backends use HTTP 401 for validation/business-rule errors too (e.g.
+// "Specimen for order already collected!"), not just expired/invalid tokens.
+// A 401 should only be treated as "kill the session" when the
+// OperationOutcome's issue code is genuinely auth-related — otherwise it's
+// just an ordinary error and the session must be left alone.
+const AUTH_ISSUE_CODES = ['login', 'unknown', 'expired', 'security', 'suppressed', 'forbidden']
+
+function isAuthFailure(errorData) {
+  // No parseable body at all — can't tell otherwise, so fail safe as before.
+  if (!errorData) return true
+  if (errorData.resourceType === 'OperationOutcome' && Array.isArray(errorData.issue)) {
+    return errorData.issue.some(i => AUTH_ISSUE_CODES.includes(i.code))
+  }
+  return true
+}
+
 // lazy import so this module has no hard dependency on Pinia being ready
 // (SSR / very first client tick before plugins run)
 async function notifyError(message, title) {
@@ -35,6 +51,7 @@ async function notifyError(message, title) {
 // maps an HTTP status to a short, specific toast title — falls back to a
 // generic one for anything not called out explicitly
 function titleForStatus(status) {
+  if (status === 401) return "Couldn't complete request"
   if (status === 422) return "Couldn't save changes"
   if (status === 409) return 'Conflict'
   if (status === 404) return 'Not found'
@@ -100,8 +117,6 @@ export default async function apiService(
     console.log(`[API] ${response.status} ${fullURL}`)
 
     if (response.status === 401) {
-      localStorage.removeItem('ibcc_auth')
-
       let errorData = null
       let errorMessage = 'Invalid credentials'
       try {
@@ -111,19 +126,31 @@ export default async function apiService(
         // no JSON body — keep fallback message
       }
 
-      if (!silent) {
-        // hadToken → an authenticated request got rejected mid-session (expiry/revocation)
-        // !hadToken → this was the login attempt itself, surface the real reason
-        if (hadToken) {
-          notifyError('Please sign in again to continue.', 'Session expired')
-        } else {
-          notifyError(errorMessage, 'Sign-in failed')
-        }
-      }
+      // Decide whether this 401 actually means "your session is dead" or is
+      // just an ordinary business/validation error that happens to use 401.
+      const authFailure = isAuthFailure(errorData)
 
-      if (hadToken && import.meta.client) {
-        const { navigateTo } = await import('#app')
-        navigateTo('/login')
+      if (authFailure) {
+        localStorage.removeItem('ibcc_auth')
+
+        if (!silent) {
+          // hadToken → an authenticated request got rejected mid-session (expiry/revocation)
+          // !hadToken → this was the login attempt itself, surface the real reason
+          if (hadToken) {
+            notifyError('Please sign in again to continue.', 'Session expired')
+          } else {
+            notifyError(errorMessage, 'Sign-in failed')
+          }
+        }
+
+        if (hadToken && import.meta.client) {
+          const { navigateTo } = await import('#app')
+          navigateTo('/login')
+        }
+      } else {
+        // A 401-coded business/validation error — surface it like any other
+        // failed request, but do NOT touch the session or redirect.
+        if (!silent) notifyError(errorMessage, titleForStatus(response.status))
       }
 
       const error = new Error(errorMessage)
